@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ds-flood-gfm"
+version = "0.1.0"
+description = "Global Flood Monitoring (GFM) data exploration"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+dependencies = [
+    "pystac-client",
+    "jupyter",
+    "ipykernel",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "black",
+    "flake8",
+]
+
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.black]
+line-length = 88
+target-version = ['py311']
