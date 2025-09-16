@@ -128,3 +128,7 @@ data/
 models/
 !models/README.md
 claude.md
+
+
+# virtual layers
+*.vrt
