@@ -127,3 +127,4 @@ data/
 *.pickle
 models/
 !models/README.md
+claude.md

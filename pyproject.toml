@@ -12,6 +12,16 @@ dependencies = [
     "pystac-client",
     "jupyter",
     "ipykernel",
+    "shapely",
+    "rasterio",
+    "xarray",
+    "rioxarray",
+    "geopandas",
+    "requests",
+    "tqdm",
+    "pandas",
+    "matplotlib",
+    "numpy",
 ]
 
 [project.optional-dependencies]
