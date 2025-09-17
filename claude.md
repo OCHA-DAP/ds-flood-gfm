@@ -25,6 +25,9 @@ The project uses Python 3.11.4 with pyenv for version and environment management
    - `data/` directory for all datasets (git-ignored)
      - `data/gfm/` for flood extent data
      - `data/ghsl/` for population data
+   - `experiments/` directory for Claude Code experiments and analysis
+     - `experiments/claude-tests/` for reusable experiment scripts and analysis
+     - `experiments/temp-analysis/` for temporary/throwaway analysis files (likely to be deleted)
    - Build modular architecture as needed
 
 ## Python Libraries

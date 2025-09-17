@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import List, Optional, Dict
 
 import numpy as np
+import pandas as pd
 import xarray as xr
 import pystac_client
 import stackstac
@@ -136,17 +137,16 @@ class STACTemporalCompositor:
             last_time = subset_stack.time.isel(time=-1)
             doy_value = int(last_time.dt.dayofyear.values)
 
-            logger.info(f"  DOY value for {target_date}: {doy_value}")
-
             # Create DOY array - preserve DOY even where pixels are nodata
-            # This tracks the most recent observation date for the composite
+            # Handle DOY overflow for uint8 (max 255) - December dates can be 344+
+            if doy_value > 255:
+                logger.warning(f"DOY {doy_value} exceeds uint8 range, clamping to 255")
+                doy_value = 255
             doy_data = xr.full_like(composite, doy_value, dtype='uint8')
 
             # Calculate statistics
             composite_computed = composite.compute()
             doy_computed = doy_data.compute()
-
-            logger.info(f"  DOY data unique values: {np.unique(doy_computed)}")
 
             valid_pixels = int((composite_computed != 255).sum())
             flood_pixels = int((composite_computed == 1).sum())
@@ -174,7 +174,6 @@ class STACTemporalCompositor:
             }
 
             # Write the temporal composite
-            logger.info(f"  Writing DOY band with unique values: {np.unique(doy_computed.values)}")
             with rasterio.open(output_path, 'w', **profile) as dst:
                 dst.write(composite_computed.values, 1)
                 dst.write(doy_computed.values, 2)
@@ -197,6 +196,129 @@ class STACTemporalCompositor:
             })
 
         return temporal_results
+
+    def extract_temporal_composite(self, stack: xr.DataArray, target_date: str,
+                                 output_dir: Path) -> Optional[Dict]:
+        """Extract a single temporal composite for a specific target date."""
+        from datetime import datetime
+
+        target_date_obj = datetime.strptime(target_date, '%Y-%m-%d').date()
+        logger.info(f"Extracting temporal composite for {target_date}")
+
+        # Filter stack to include only data up to target date
+        mask = stack.time.dt.date <= target_date_obj
+        subset_stack = stack.isel(time=mask)
+
+        if subset_stack.sizes['time'] == 0:
+            logger.warning(f"No data found for {target_date}")
+            return None
+
+        logger.info(f"  Using {subset_stack.sizes['time']} time steps for {target_date}")
+
+        # Use simple stackstac approach following Planetary Computer examples
+        logger.info("  Creating temporal composite using stackstac...")
+
+        # Method 1: Use the last valid observation (latest wins) - this is the simple approach
+        # Filter out nodata values (255) and take the last time step
+        valid_data = subset_stack.where(subset_stack != 255)
+
+        # For latest valid pixel wins: use last valid observation per pixel
+        # This uses xarray's built-in functionality
+        composite = valid_data.bfill(dim='time').isel(time=-1, band=0)
+
+        # Create DOY tracking - use the actual time of the latest observation
+        time_index = subset_stack.time.dt.dayofyear.astype(np.uint8)
+        time_index = time_index.where(time_index <= 255, 255)  # Clamp to uint8
+
+        # For each pixel, get the DOY of the last valid observation
+        # Create a time-indexed version and use same logic
+        time_array = xr.concat([time_index] * subset_stack.sizes['band'], dim='band')
+        time_valid = time_array.where(subset_stack != 255)
+        doy_composite = time_valid.bfill(dim='time').isel(time=-1, band=0)
+
+        logger.info("  Computing arrays...")
+
+        # Compute the results - handle potential NaNs by filling with nodata
+        composite_computed = composite.fillna(255).compute().astype(np.uint8)
+        doy_computed = doy_composite.fillna(0).compute().astype(np.uint8)
+
+        logger.info(f"  Valid pixels found: {np.sum(composite_computed != 255):,}")
+        logger.info(f"  Flood pixels found: {np.sum(composite_computed == 1):,}")
+
+        valid_pixels = int((composite_computed != 255).sum())
+        flood_pixels = int((composite_computed == 1).sum())
+        total_pixels = int(composite_computed.size)
+        coverage_pct = 100 * valid_pixels / total_pixels
+
+        logger.info(f"  Stats: {flood_pixels:,} flood pixels, "
+                   f"{valid_pixels:,} valid pixels "
+                   f"({coverage_pct:.2f}% coverage)")
+
+        # Save temporal composite
+        output_dir.mkdir(parents=True, exist_ok=True)
+        output_path = output_dir / f"stac_temporal_{target_date}.tif"
+
+        # Create multi-band profile
+        # Extract transform from xarray coordinates
+        y_coords = subset_stack.y.values
+        x_coords = subset_stack.x.values
+        y_res = float(y_coords[1] - y_coords[0]) if len(y_coords) > 1 else -0.0002
+        x_res = float(x_coords[1] - x_coords[0]) if len(x_coords) > 1 else 0.0002
+
+        from rasterio.transform import from_bounds
+        transform = from_bounds(
+            float(x_coords.min()), float(y_coords.min()),
+            float(x_coords.max()), float(y_coords.max()),
+            len(x_coords), len(y_coords)
+        )
+
+        profile = {
+            'driver': 'GTiff',
+            'height': composite_computed.shape[0],
+            'width': composite_computed.shape[1],
+            'count': 2,
+            'dtype': 'uint8',
+            'crs': 'EPSG:4326',
+            'transform': transform,
+            'compress': 'lzw',
+            'nodata': None
+        }
+
+        # Write the temporal composite
+        # DEBUG: Check data before writing
+        logger.info(f"  DEBUG - Before write: {np.sum(composite_computed == 1)} flood pixels")
+        logger.info(f"  DEBUG - Data shape: {composite_computed.shape}")
+        logger.info(f"  DEBUG - Data type: {composite_computed.dtype}")
+        logger.info(f"  DEBUG - Unique values: {np.unique(composite_computed)}")
+
+        with rasterio.open(output_path, 'w', **profile) as dst:
+            dst.write(composite_computed, 1)
+            dst.write(doy_computed, 2)
+            dst.set_band_description(1,
+                'Flood Extent (0=no flood, 1=flood, 255=nodata)')
+            dst.set_band_description(2,
+                'Day of Year (1-366, 0=no observation)')
+
+        # DEBUG: Verify what was actually written
+        with rasterio.open(output_path, 'r') as verify:
+            written_data = verify.read(1)
+            written_flood_pixels = np.sum(written_data == 1)
+            logger.info(f"  DEBUG - After write: {written_flood_pixels} flood pixels in file")
+            logger.info(f"  DEBUG - Written unique values: {np.unique(written_data)}")
+
+        logger.info(f"✅ Saved: {output_path.name}")
+
+        # Return results
+        result = {
+            'date': target_date,
+            'output_file': str(output_path),
+            'tiles_count': int(subset_stack.sizes['time']),
+            'valid_pixels': valid_pixels,
+            'flood_pixels': flood_pixels,
+            'coverage_pct': coverage_pct
+        }
+
+        return result
 
     def process_stac_temporal(self, bbox: List[float], datetime_range: str,
                             output_dir: Path, resolution: float = 0.0002,
@@ -236,6 +358,73 @@ class STACTemporalCompositor:
 
         return results
 
+    def process_stac_temporal_selective(self, bbox: List[float], datetime_range: str,
+                                      target_dates: List[str], output_dir: Path,
+                                      resolution: float = 0.0002,
+                                      limit: int = 1000) -> Dict:
+        """Process STAC temporal composites for specific target dates only.
+
+        Args:
+            bbox: Bounding box [min_lon, min_lat, max_lon, max_lat]
+            datetime_range: Full range to query (e.g., "2023-09-01/2023-12-31")
+            target_dates: Specific dates to extract (e.g., ["2023-12-10", "2023-12-15"])
+            output_dir: Output directory for composite files
+            resolution: Spatial resolution in degrees
+            limit: Maximum number of STAC items to query
+
+        Returns:
+            Dictionary with processing results for target dates only
+        """
+        logger.info("=" * 60)
+        logger.info("STAC SELECTIVE TEMPORAL COMPOSITING WORKFLOW")
+        logger.info("=" * 60)
+        logger.info(f"Query range: {datetime_range}")
+        logger.info(f"Target dates: {target_dates}")
+
+        # Step 1: Search STAC API for full date range
+        search = self.search_gfm_items(bbox, datetime_range, limit)
+
+        # Step 2: Create lazy xarray stack for full range
+        logger.info("\nStep 1: Creating lazy xarray stack for full range")
+        stack = self.create_lazy_stack(search, resolution, bbox)
+
+        # Step 3: Extract only requested target dates
+        logger.info(f"\nStep 2: Extracting {len(target_dates)} target dates")
+        results = []
+        output_files = []
+
+        for target_date in target_dates:
+            logger.info(f"\n--- Processing target date: {target_date} ---")
+            result = self.extract_temporal_composite(stack, target_date, output_dir)
+
+            if result:
+                results.append(result)
+                output_files.append(result['output_file'])
+            else:
+                logger.warning(f"Failed to process {target_date}")
+
+        # Summary
+        summary = {
+            'query_range': datetime_range,
+            'search_items': len(list(search.items())),
+            'target_dates_requested': len(target_dates),
+            'target_dates_processed': len(results),
+            'dates_processed': [r['date'] for r in results],
+            'output_files': output_files,
+            'stats': results,
+            'output_dir': str(output_dir)
+        }
+
+        logger.info("=" * 60)
+        logger.info("SELECTIVE STAC PROCESSING COMPLETE")
+        logger.info(f"Query range: {datetime_range}")
+        logger.info(f"STAC items found: {summary['search_items']}")
+        logger.info(f"Target dates requested: {summary['target_dates_requested']}")
+        logger.info(f"Target dates processed: {summary['target_dates_processed']}")
+        logger.info(f"Files created: {len(output_files)}")
+
+        return summary
+
     def validate_temporal_growth(self, results: Dict):
         """Validate that temporal composites show growing coverage."""
         logger.info("\nValidating temporal composite growth...")
@@ -261,32 +450,48 @@ class STACTemporalCompositor:
 
 
 def main():
-    """Test the STAC temporal compositor."""
+    """Test the STAC temporal compositor with selective processing."""
     compositor = STACTemporalCompositor()
 
     # Somalia bounding box
     bbox = [40.0, -2.0, 51.0, 12.0]
-    datetime_range = "2023-09-01/2023-09-03"
-    output_dir = Path("data/gfm/somalia_example/stac_temporal_composites")
 
-    print("Testing STAC Temporal Compositor...")
-    print(f"AOI: {bbox}")
-    print(f"Time range: {datetime_range}")
+    # Example 1: Traditional processing (process all dates)
+    print("=" * 70)
+    print("EXAMPLE 1: Traditional Processing (few dates)")
+    print("=" * 70)
+    datetime_range_short = "2023-09-01/2023-09-03"
+    output_dir = Path("data/gfm/somalia_example/stac_temporal_composites")
 
     try:
         results = compositor.process_stac_temporal(
-            bbox, datetime_range, output_dir,
-            resolution=0.0002, limit=20  # Very small test to avoid timeout
+            bbox, datetime_range_short, output_dir,
+            resolution=0.0002, limit=50
         )
-
-        print("\n✅ Processing complete!")
-        print("Results:", results)
-
-        # Validate growth
+        print("\n✅ Traditional processing complete!")
         compositor.validate_temporal_growth(results)
+    except Exception as e:
+        print(f"❌ Traditional processing error: {e}")
+
+    # Example 2: Selective processing (query long range, extract specific dates)
+    print("\n" + "=" * 70)
+    print("EXAMPLE 2: Selective Processing (December dates only)")
+    print("=" * 70)
+
+    datetime_range_full = "2023-09-01/2023-12-31"  # Query full range
+    target_dates = ["2023-12-10", "2023-12-15", "2023-12-31"]  # Extract specific dates
+    output_dir_selective = Path("data/gfm/somalia_example/stac_temporal_composites_selective")
+
+    try:
+        results_selective = compositor.process_stac_temporal_selective(
+            bbox, datetime_range_full, target_dates, output_dir_selective,
+            resolution=0.0002, limit=200
+        )
+        print("\n✅ Selective processing complete!")
+        print("Results:", results_selective)
 
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"❌ Selective processing error: {e}")
         import traceback
         traceback.print_exc()
 

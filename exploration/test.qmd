@@ -1,0 +1,330 @@
+
+---
+jupyter: ds-flood-gfm
+---
+## Simple STAC based approach to recent composites
+
+```{python}
+import pystac_client
+import stackstac
+import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap, BoundaryNorm
+import numpy as np
+
+import numpy as np
+
+# Configure matplotlib for better display
+%matplotlib inline
+plt.rcParams['figure.dpi'] = 100
+
+```
+
+
+## Spatio-temporal Ranges
+
+Define spatial-temporal range. For this example we just define aoi lon/lat as a point
+but later we'd probably want larger bbox's
+
+We should be able to define any start range and cumulatively fill with most recent values.
+
+Here we cover Oct-December 2024 and a point in Somalia
+```{python}
+lon, lat = 0, 45
+
+start_date = "2023-10-01"
+end_date = "2023-12-31"
+```
+
+
+## STAC - connect & query
+```{python}
+
+stac_api = "https://stac.eodc.eu/api/v1"
+client = pystac_client.Client.open(stac_api)
+
+
+# Step 2: Search for GFM items
+datetime_range = f"{start_date}/{end_date}"
+search = client.search(
+    collections=["GFM"],
+    intersects=dict(type="Point", coordinates=[lon, lat]),
+    # bbox=aoi,
+    datetime=datetime_range
+    # limit=20  # Maximum number of STAC items/scenes to return
+    # Each item = one satellite image/scene at a specific time
+    # Without limit, you might get hundreds of results
+    # limit=20 means "give me up to 20 scenes that match my criteria"
+)
+
+item_collection = search.get_all_items()
+stack = stackstac.stack(item_collection,epsg= 4326)
+
+
+```
+
+
+## Processing
+
+Create ImageCollection of latest composites up to the date of each image
+```{python}
+stack
+ic_latest = stack.sel(band="ensemble_flood_extent").ffill(dim= "time")
+
+```
+
+
+## View Results
+
+Select Snapshots to visually inspect and make sure it's working
+```{python}
+# Get 3 Image snap-shots from STAC for visualization of concept
+img_tstart = ic_latest.isel(time =0)
+img_tend = ic_latest.isel(time = -1 )
+img_t2 = ic_latest.isel(time =2)
+img_t45= ic_latest.isel(time =45)
+
+```
+
+plots to visualize snapshots together
+
+```{python plots}
+
+# Create 3 subplots for the three time points
+fig, axes = plt.subplots(2, 2, figsize=(6, 6))
+ax1, ax2, ax3, ax4 = axes.flatten()
+
+# Define colors for flood data
+# Simple approach: mask nodata (255) and use binary colormap for 0/1
+colors = ["white", "blue"]  # 0=not flooded (white), 1=flooded (blue)
+flood_cmap = ListedColormap(colors)
+
+
+# Plot start image (ensemble_flood_extent band)
+img_tstart.plot(ax=ax1, cmap=flood_cmap, vmin=0, vmax=1, add_colorbar=True)
+ax1.set_title("Start (Time 0)")
+ax1.set_xlabel("Longitude")
+ax1.set_ylabel("Latitude")
+
+# Plot midway image
+img_t2.plot(ax=ax2, cmap=flood_cmap, vmin=0, vmax=1, add_colorbar=True)
+ax2.set_title("Day 2 (Time 2)")
+ax2.set_xlabel("Longitude")
+ax2.set_ylabel("Latitude")
+
+# Plot latest image
+img_t45.plot(ax=ax3, cmap=flood_cmap, vmin=0, vmax=1, add_colorbar=True)
+ax3.set_title("Midway (Day-45)")
+ax3.set_xlabel("Longitude")
+ax3.set_ylabel("Latitude")
+
+plt.tight_layout()
+plt.show()
+fig
+```
+
+
+
+## Check advisory bands
+```{python}
+ic_advisory_flags = stack.sel(band="advisory_flags")
+img_advisory_flag = ic_advisory_flags.isel(time=0)
+
+
+img_advisory_flag.plot()
+plt.show()
+```
+
+
+## Scrap - Ignore below
+
+```{python}
+latest_composite = stack.ffill(dim="time").isel(time=-1)
+time0
+single_band = latest_composite.sel(band="ensemble_flood_extent")
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Configure matplotlib for better display
+%matplotlib inline
+plt.rcParams['figure.dpi'] = 100
+
+# Plot just the single_band composite
+fig, ax = plt.subplots(1, 1, figsize=(10, 8))
+im1 = single_band.plot(ax=ax, cmap="viridis", add_colorbar=True)
+ax.set_title("Latest Valid Composite - ensemble_flood_extent")
+ax.set_xlabel("Longitude")
+ax.set_ylabel("Latitude")
+plt.tight_layout()
+plt.show()
+
+# Alternative: Force display without plt.show()
+fig
+```
+
+
+
+### TBD
+
+```{python}
+
+# Method 2: Alternative approach using where and reduce operations
+# This finds the last valid value by working backwards through time
+import xarray as xr
+
+def get_latest_valid(data_array):
+    """
+    Get the latest valid (non-NaN) value for each pixel across the time dimension
+    """
+    # Create a mask for valid (non-NaN) values
+    valid_mask = ~data_array.isnull()
+    
+    # Get the index of the last valid value for each pixel
+    last_valid_time = valid_mask.cumsum(dim='time').argmax(dim='time')
+    
+    # Use advanced indexing to get the last valid value
+    result = data_array.isel(time=last_valid_time)
+    
+    # Mask out pixels that had no valid values
+    any_valid = valid_mask.any(dim='time')
+    result = result.where(any_valid)
+    
+    return result
+
+# Apply the function to get latest valid composite
+latest_composite_v2 = get_latest_valid(stack)
+
+# Display information about the composites
+print("Latest composite shape:", latest_composite.shape)
+print("Latest composite (v2) shape:", latest_composite_v2.shape)
+
+```
+
+```{python}
+# First, let's examine the structure of our composite
+print("Latest composite dimensions:", latest_composite.dims)
+print("Latest composite coordinates:", list(latest_composite.coords))
+print(
+    "Latest composite data variables:",
+    (
+        list(latest_composite.data_vars)
+        if hasattr(latest_composite, "data_vars")
+        else "Not a Dataset"
+    ),
+)
+
+# Check if it has a 'band' dimension and what bands are available
+if "band" in latest_composite.dims:
+    print("Available bands:", latest_composite.band.values)
+    print("Number of bands:", len(latest_composite.band.values))
+
+    # Select the ensemble_flood_extent band specifically
+    if "ensemble_flood_extent" in latest_composite.band.values:
+        
+        print(f"Selected band: ensemble_flood_extent")
+        print(f"Selected band shape: {single_band.shape}")
+    else:
+        print("ensemble_flood_extent band not found, using first band as fallback")
+        single_band = latest_composite.isel(band=0)
+        print(f"Selected band: {latest_composite.band.values[0]}")
+        print(f"Selected band shape: {single_band.shape}")
+else:
+    print("No 'band' dimension found")
+    single_band = latest_composite
+
+```
+
+```{python}
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Plot the latest composite using a single band
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
+
+# Plot method 1 composite (ensemble_flood_extent band)
+if "band" in latest_composite.dims:
+    if "ensemble_flood_extent" in latest_composite.band.values:
+        im1 = latest_composite.sel(band="ensemble_flood_extent").plot(
+            ax=ax1, cmap="viridis", add_colorbar=True
+        )
+        ax1.set_title(
+            "Latest Valid Composite (Method 1: ffill)\nBand: ensemble_flood_extent"
+        )
+    else:
+        im1 = latest_composite.isel(band=0).plot(
+            ax=ax1, cmap="viridis", add_colorbar=True
+        )
+        band_name = latest_composite.band.values[0]
+        ax1.set_title(f"Latest Valid Composite (Method 1: ffill)\nBand: {band_name}")
+else:
+    im1 = latest_composite.plot(ax=ax1, cmap="viridis", add_colorbar=True)
+    ax1.set_title("Latest Valid Composite (Method 1: ffill)")
+
+ax1.set_xlabel("Longitude")
+ax1.set_ylabel("Latitude")
+
+# Plot method 2 composite for comparison (also handle bands)
+if "band" in latest_composite_v2.dims:
+    if "ensemble_flood_extent" in latest_composite_v2.band.values:
+        im2 = latest_composite_v2.sel(band="ensemble_flood_extent").plot(
+            ax=ax2, cmap="viridis", add_colorbar=True
+        )
+        ax2.set_title(
+            "Latest Valid Composite (Method 2: custom)\nBand: ensemble_flood_extent"
+        )
+    else:
+        im2 = latest_composite_v2.isel(band=0).plot(
+            ax=ax2, cmap="viridis", add_colorbar=True
+        )
+        band_name = latest_composite_v2.band.values[0]
+        ax2.set_title(f"Latest Valid Composite (Method 2: custom)\nBand: {band_name}")
+else:
+    im2 = latest_composite_v2.plot(ax=ax2, cmap="viridis", add_colorbar=True)
+    ax2.set_title("Latest Valid Composite (Method 2: custom)")
+
+ax2.set_xlabel("Longitude")
+ax2.set_ylabel("Latitude")
+
+plt.tight_layout()
+plt.show()
+
+# Also create a single larger plot focusing on method 1
+fig, ax = plt.subplots(1, 1, figsize=(10, 8))
+
+# Select ensemble_flood_extent band for the detailed plot
+if "band" in latest_composite.dims:
+    if "ensemble_flood_extent" in latest_composite.band.values:
+        plot_data = latest_composite.sel(band="ensemble_flood_extent")
+        title = "Latest Valid Flood Composite (Band: ensemble_flood_extent)\n(Most Recent Non-Null Value per Pixel)"
+    else:
+        plot_data = latest_composite.isel(band=0)
+        band_name = latest_composite.band.values[0]
+        title = f"Latest Valid Flood Composite (Band: {band_name})\n(Most Recent Non-Null Value per Pixel)"
+else:
+    plot_data = latest_composite
+    title = "Latest Valid Flood Composite\n(Most Recent Non-Null Value per Pixel)"
+
+plot_data.plot(
+    ax=ax,
+    cmap="RdYlBu_r",
+    add_colorbar=True,
+    cbar_kwargs={"label": "Flood Values", "shrink": 0.8},
+)
+ax.set_title(title, fontsize=14, fontweight="bold")
+ax.set_xlabel("Longitude", fontsize=12)
+ax.set_ylabel("Latitude", fontsize=12)
+ax.grid(True, alpha=0.3)
+
+# Add some basic statistics
+print(
+    f"Composite data range: {plot_data.min().values:.3f} to {plot_data.max().values:.3f}"
+)
+print(f"Number of valid pixels: {(~plot_data.isnull()).sum().values}")
+print(
+    f"Percentage of valid pixels: {((~plot_data.isnull()).sum() / plot_data.size * 100).values:.1f}%"
+)
+
+plt.tight_layout()
+plt.show()
+
+```

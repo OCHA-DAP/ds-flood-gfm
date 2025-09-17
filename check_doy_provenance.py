@@ -10,8 +10,13 @@ def check_doy_provenance():
     """Check DOY provenance tracking in temporal composites."""
     output_dir = Path("data/gfm/somalia_example/stac_temporal_composites")
 
-    # Find all temporal composite files
+    # Find all temporal composite files in both directories
     tif_files = sorted(list(output_dir.glob("stac_temporal_*.tif")))
+
+    # Also check selective output directory
+    selective_dir = Path("data/gfm/somalia_example/stac_temporal_composites_selective")
+    if selective_dir.exists():
+        tif_files.extend(sorted(list(selective_dir.glob("stac_temporal_*.tif"))))
 
     print(f"Checking DOY provenance in {len(tif_files)} files:")
     print()
