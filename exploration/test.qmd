@@ -29,8 +29,7 @@ We should be able to define any start range and cumulatively fill with most rece
 
 Here we cover Oct-December 2024 and a point in Somalia
 ```{python}
-lon, lat = 0, 45
-
+lon, lat = 12.299,9.4727
 start_date = "2023-10-01"
 end_date = "2023-12-31"
 ```
@@ -125,6 +124,57 @@ fig
 
 
 ## Check advisory bands
+
+```{python}
+search = client.search(
+    collections=["GFM"],
+    intersects=dict(type="Point", coordinates=[lon, lat]),
+    # bbox=large_bbox,  # Huge geographic extent
+    datetime="2025-09-01/2025-09-22",
+    query={"anomaly_detected": {"eq": True}},  # Only scenes with advisories
+)
+
+
+item_collection = search.get_all_items()
+stack = stackstac.stack(item_collection, epsg=4326)
+```
+
+```{python}
+ic_advisories = stack.sel(band="ensemble_flood_extent")  # .ffill(dim= "time")
+
+# Get the advisory data for plotting
+img_advisory = ic_advisories[[6]]
+
+# Create the plot
+fig, ax = plt.subplots(1, 1, figsize=(8, 6))
+
+# Plot the advisory data
+img_advisory.plot(ax=ax, cmap=flood_cmap, vmin=0, vmax=1, add_colorbar=True)
+ax.set_title("Advisory Flood Extent (Time 0)")
+ax.set_xlabel("Longitude")
+ax.set_ylabel("Latitude")
+
+plt.tight_layout()
+plt.show()
+fig
+
+
+```
+
+
+## View Results
+
+Select Snapshots to visually inspect and make sure it's working
+```{python}
+# Get 3 Image snap-shots from STAC for visualization of concept
+img_tstart = ic_latest.isel(time =0)
+img_tend = ic_latest.isel(time = -1 )
+img_t2 = ic_latest.isel(time =2)
+img_t45= ic_latest.isel(time =45)
+
+```
+
+
 ```{python}
 ic_advisory_flags = stack.sel(band="advisory_flags")
 img_advisory_flag = ic_advisory_flags.isel(time=0)
@@ -132,6 +182,102 @@ img_advisory_flag = ic_advisory_flags.isel(time=0)
 
 img_advisory_flag.plot()
 plt.show()
+```
+
+
+```{python}
+
+import geopandas as gpd
+from shapely.geometry import shape
+
+gdf = gpd.GeoDataFrame(
+    [
+        {"id": item.id, "datetime": item.datetime, "geometry": shape(item.geometry)}
+        for item in item_collection
+    ]
+)  
+
+```
+
+
+```{python}
+## Claude - code here:
+
+# Analyze duplicate geometries and 
+#different datetimes
+print(f"Total items: {len(gdf)}")
+print(f"Unique geometries: {gdf.geometry.nunique()}")
+print(f"Unique dates: {gdf['datetime'].dt.date.nunique()}")
+
+# Group by geometry to find duplicates
+geom_groups =gdf.groupby(gdf.geometry.astype(str))
+duplicate_geoms =geom_groups.filter(lambda x: len(x) >1)
+
+print(f"\nItems with duplicate 
+geometries: {len(duplicate_geoms)}")
+
+  # Look at first duplicate geometry group
+if len(duplicate_geoms) > 0:
+    first_geom = duplicate_geoms.geometry
+
+try astype(str).iloc[0]:
+    same_geom_items =gdf[gdf.geometry.astype(str) ==first_geom]
+
+    print(f"\nExample - same geometry,
+different times:")
+    for idx, row in
+same_geom_items.iterrows():
+        print(f"ID: {row['id']}")
+        print(f"DateTime: 
+{row['datetime']}")
+        print(f"DOY: {row['doy']}")
+        print("---")
+
+# Check time differences within same 
+date
+gdf['date'] = gdf['datetime'].dt.date
+same_date_groups = gdf.groupby('date')
+for date, group in same_date_groups:
+    if len(group) > 1:
+        time_diff =
+group['datetime'].max() -
+group['datetime'].min()
+        if time_diff.total_seconds() >
+0:
+            print(f"\nDate {date} has 
+{len(group)} items with time range: 
+{time_diff}")
+            for idx, row in
+group.iterrows():
+                print(f"  
+{row['datetime'].time()} - 
+{row['id']}")
+
+```
+
+```{python}
+# Extract day of year from datetime
+gdf["doy"] = gdf["datetime"].dt.dayofyear
+gdf["doy"].unique()
+# Plot geometries colored by DOY
+fig, ax = plt.subplots(figsize=(12, 8))
+gdf.plot(
+    column="doy",
+    ax=ax,
+    linewidth=1,
+    alpha=0.7,
+    cmap="viridis",
+    facecolor="none",
+    legend=True,
+    legend_kwds={"label": "Day of Year", "shrink": 0.8},
+)
+
+ax.set_title("STAC Item Footprints Colored by Day of Year")
+ax.set_xlabel("Longitude")
+ax.set_ylabel("Latitude")
+plt.tight_layout()
+plt.show()
+fig
 ```
 
 
