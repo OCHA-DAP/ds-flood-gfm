@@ -6,10 +6,11 @@ build-backend = "setuptools.build_meta"
 name = "ds-flood-gfm"
 version = "0.1.0"
 description = "Global Flood Monitoring (GFM) data exploration"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 license = {text = "MIT"}
 dependencies = [
     "pystac-client",
+    "stackstac",
     "jupyter",
     "ipykernel",
     "shapely",
@@ -22,6 +23,15 @@ dependencies = [
     "pandas",
     "matplotlib",
     "numpy",
+    "duckdb",
+    "fsspec",
+    "aiohttp>=3.13.0",
+    "ee>=0.2",
+    "geemap>=0.36.4",
+    "pyarrow>=21.0.0",
+    "xee>=0.0.22",
+    "ocha-stratus>=0.1.5",
+    "bottleneck>=1.6.0",
 ]
 
 [project.optional-dependencies]
@@ -37,4 +47,4 @@ where = ["src"]
 
 [tool.black]
 line-length = 88
-target-version = ['py311']
+target-version = ['py312']

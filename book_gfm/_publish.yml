@@ -1,0 +1,4 @@
+- source: project
+  netlify:
+    - id: 8603c5fc-68ff-4c29-b73a-bf83ee3fd7b6
+      url: https://ds-global-flood-monitoring.netlify.app

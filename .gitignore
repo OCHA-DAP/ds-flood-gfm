@@ -132,3 +132,10 @@ claude.md
 
 # virtual layers
 *.vrt
+claude.md
+uv.lock
+book_gfm/_book/*
+book_gfm/_freeze/*
+book_gfm/early_wips/*
+*.png
+*.html

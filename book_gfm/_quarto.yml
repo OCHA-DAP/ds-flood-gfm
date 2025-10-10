@@ -1,0 +1,69 @@
+project:
+  type: book
+  output-dir: _book
+  execute-dir: project
+
+dotenv:
+  - required: false
+    allowEmptyValues: true
+
+book:
+  title: "Global Flood Monitoring"
+  subtitle: "CHD Dsci Exploration"
+  author: "OCHA Centre for Humanitarian Data"
+  date: today
+  search: true
+  repo-url: https://github.com/OCHA-DAP/ds-flood-gfm
+  repo-actions: [edit, issue]
+  
+  chapters:
+    - index.qmd
+    - part: "Exploration"
+      chapters:
+        - 01_poc_latst_image_composite.qmd
+        - 02_poc_gfm_anomaly_flag.qmd
+        # - poc_coverage.qmd
+    - part: "Historical Analyses"
+      # chapters:
+    #     - methodology.qmd
+    #     - warning-levels.qmd
+    # - part: "Analysis"
+    #   chapters:
+    #     - threshold-analysis.qmd
+    #     - country-profiles.qmd
+    #     - temporal-trends.qmd
+    # - part: "Results"
+    #   chapters:
+    #     - key-findings.qmd
+    #     - visualizations.qmd
+    # - summary.qmd
+    # - references.qmd
+
+format:
+  html:
+    theme: cosmo
+    css: custom.css
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    number-depth: 3
+    code-fold: true
+    code-tools: true
+    fig-dpi: 96
+    fig-format: png
+    fig-width: 8
+    fig-height: 6
+    smooth-scroll: true
+
+execute:
+  freeze: auto
+  cache: false
+  echo: true
+  warning: false
+  error: false
+
+jupyter:
+  kernelspec:
+    name: "ds-flood-gfm"
+    language: "python"
+    display_name: "ds-flood-gfm"
