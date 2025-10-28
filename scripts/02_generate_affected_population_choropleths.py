@@ -181,16 +181,16 @@ def main(end_date_str, n_latest, iso3="JAM", population_raster=None, cache_dir="
         'cumulative' = sum across all dates (conservative extent)
     """
 
-    # Parse dates - look back 60 days to find available data
+    # Parse dates - look back 15 days to find available data
     end_date = datetime.strptime(end_date_str, "%Y-%m-%d")
-    search_start_date = end_date - timedelta(days=60)
+    search_start_date = end_date - timedelta(days=15)
 
     start_date_str = search_start_date.strftime("%Y-%m-%d")
 
     print("="*80)
     print(f"FLOOD PROVENANCE ANALYSIS: {iso3}")
     print(f"End date: {end_date_str}")
-    print(f"Searching for {n_latest} most recent observations (looking back 60 days)")
+    print(f"Searching for {n_latest} most recent observations (looking back 15 days)")
     print("="*80)
 
     # Configuration
