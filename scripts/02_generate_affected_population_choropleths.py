@@ -16,6 +16,8 @@ Output:
 - Saves provenance + flood density map as PNG
 """
 
+import sys
+
 import argparse
 from datetime import datetime, timedelta
 import pystac_client
