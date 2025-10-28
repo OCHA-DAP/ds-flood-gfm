@@ -34,6 +34,11 @@ dependencies = [
     "bottleneck>=1.6.0",
     "python-dotenv>=1.1.1",
     "exactextract>=0.2.2",
+    "jupyter-cache>=1.0.1",
+    "scipy>=1.16.2",
+    "stratus>=0.1.2",
+    "rasterstats>=0.20.0",
+    "adjusttext>=1.3.0",
 ]
 
 [project.optional-dependencies]

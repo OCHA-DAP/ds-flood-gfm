@@ -36,20 +36,35 @@ import rasterio
 from rasterio.features import geometry_mask
 from pathlib import Path
 import json
-import hashlib
 import exactextract
 from ds_flood_gfm.geo_utils import get_highest_admin_level, calculate_admin_population, load_fieldmaps_parquet
 
 
 def generate_cache_key(iso3, dates_list, population_raster, flood_mode="latest"):
-    """Generate unique cache key from parameters."""
-    # Create string representation of dates
-    dates_str = "_".join([str(d)[:10] for d in dates_list])
-    pop_str = "pop" if population_raster else "nopop"
-    cache_str = f"{iso3}_{dates_str}_{pop_str}_{flood_mode}"
-    # Use hash for shorter filenames
-    cache_hash = hashlib.md5(cache_str.encode()).hexdigest()[:8]
-    return f"{iso3}_{flood_mode}_{cache_hash}"
+    """Generate unique cache key from parameters.
+
+    Returns a human-readable cache key like:
+    JAM_20241020_20241022_20241025_ghsl_cumulative
+    """
+    # Create abbreviated date strings (YYYYMMDD format)
+    dates_str = "_".join([str(d)[:10].replace('-', '') for d in dates_list])
+
+    # Extract population raster identifier
+    if population_raster:
+        # Get just the filename without path and extension
+        pop_filename = Path(population_raster).stem
+        # Abbreviate common patterns
+        if 'GHS_POP' in pop_filename:
+            pop_str = 'ghsl'
+        elif 'worldpop' in pop_filename.lower():
+            pop_str = 'wpop'
+        else:
+            pop_str = 'pop'
+    else:
+        pop_str = 'nopop'
+
+    # Combine into readable cache key
+    return f"{iso3}_{dates_str}_{pop_str}_{flood_mode}"
 
 
 def save_cache(cache_dir, cache_key, flood_points, provenance_indexed, provenance_target, unique_dates, metadata):
@@ -180,15 +195,14 @@ def main(end_date_str, n_latest, iso3="JAM", population_raster=None, cache_dir="
 
     # Configuration
     OUTPUT_DIR = "experiments"
-    ADMIN_FILE = "experiments/claude-tests/jamaica_admin_cleaned.geojson"
 
-    # Load cleaned boundaries
-    gdf_aoi = gpd.read_file(ADMIN_FILE)
-    bbox = gdf_aoi.total_bounds
+    # Get bounding box from country config
+    from ds_flood_gfm.geo_utils import load_fieldmaps_parquet
+    from ds_flood_gfm.country_config import get_bbox
+    bbox = get_bbox(iso3)
     print(f"\nBounding box: {bbox}")
 
     # Load admin1 boundaries (try blob, fallback to HTTP)
-    from ds_flood_gfm.geo_utils import load_fieldmaps_parquet
     try:
         gdf_admin1 = load_fieldmaps_parquet(iso3, adm_level=1, admin_source="blob")
         print(f"Loaded {len(gdf_admin1)} admin1 divisions from blob storage")
@@ -798,7 +812,7 @@ def create_map_visualization_only(target_date, flood_points, provenance_indexed,
             plt.tight_layout()
 
             # Save choropleth
-            choropleth_filename = f"choropleth_adm{adm_level}_{target_date.replace('-', '')}.png"
+            choropleth_filename = f"{iso3}_choropleth_adm{adm_level}_{target_date.replace('-', '')}.png"
             choropleth_path = f"{output_dir}/{choropleth_filename}"
             plt.savefig(choropleth_path, dpi=150, bbox_inches='tight', facecolor='white')
             print(f"Saved: {choropleth_path}")
@@ -1476,7 +1490,7 @@ def create_map(target_date, flood_filled, provenance_filled, stack_flood_max,
             plt.tight_layout()
 
             # Save choropleth
-            choropleth_filename = f"choropleth_adm{adm_level}_{target_date.replace('-', '')}.png"
+            choropleth_filename = f"{iso3}_choropleth_adm{adm_level}_{target_date.replace('-', '')}.png"
             choropleth_path = f"{output_dir}/{choropleth_filename}"
             plt.savefig(choropleth_path, dpi=150, bbox_inches='tight', facecolor='white')
             print(f"Saved: {choropleth_path}")

@@ -4,7 +4,7 @@ jupyter: ds-flood-gfm
 
 ## Cameroon Flood Snapshots
 
-- First we compare against 
+Analysis of October & November 2024 flooding events in Cameroon using GFM (Global Flood Monitoring) satellite data. We compare GFM-derived affected population estimates against FloodScan and CEMS reference data. 
 
 ```{python}
 import pystac_client
@@ -20,17 +20,42 @@ import pandas as pd
 
 import ocha_stratus as stratus
 from datetime import datetime, timedelta
-
+from exactextract import exact_extract
 # Configure matplotlib for better display
 %matplotlib inline
 plt.rcParams['figure.dpi'] = 100
 
 ```
 
+```{python}
+# Analysis configuration
+notebook_config = {
+    'combined_range': {
+        'start': '2024-10-14',
+        'end': '2024-11-30'
+    },
+    'october': {
+        'name': 'October 2024 Floods',
+        'start': '2024-10-14',
+        'end': '2024-10-30',
+        'snapshot_dates': ['2024-10-18', '2024-10-25'],
+        'reference_date': '2024-10-18'
+    },
+    'november': {
+        'name': 'November 2024 Floods',
+        'start': '2024-11-13',
+        'end': '2024-11-30',
+        'snapshot_dates': ['2024-11-23', '2024-11-28'],
+        'reference_date': '2024-11-18'
+    }
+}
+```
+
 
 ## Area of Interest
 
-Define spatial and temporal range for flood analysis. We'll use Admin 1 pcode CM004 in Cameroon for November 2024.
+Analysis focuses on Admin 1 region CM004 in Cameroon, with three custom AOI polygons defined by Copernicus Emergency Management Service (EMSR772 & EMSR779).
+
 ```{python}
 GLOBAL_ADM1 = (
     "https://data.fieldmaps.io/edge-matched/humanitarian/intl/adm1_polygons.parquet"
@@ -65,7 +90,9 @@ gdf_aoi_copernicus = gpd.pd.concat(laoi, ignore_index=True)
 
 
 
-## STAC - connect & query
+## STAC Query
+
+Query GFM flood extent data from EODC STAC API for the combined date range (Oct 14 - Nov 30, 2024).
 ```{python}
 # | cache: true
 # | cache-comments: "Cache STAC search results - change dates to invalidate"
@@ -73,23 +100,19 @@ gdf_aoi_copernicus = gpd.pd.concat(laoi, ignore_index=True)
 stac_api = "https://stac.eodc.eu/api/v1"
 client = pystac_client.Client.open(stac_api)
 
+# Query for combined date range covering both October and November events
+start_date = notebook_config['combined_range']['start']
+end_date = notebook_config['combined_range']['end']
 
-start_date = "2024-11-13"
-end_date = "2024-11-30"
-
-
-# start_date = "2024-10-14"
-# end_date = "2024-10-30"
 # Step 2: Search for GFM items
 datetime_range = f"{start_date}/{end_date}"
 search = client.search(
     collections=["GFM"],
     bbox=gdf_aoi.total_bounds,
-    datetime=datetime_range,
+    datetime=datetime_range,    
 )
 
 item_collection = search.item_collection()
-
 
 ```
 
@@ -104,9 +127,11 @@ stack = stackstac.stack(item_collection, epsg=4326)
 ```
 
 
-## Processing
+## Pre-Processing
 
-Create daily flood composites using forward-fill to handle temporal gaps.
+### GFM Data (STAC) Lazy
+
+Extract flood extent band and create daily composites by taking the maximum flood value per day across overlapping tiles.
 
 ```{python}
 # | cache: true
@@ -115,7 +140,7 @@ Create daily flood composites using forward-fill to handle temporal gaps.
 stack_flood = stack.sel(band="ensemble_flood_extent")
 
 stack_flood_clipped = stack_flood.sel(
-    x=slice(bbox[0], bbox[2]), y=slice(bbox[3], bbox[1])  # y is reversed
+x=slice(bbox[0], bbox[2]), y=slice(bbox[3], bbox[1])  # y is reversealri
 )
 
 # Group by day and take the maximum flood value for each day
@@ -126,35 +151,41 @@ stack_flood_max = stack_flood_clipped.groupby("time.date").max()
 stack_flood_max = stack_flood_max.rename({"date": "time"})
 stack_flood_max["time"] = stack_flood_max.time.astype("datetime64[ns]")
 
-# Now do forward fill if you need daily interpolation
-ic_latest = stack_flood_max.ffill(dim="time")
-# For now, just work with actual observation dates
-
-
-
-# start_date_extract = "2024-11-23"
-# # Create a vector of dates: start_date_extract + 1, +2, +3, +4 days
-# base_date = datetime.strptime(start_date_extract, "%Y-%m-%d")
-# date_vector = [base_date + timedelta(days=i) for i in range(1, 5)]
-# date_strings = [date.strftime("%Y-%m-%d") for date in date_vector]
-
-
-# # Subset ic_latest to the specific dates
-# ic_latest_subset = ic_latest.sel(time=date_strings)
-# print(f"Size in memory: {ic_latest_subset.sel(time=date_strings[0]).nbytes / 1024**2:.1f} MB")
-
-
-def print_mb(da):
-    print(f"Size in memory: {da.nbytes / 1024**2:.1f} MB")
-
-
 ```
 
 
-## Population Data Overlay
+Split the combined dataset into October and November events before applying forward-fill. This is more efficient since forward-fill is a sequential operation that processes all timesteps.
+
+```{python}
+# Split into individual events using config dates (before ffill for performance)
+oct_stack_flood_max = stack_flood_max.sel(
+    time=slice(notebook_config['october']['start'], notebook_config['october']['end'])
+)
+nov_stack_flood_max = stack_flood_max.sel(
+    time=slice(notebook_config['november']['start'], notebook_config['november']['end'])
+)
+
+# Apply forward-fill separately to each event (much more efficient)
+oct_ic_latest = oct_stack_flood_max.ffill(dim="time")
+nov_ic_latest = nov_stack_flood_max.ffill(dim="time")
+
+```
+
+```{python}
+#| eval: false
+#| echo: false
+
+def print_mb(da):
+    print(f"Size in memory: {da.nbytes / 1024**2:.1f} MB")
+```
 
 
-Load population for area
+### Population Data (GHSL)
+
+
+Load GHSL population data to overlay. Here we are using the estimated 2025 pop produced in 2023.
+
+- We load it just for the AOI bbox, then clip it down further.
 ```{python}
 
 blob_name = "ghsl/pop/GHS_POP_E2025_GLOBE_R2023A_4326_3ss_V1_0.tif"
@@ -175,7 +206,8 @@ da_clip = da_clip.where(da_clip != da_clip.rio.nodata)
 ```
 
 ```{python}
-# | eval = false
+#| eval: false
+#| echo: false
 # Load local GHSL population data
 import rioxarray as rxr
 
@@ -233,6 +265,8 @@ plt.show()
 
 ```{python}
 # | eval: false
+# | echo: false
+
 print(f"da_clip fill value: {da_clip.rio.nodata}")
 print(f"da_clip has NaNs: {da_clip.isnull().any().values}")
 print(f"da_clip min (should be 0): {da_clip.min().values}")
@@ -247,6 +281,7 @@ print(
 print(f"da_clip has NaNs: {da_clip.isnull().any().values}")  # Should be True
 ```
 
+Here we show the GHSL population raster  for the admin 1 of interest (grey outline) and the specific custom AOI's from CEMS (black outline).
 ```{python}
 # Create a map of the clipped population data
 fig, ax = plt.subplots(1, 1, figsize=(12, 8))
@@ -263,8 +298,11 @@ im = da_clip.plot(
 # Add colorbar
 cbar = plt.colorbar(im, ax=ax, label='Population Count')
 
-# Add AOI boundary
-gdf_aoi.boundary.plot(ax=ax, color='black', linewidth=2, alpha=1.0)
+# Add admin boundary in grey
+gdf_aoi.boundary.plot(ax=ax, color='grey', linewidth=2, alpha=0.8)
+
+# Add Copernicus AOI boundaries in black
+gdf_aoi_copernicus.boundary.plot(ax=ax, color='black', linewidth=2, alpha=1.0)
 
 # Set title and labels
 ax.set_title('Population Density 2025 - Clipped to AOI', fontsize=12, fontweight='bold')
@@ -275,183 +313,12 @@ plt.tight_layout()
 plt.show()
 ```
 
-```{python}
-# | eval: false
-
-# NOT CURRENTLY USNG THIS
-ic_subset_ready = ic_latest_subset.compute()
-
-print(ic_latest_subset)
-print(f"Shape: {ic_latest_subset.shape}")
-print(f"Size in memory: {ic_latest_subset.nbytes / 1024**2:.1f} MB")
-```
-```{python}
-# All dates in ic_latest are actual observation dates (no filling needed)
-# Create binary flood masks and calculate population impacts for each time step
-ic_ready = stack_flood_max
-population_impacts = []
-dates = []
-
-for i, time_step in enumerate(ic_ready.time):
-    print(f"\nProcessing date: {str(time_step.values)[:10]}")
-
-    try:
-        # Get flood data for this time step
-        flood_data = ic_ready.sel(time=time_step)
-
-        # Compute the data first to handle network errors
-        print("  Computing flood data from EODC...")
-        flood_data_computed = flood_data.compute()
-
-        # Create binary flood mask (1 = flooded, 0 = not flooded)
-        # Use GFM's official binary classification: exactly 1 = flood
-        # (ensemble requires 2 out of 3 algorithms to agree)
-        flood_binary = (flood_data_computed == 1).astype(int)
-        flood_binary = flood_binary.rio.write_crs(flood_data_computed.rio.crs)
-
-        # DEBUG: Check flood mask BEFORE resampling
-        print(
-            f"    DEBUG - Unique values in flood_binary: {np.unique(flood_binary.values[~np.isnan(flood_binary.values)])}"
-        )
-        print(
-            f"    DEBUG - Flooded cells BEFORE resample: {(flood_binary == 1).sum().values:,}"
-        )
-
-        # Resample flood data to match population grid resolution
-        # Population data is at higher resolution, so we need to align grids
-        # Use nearest neighbor (resampling=0) per GFM methodology
-        # https://rasterio.readthedocs.io/en/stable/api/rasterio.enums.html#rasterio.enums.Resampling
-        print("  Reprojecting to match population grid...")
-        flood_resampled = flood_binary.rio.reproject_match(
-            da_clip, resampling=0
-        )  # 0 = Resampling.nearest (GFM spec)
-
-    except Exception as e:
-        print(f"  ⚠️  ERROR: Failed to process {str(time_step.values)[:10]}: {e}")
-        print(f"  Skipping this date...")
-        continue
-
-    # Calculate flooded population (multiply binary flood by population)
-    print("  Calculating affected population...")
-
-    # DEBUG: Check spatial extents and masking
-    print(f"    DEBUG - flood_resampled extent: {flood_resampled.rio.bounds()}")
-    print(f"    DEBUG - da_clip extent: {da_clip.rio.bounds()}")
-    print(f"    DEBUG - da_clip has NaNs: {da_clip.isnull().any().values}")
-    print(f"    DEBUG - da_clip non-null cells: {(~da_clip.isnull()).sum().values:,}")
-    print(f"    DEBUG - flooded cells (>0): {(flood_resampled > 0).sum().values:,}")
-    print(f"    DEBUG - flood_resampled sum: {flood_resampled.sum().values:,.0f}")
-    print(
-        f"    DEBUG - flood_resampled unique values: {np.unique(flood_resampled.values[~np.isnan(flood_resampled.values)])}"
-    )
-
-    pop_flooded = flood_resampled * da_clip
-
-    # DEBUG: Check population calculation
-    print(f"    DEBUG - pop_flooded > 0 cells: {(pop_flooded > 0).sum().values:,}")
-    print(
-        f"    DEBUG - pop_flooded sum (skipna=True): {pop_flooded.sum(skipna=True).values:,.0f}"
-    )
-    print(f"    DEBUG - pop_flooded max: {pop_flooded.max(skipna=True).values:.2f}")
-
-    # Store results
-    population_impacts.append(pop_flooded)
-    date_str = str(time_step.values)[:10]
-    dates.append(date_str)
-
-    print(f"  ✅ {date_str}: {pop_flooded.sum().values:,.0f} people affected")
-
-# Calculate zonal statistics (total flooded population per admin area)
-zonal_stats = []
-for i, pop_impact in enumerate(population_impacts):
-    # Sum population within the admin boundary
-    total_pop_flooded = pop_impact.sum().values
-
-    zonal_stats.append(
-        {
-            "date": dates[i],
-            "total_population_flooded": total_pop_flooded,
-            "admin_code": gdf_aoi.iloc[0]["adm1_src"],
-        }
-    )
-
-# Display results
-import pandas as pd
-
-df_results = pd.DataFrame(zonal_stats)
-print("\n=== Zonal Statistics Summary ===")
-print(df_results)
-```
 
 
 ```{python}
+#| eval: false
+#| echo: false
 
-
-def gfm_exact_workflow(flood_20m, population_100m, aoi_geometry=None):
-    """
-    Replicate GFM's exact workflow for affected population calculation.
-
-    Parameters
-    ----------
-    flood_20m : xr.DataArray
-        Binary flood mask at 20m resolution (0 or 1)
-    population_100m : xr.DataArray
-        Population density at 100m resolution
-    aoi_geometry : gpd.GeoSeries, optional
-        Geometry to clip final results
-
-    Returns
-    -------
-    tuple
-        (affected_pop_raster_20m, total_affected_count)
-    """
-
-    print("GFM Exact Workflow:")
-    print("1. Flood data at 20m resolution")
-    print("2. Upsampling population from 100m to 20m...")
-
-    # Step 1: Resample population TO match flood grid (100m → 20m)
-    # Use nearest neighbor per GFM spec
-    population_20m = population_100m.rio.reproject_match(
-        flood_20m,
-        resampling=0  # nearest neighbor
-    )
-
-    # Step 2: Adjust population density for pixel area change
-    # When going from 100m to 20m, each 100m cell becomes 25 cells of 20m
-    # Population density needs to be divided by 25
-    print("3. Adjusting population density for resolution change...")
-    pixel_area_ratio = (100 / 20) ** 2  # = 25
-    population_20m_adjusted = population_20m / pixel_area_ratio
-
-    print(f"   Population adjustment factor: {pixel_area_ratio}")
-    print(f"   Original sum: {population_100m.sum(skipna=True).values:,.0f}")
-    print(f"   After resampling: {population_20m.sum(skipna=True).values:,.0f}")
-    print(f"   After adjustment: {population_20m_adjusted.sum(skipna=True).values:,.0f}")
-
-    # Step 3: Multiply flood mask (20m) × population (20m)
-    print("4. Calculating affected population at 20m resolution...")
-    affected_pop_20m = flood_20m * population_20m_adjusted
-
-    # Step 4: Clip to AOI if provided
-    if aoi_geometry is not None:
-        print("5. Clipping to AOI boundary...")
-        affected_pop_20m = affected_pop_20m.rio.clip(
-            aoi_geometry.values,
-            affected_pop_20m.rio.crs,
-            drop=False
-        )
-
-    # Step 5: Calculate total
-    total_affected = float(affected_pop_20m.sum(skipna=True).values)
-
-    print(f"\n✅ Total affected population: {int(total_affected):,}")
-
-    return affected_pop_20m, total_affected
-```
-
-
-```{python}
 print(f"da_clip dtype: {da_clip.dtype}")
 print(f"da_clip nodata: {da_clip.rio.nodata}")
 print(f"da_clip min: {da_clip.min().values}")
@@ -461,44 +328,15 @@ print(f"da_clip has NaN: {da_clip.isnull().any().values}")
 print(f"da_clip has negative: {(da_clip < 0).any().values}")
 ```
 
-```{python}
-# Process the latest time step as an example
-time_step = ic_ready.time[1]  # Get the last time step
-print(f"\nProcessing date: {str(time_step.values)[:10]}")
-da_clip_nd = da_clip.rio.write_nodata(None)
 
-try:
-    # Get flood data for this time step
-    flood_data = ic_ready.sel(time=time_step)
+## Overlay Flood Extent & Population Data
 
-    # Compute the data first to handle network errors
-    print("  Computing flood data from EODC...")
-    flood_data_computed = flood_data.compute()
-
-    # Create binary flood mask (1 = flooded, 0 = not flooded)
-    # Use GFM's official binary classification: exactly 1 = flood
-    # (ensemble requires 2 out of 3 algorithms to agree)
-    flood_binary = (flood_data_computed == 1).astype(int)
-    flood_binary = flood_binary.rio.write_crs(flood_data_computed.rio.crs)
-
-    # Run the GFM exact workflow
-    affected_pop_raster, total_affected = gfm_exact_workflow(
-        flood_20m=flood_binary,
-        population_100m=da_clip_nd,
-        aoi_geometry=gdf_aoi.geometry,
-    )
-
-    print(f"Analysis complete for {str(time_step.values)[:10]}")
-
-except Exception as e:
-    print(f"Error processing data: {e}")
-```
-
-
-## Replicate GFM Method, w/ exactextract & gdf_aoi_copernicus
+Here we follow the GFM methodology as closely as possible. We need to get the data on comparable grids:
+- We take the 100m population data and resample it to the 20m flood data and rescale the population numbers to reflect this.
+- We then run zonal statistics (using `exact_extract`)
 
 ```{python}
-from exactextract import exact_extract
+
 
 def gfm_exact_workflow_zonal(flood_20m, population_100m, gdf_zones, zone_id_col=None):
     """
@@ -611,14 +449,222 @@ def gfm_exact_workflow_zonal(flood_20m, population_100m, gdf_zones, zone_id_col=
     return results_df
 ```
 
+```{python}
+def map_flood_extent_snapshots(flood_data_computed, snapshot_dates, gdf_boundaries, event_name):
+    """
+    Create side-by-side flood extent maps for snapshot dates.
 
+    Parameters
+    ----------
+    flood_data_computed : xr.DataArray
+        Computed flood data array (already filtered and computed)
+    snapshot_dates : list
+        List of snapshot dates being visualized
+    gdf_boundaries : gpd.GeoDataFrame
+        Boundaries to overlay on maps
+    event_name : str
+        Event name for plot context
 
-These plots demonstrate the utility of the the latest image compositing method. We get a decent estimate from the image on Nov 23 from the single day image, but can't get an idea of November 28. This is the kind of issue, we'd likely run into all the time when looknig at individual dates. By using the latest image composite, we get a much more realistic figure for flooding around the date to use for both visualization and zonal stats.
+    Returns
+    -------
+    None
+        Displays matplotlib figure
+    """
+    # Define colors for flood data visualization
+    colors = ["lightgrey", "darkblue", "white"]  # 0=no flood, 1=flood, 255=nodata
+    cmap = ListedColormap(colors)
+    bounds = [0, 0.5, 1.5, 255.5]
+    norm = BoundaryNorm(bounds, cmap.N)
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 8))
+
+    # Process each time step
+    for i, ax in enumerate([ax1, ax2]):
+        time_step = flood_data_computed.isel(time=i)
+        date_str = str(time_step.time.values)[:10]
+
+        # Process data (handle NaN and downsample for visualization)
+        data_clean = np.where(np.isnan(time_step), 255, time_step)
+        data_clean = data_clean[::4, ::4]  # Downsample for speed
+
+        # Get extent from the xarray data
+        bounds_extent = time_step.rio.bounds()
+        extent = [bounds_extent[0], bounds_extent[2], bounds_extent[1], bounds_extent[3]]
+
+        # Plot the flood data
+        im = ax.imshow(
+            data_clean,
+            cmap=cmap,
+            norm=norm,
+            interpolation="nearest",
+            origin="upper",
+            extent=extent,
+        )
+
+        # Overlay boundaries
+        gdf_boundaries.boundary.plot(ax=ax, color='red', linewidth=3, alpha=0.8)
+
+        # Set title and labels
+        ax.set_title(f'{event_name}\nFlood Extent - {date_str}',
+                    fontsize=12, fontweight='bold')
+        ax.set_xlabel('Longitude')
+        ax.set_ylabel('Latitude')
+
+    plt.tight_layout()
+    plt.show()
+```
 
 ```{python}
-# zonal stats for single day images
+def create_comparison_barplot(gfm_results, other_systems_data, event_name,
+                              systems=['CEMS', 'FloodScan', 'GFM (STAC)']):
+    """
+    Create comparison bar plot of affected population across systems.
 
-flood_day_max = stack_flood_max.sel(time=['2024-11-23', '2024-11-28'])
+    Parameters
+    ----------
+    gfm_results : pd.DataFrame
+        GFM zonal statistics results with columns: zone_id, affected_population
+    other_systems_data : dict
+        Dict of system data, e.g., {'FloodScan': {'AOI 1': 7580, ...}, 'CEMS': {...}}
+    event_name : str
+        Event name for plot title
+    systems : list
+        List of systems to include in plot (e.g., ['CEMS', 'GFM (STAC)'])
+
+    Returns
+    -------
+    None
+        Displays matplotlib figure and prints comparison stats
+    """
+    # Convert other systems data to DataFrame
+    comparison_data = []
+    for system, values in other_systems_data.items():
+        for aoi, pop in values.items():
+            comparison_data.append({
+                'AOI': aoi,
+                'System': system,
+                'affected_population': pop
+            })
+
+    df_other_systems = pd.DataFrame(comparison_data)
+
+    # Prepare GFM data
+    gfm_comparison = gfm_results[['zone_id', 'affected_population']].copy()
+    gfm_comparison['System'] = 'GFM (STAC)'
+
+    # Map zone_id to standard AOI format
+    zone_id_to_aoi = {}
+    for idx, zone_id in enumerate(gfm_comparison['zone_id']):
+        if isinstance(zone_id, (int, np.integer)):
+            zone_id_to_aoi[zone_id] = f"AOI {zone_id + 1}"
+        elif 'AOI' in str(zone_id).upper():
+            import re
+            match = re.search(r'AOI(\d+)', str(zone_id), re.IGNORECASE)
+            if match:
+                aoi_num = int(match.group(1))
+                zone_id_to_aoi[zone_id] = f"AOI {aoi_num}"
+            else:
+                zone_id_to_aoi[zone_id] = f"AOI {idx + 1}"
+        else:
+            zone_id_to_aoi[zone_id] = f"AOI {idx + 1}"
+
+    gfm_comparison['AOI'] = gfm_comparison['zone_id'].map(zone_id_to_aoi)
+    gfm_comparison = gfm_comparison[['AOI', 'System', 'affected_population']]
+
+    # Combine all data
+    df_combined = pd.concat([df_other_systems, gfm_comparison], ignore_index=True)
+
+    # Filter to requested systems
+    df_combined = df_combined[df_combined['System'].isin(systems)]
+
+    # Display comparison table
+    print("\n" + "=" * 80)
+    print(f"AFFECTED POPULATION COMPARISON - {event_name}")
+    print("=" * 80)
+    print(df_combined.pivot(index='AOI', columns='System', values='affected_population'))
+
+    # Create comparison barplot
+    fig, ax = plt.subplots(figsize=(12, 6))
+
+    # Get unique AOIs and systems
+    aois = sorted(df_combined['AOI'].unique())
+    systems_plot = [s for s in systems if s in df_combined['System'].values]
+
+    # Set up bar positions
+    x = np.arange(len(aois))
+    width = 0.8 / len(systems_plot)  # Adjust width based on number of systems
+
+    # Define consistent colors
+    color_map = {
+        'GFM (STAC)': '#3cb371',      # Minty green
+        'FloodScan': '#ff6347',        # Tomato red
+        'CEMS': '#0f52ba'              # Sapphire blue
+    }
+
+    # Plot bars for each system
+    for i, system in enumerate(systems_plot):
+        system_data = df_combined[df_combined['System'] == system]
+        values = [system_data[system_data['AOI'] == aoi]['affected_population'].values[0]
+                  if len(system_data[system_data['AOI'] == aoi]) > 0 else 0
+                  for aoi in aois]
+
+        bars = ax.bar(x + i * width, values, width, label=system, color=color_map.get(system, 'gray'))
+
+        # Add value labels on bars
+        for bar, val in zip(bars, values):
+            height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width()/2., height,
+                    f'{int(val):,}',
+                    ha='center', va='bottom', fontsize=9)
+
+    # Customize plot
+    ax.set_xlabel('Area of Interest (AOI)', fontsize=12, fontweight='bold')
+    ax.set_ylabel('Affected Population', fontsize=12, fontweight='bold')
+    ax.set_title(f'Affected Population Comparison\n{event_name}', fontsize=14, fontweight='bold')
+    ax.set_xticks(x + width * (len(systems_plot) - 1) / 2)
+    ax.set_xticklabels(aois)
+    ax.legend(title='System', loc='upper right', fontsize=11)
+    ax.grid(axis='y', alpha=0.3, linestyle='--')
+
+    # Format y-axis
+    ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'{int(x):,}'))
+
+    plt.tight_layout()
+    plt.show()
+
+    # Print comparison ratios
+    if 'GFM (STAC)' in systems_plot:
+        print("\n" + "=" * 80)
+        print("SYSTEM COMPARISON RATIOS (relative to GFM)")
+        print("=" * 80)
+
+        for aoi in aois:
+            gfm_val = df_combined[(df_combined['AOI'] == aoi) & (df_combined['System'] == 'GFM (STAC)')]['affected_population'].values
+            if len(gfm_val) > 0:
+                gfm_val = gfm_val[0]
+                print(f"\n{aoi}:")
+                print(f"  GFM (baseline): {gfm_val:,}")
+
+                for system in systems_plot:
+                    if system != 'GFM (STAC)':
+                        sys_val = df_combined[(df_combined['AOI'] == aoi) & (df_combined['System'] == system)]['affected_population'].values
+                        if len(sys_val) > 0:
+                            sys_val = sys_val[0]
+                            ratio = sys_val / gfm_val if gfm_val > 0 else np.inf
+                            print(f"  {system}: {sys_val:,} ({ratio:.2f}x GFM)")
+```
+
+
+
+## Resulting Flood Extents & Affected Population Zonal Stats
+
+Calculate affected population for the November event using the forward-filled flood stack.
+
+```{python}
+#| cache: true
+# Run zonal stats for November event using filled/forward-filled stack
+
+flood_day_max = nov_stack_flood_max.sel(time=notebook_config['november']['snapshot_dates'])
 
 flood_day_max_computed= flood_day_max.compute()
 # Process each time step in flood_data_latest_computed
@@ -655,9 +701,10 @@ day_max_zonal
 ```
 
 ```{python}
-# zonal stats for same filled latest image composits
+#| cache: true
+# Zonal statistics using forward-filled composites (November event)
 
-flood_data_latest = ic_latest.sel(time=['2024-11-23', '2024-11-28'])
+flood_data_latest = nov_ic_latest.sel(time=notebook_config['november']['snapshot_dates'])
 
 flood_data_latest_computed = flood_data_latest.compute()
 
@@ -687,114 +734,49 @@ for i in range(len(flood_data_latest_computed.time)):
     print(f"Total affected population for {date_str}: {results_time['affected_population'].sum():,}")
 
 # Combine all results
-latest_img_zonal = pd.concat(results_filled, ignore_index=True)
+nov_zonal_results = pd.concat(results_filled, ignore_index=True)
+
+# Store the latest date result for comparison
+nov_latest_img_zonal_date = nov_zonal_results[nov_zonal_results["date"] == notebook_config['november']['snapshot_dates'][0]]
 
 ```
 
+### Flood Extent Visualizations
+
+::: {.callout-tip collapse="true"}
+## Why Latest-Day Composite is Beneficial
+
+Individual satellite observations can have gaps largely due to overpass timing. Here we see the visualization. Here we see the flood extent of two single days around one of our flood event dates. In many use-cases we'd be interested in checking out a date and then we'd find the closest image with coverage. You can see the data gap present on Nov 28. If we ran zonal statistics on that image we'd end up with some confusing and misleading results. The `latest-image-composite` shown below will give us more useful results.
+
 ```{python}
-# Define colors for flood data visualization
-colors = ["lightgrey", "darkblue", "white"]  # 0=no flood, 1=flood, 255=nodata
-cmap = ListedColormap(colors)
-bounds = [0, 0.5, 1.5, 255.5]
-norm = BoundaryNorm(bounds, cmap.N)
-
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 8))
-
-
-# Process each time step
-for i, ax in enumerate([ax1, ax2]):
-    # Get the time step data
-    flood_day_max
-    # time_step = flood_day_max_computed.isel(time=i)
-    time_step = flood_day_max_computed.isel(time=i)
-    date_str = str(time_step.time.values)[:10]
-    
-    # Process data (handle NaN and downsample for visualization)
-    data_clean = np.where(np.isnan(time_step), 255, time_step)
-    data_clean = data_clean[::4, ::4]  # Downsample for speed
-    
-    # Get extent from the xarray data
-    bounds = time_step.rio.bounds()
-    extent = [bounds[0], bounds[2], bounds[1], bounds[3]]
-    
-    # Plot the flood data
-    im = ax.imshow(
-        data_clean,
-        cmap=cmap,
-        norm=norm,
-        interpolation="nearest",
-        origin="upper",
-        extent=extent,
-    )
-    
-    # Overlay Copernicus AOI boundaries
-    gdf_aoi_copernicus.boundary.plot(ax=ax, color='red', linewidth=3, alpha=0.8)
-    
-    # Set title and labels
-    ax.set_title(f'Flood Extent - {date_str}\nwith Copernicus AOI Boundaries', 
-                fontsize=12, fontweight='bold')
-    ax.set_xlabel('Longitude')
-    ax.set_ylabel('Latitude')
-
-plt.tight_layout()
-plt.show()
-```
-```{python}
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 8))
-
-# Process each time step
-for i, ax in enumerate([ax1, ax2]):
-    # Get the time step data
-    flood_data_latest_computed
-    # time_step = flood_day_max_computed.isel(time=i)
-    time_step = flood_data_latest_computed.isel(time=i)
-    date_str = str(time_step.time.values)[:10]
-    
-    # Process data (handle NaN and downsample for visualization)
-    data_clean = np.where(np.isnan(time_step), 255, time_step)
-    data_clean = data_clean[::4, ::4]  # Downsample for speed
-    
-    # Get extent from the xarray data
-        # Get extent from the xarray data
-    # Get extent - rio.bounds() returns [left, bottom, right, top]
-    # imshow needs [left, right, bottom, top]
-    bounds = time_step.rio.bounds()
-    extent = [bounds[0], bounds[2], bounds[1], bounds[3]]
-    
-    # Plot the flood data
-    im = ax.imshow(
-        data_clean,
-        cmap=cmap,
-        norm=norm,
-        interpolation="nearest",
-        origin="upper",
-        extent=extent,
-    )
-    
-    # Overlay Copernicus AOI boundaries
-    gdf_aoi_copernicus.boundary.plot(ax=ax, color='red', linewidth=3, alpha=0.8)
-    
-    # Set title and labels
-    ax.set_title(f'Flood Extent - {date_str}\nwith Copernicus AOI Boundaries', 
-                fontsize=12, fontweight='bold')
-    ax.set_xlabel('Longitude')
-    ax.set_ylabel('Latitude')
-
-plt.tight_layout()
-plt.show()
-```
-```{python}
-results_filled_combined.groupby(["date"]).agg(
-    {
-        "affected_population": "sum"
-    }
+#| cache: true
+# Visualize flood extent for snapshot dates (individual observations only, no forward-fill)
+map_flood_extent_snapshots(
+    flood_data_computed=flood_day_max_computed,
+    snapshot_dates=notebook_config['november']['snapshot_dates'],
+    gdf_boundaries=gdf_aoi_copernicus,
+    event_name=notebook_config['november']['name']
 )
 ```
+:::
+
+
 ```{python}
+#| cache: true
+# Visualize flood extent for snapshot dates (with forward-fill compositing)
+map_flood_extent_snapshots(
+    flood_data_computed=flood_data_latest_computed,
+    snapshot_dates=notebook_config['november']['snapshot_dates'],
+    gdf_boundaries=gdf_aoi_copernicus,
+    event_name=notebook_config['november']['name']
+)
+```
 
+### System Comparisons
 
-# Affected population from other systems (hardcoded reference data)
-other_systems_data = {
+```{python}
+# Hardcoded November 2024 reference data from other systems
+nov_other_systems_data = {
     'FloodScan': {
         'AOI 1': 7580,
         'AOI 2': 110655,
@@ -807,344 +789,320 @@ other_systems_data = {
     }
 }
 
-# Convert to DataFrame
-comparison_data = []
-for system, values in other_systems_data.items():
-    for aoi, pop in values.items():
-        comparison_data.append({
-            'AOI': aoi,
-            'System': system,
-            'affected_population': pop
-        })
-
-df_other_systems = pd.DataFrame(comparison_data)
-
-# Add GFM results to comparison
-# First, check what zone_ids we have
-print("\nOriginal zone IDs in results_zonal:")
-print(results_zonal['zone_id'].tolist())
-
-# Create mapping from zone_id to "AOI 1", "AOI 2", "AOI 3" format
-gfm_comparison = results_zonal[['zone_id', 'affected_population']].copy()
-gfm_comparison['System'] = 'GFM (STAC)'
-
-# Map zone_id to standard AOI format
-# If zone_id is numeric (0, 1, 2) -> "AOI 1", "AOI 2", "AOI 3"
-# If zone_id contains AOI number, extract it
-zone_id_to_aoi = {}
-for idx, zone_id in enumerate(gfm_comparison['zone_id']):
-    # Try to extract number from zone_id or just use index
-    if isinstance(zone_id, (int, np.integer)):
-        zone_id_to_aoi[zone_id] = f"AOI {zone_id + 1}"
-    elif 'AOI' in str(zone_id).upper():
-        # Extract number from string like "EMSR772_AOI01"
-        import re
-        match = re.search(r'AOI(\d+)', str(zone_id), re.IGNORECASE)
-        if match:
-            aoi_num = int(match.group(1))
-            zone_id_to_aoi[zone_id] = f"AOI {aoi_num}"
-        else:
-            zone_id_to_aoi[zone_id] = f"AOI {idx + 1}"
-    else:
-        # Use index as fallback
-        zone_id_to_aoi[zone_id] = f"AOI {idx + 1}"
-
-print("\nMapping created:")
-print(zone_id_to_aoi)
-
-gfm_comparison['AOI'] = gfm_comparison['zone_id'].map(zone_id_to_aoi)
-gfm_comparison = gfm_comparison[['AOI', 'System', 'affected_population']]
-
-# Combine all data
-df_combined = pd.concat([df_other_systems, gfm_comparison], ignore_index=True)
-
-# Display comparison table
-print("\n" + "=" * 80)
-print("AFFECTED POPULATION COMPARISON")
-print("=" * 80)
-print(df_combined.pivot(index='AOI', columns='System', values='affected_population'))
-
-# Create comparison barplot
-fig, ax = plt.subplots(figsize=(12, 6))
-
-# Get unique AOIs
-aois = df_combined['AOI'].unique()
-systems = df_combined['System'].unique()
-
-# Set up bar positions
-x = np.arange(len(aois))
-width = 0.25
-
-# Define consistent colors for each system
-color_map = {
-    'GFM (STAC)': '#3cb371',      # Minty green (medium sea green)
-    'FloodScan': '#ff6347',        # Tomato red
-    'CEMS': '#0f52ba'              # Sapphire blue
-}
-
-# Plot bars for each system
-for i, system in enumerate(systems):
-    system_data = df_combined[df_combined['System'] == system]
-    values = [system_data[system_data['AOI'] == aoi]['affected_population'].values[0]
-              if len(system_data[system_data['AOI'] == aoi]) > 0 else 0
-              for aoi in aois]
-
-    bars = ax.bar(x + i * width, values, width, label=system, color=color_map.get(system, 'gray'))
-
-    # Add value labels on bars
-    for bar, val in zip(bars, values):
-        height = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width()/2., height,
-                f'{int(val):,}',
-                ha='center', va='bottom', fontsize=9)
-
-# Customize plot
-ax.set_xlabel('Area of Interest (AOI)', fontsize=12)
-ax.set_ylabel('Affected Population', fontsize=12)
-ax.set_title('Affected Population Comparison Across Systems\n2024-10-18', fontsize=14, fontweight='bold')
-ax.set_xticks(x + width)
-ax.set_xticklabels(aois)
-ax.legend(title='System', loc='upper right')
-ax.grid(axis='y', alpha=0.3)
-
-# Format y-axis with comma separators
-ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'{int(x):,}'))
-
-plt.tight_layout()
-plt.show()
-
-# Calculate ratios for analysis
-print("\n" + "=" * 80)
-print("SYSTEM COMPARISON RATIOS (relative to GFM)")
-print("=" * 80)
-
-for aoi in aois:
-    gfm_val = df_combined[(df_combined['AOI'] == aoi) & (df_combined['System'] == 'GFM (STAC)')]['affected_population'].values
-    if len(gfm_val) > 0:
-        gfm_val = gfm_val[0]
-        print(f"\n{aoi}:")
-        print(f"  GFM (baseline): {gfm_val:,}")
-
-        for system in ['FloodScan', 'CEMS']:
-            sys_val = df_combined[(df_combined['AOI'] == aoi) & (df_combined['System'] == system)]['affected_population'].values
-            if len(sys_val) > 0:
-                sys_val = sys_val[0]
-                ratio = sys_val / gfm_val if gfm_val > 0 else np.inf
-                print(f"  {system}: {sys_val:,} ({ratio:.2f}x GFM)")
-
-df_combined
+# Create comparison plot with all three systems
+create_comparison_barplot(
+    gfm_results=nov_latest_img_zonal_date,
+    other_systems_data=nov_other_systems_data,
+    event_name=notebook_config['november']['name'],
+    systems=['CEMS', 'FloodScan', 'GFM (STAC)']
+)
 ```
 
-```{python}
-# CEMS vs GFM focused comparison
-fig, ax = plt.subplots(figsize=(10, 6))
+## October 2024 Event Analysis
 
-# Filter for just CEMS and GFM
-df_cems_gfm = df_combined[df_combined['System'].isin(['CEMS', 'GFM (STAC)'])].copy()
-
-# Get unique AOIs
-aois_cems_gfm = sorted(df_cems_gfm['AOI'].unique())
-systems_cems_gfm = ['CEMS', 'GFM (STAC)']
-
-# Set up bar positions
-x = np.arange(len(aois_cems_gfm))
-width = 0.35
-
-# Use consistent color scheme
-color_map_cems_gfm = {
-    'GFM (STAC)': '#3cb371',      # Minty green
-    'CEMS': '#0f52ba'              # Sapphire blue
-}
-
-# Plot bars for each system
-for i, system in enumerate(systems_cems_gfm):
-    system_data = df_cems_gfm[df_cems_gfm['System'] == system]
-    values = [system_data[system_data['AOI'] == aoi]['affected_population'].values[0]
-              if len(system_data[system_data['AOI'] == aoi]) > 0 else 0
-              for aoi in aois_cems_gfm]
-
-    bars = ax.bar(x + i * width, values, width, label=system, color=color_map_cems_gfm[system])
-
-    # Add value labels on bars
-    for j, (bar, val) in enumerate(zip(bars, values)):
-        height = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width()/2., height,
-                f'{int(val):,}',
-                ha='center', va='bottom', fontsize=9)
-
-# Customize plot
-ax.set_xlabel('Area of Interest (AOI)', fontsize=12, fontweight='bold')
-ax.set_ylabel('Affected Population', fontsize=12, fontweight='bold')
-ax.set_title('CEMS vs GFM (STAC) Affected Population Comparison\n2024-10-18',
-             fontsize=14, fontweight='bold')
-ax.set_xticks(x + width / 2)
-ax.set_xticklabels(aois_cems_gfm)
-ax.legend(title='System', loc='upper left', fontsize=11)
-ax.grid(axis='y', alpha=0.3, linestyle='--')
-
-# Format y-axis
-ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'{int(x):,}'))
-
-plt.tight_layout()
-plt.show()
-
-# Summary statistics
-print("\n" + "=" * 80)
-print("CEMS vs GFM (STAC) SUMMARY")
-print("=" * 80)
-
-summary_stats = []
-for aoi in aois_cems_gfm:
-    cems_val = df_cems_gfm[(df_cems_gfm['AOI'] == aoi) & (df_cems_gfm['System'] == 'CEMS')]['affected_population'].values
-    gfm_val = df_cems_gfm[(df_cems_gfm['AOI'] == aoi) & (df_cems_gfm['System'] == 'GFM (STAC)')]['affected_population'].values
-
-    if len(cems_val) > 0 and len(gfm_val) > 0:
-        cems_val = cems_val[0]
-        gfm_val = gfm_val[0]
-        ratio = cems_val / gfm_val if gfm_val > 0 else np.inf
-        diff = cems_val - gfm_val
-
-        summary_stats.append({
-            'AOI': aoi,
-            'CEMS': cems_val,
-            'GFM_STAC': gfm_val,
-            'Difference': diff,
-            'Ratio_CEMS_to_GFM': ratio
-        })
-
-df_summary = pd.DataFrame(summary_stats)
-print(df_summary.to_string(index=False))
-
-print(f"\nAverage CEMS/GFM ratio: {df_summary['Ratio_CEMS_to_GFM'].mean():.2f}×")
-print(f"CEMS typically {'underestimates' if df_summary['Ratio_CEMS_to_GFM'].mean() < 1 else 'overestimates'} by {abs(1 - df_summary['Ratio_CEMS_to_GFM'].mean()) * 100:.1f}%")
-```
-
-
-Select time slices to visualize the compositing process:
+### Zonal Statistics
 
 ```{python}
-# | eval: false
+#| cache: true
+# Run zonal stats for October event using filled/forward-filled stack
 
+oct_flood_data_latest = oct_ic_latest.sel(time=notebook_config['october']['snapshot_dates'])
+oct_flood_data_latest_computed = oct_flood_data_latest.compute()
 
-# Get 4 Image snap-shots from STAC for visualization of concept
-limg_tstart = ic_latest.isel(time=0)
-limg_tearly = ic_latest.isel(time=5)
-limg_tmid = ic_latest.isel(time=10)
-limg_tlater = ic_latest.isel(time=-1)
+oct_results_filled = []
+for i in range(len(oct_flood_data_latest_computed.time)):
+    time_step = oct_flood_data_latest_computed.isel(time=i)
+    date_str = str(time_step.time.values)[:10]
+    print(f"\nProcessing {date_str}...")
 
+    # Apply GFM threshold
+    flood_binary = (time_step == 1).astype(int)
+    flood_binary = flood_binary.rio.write_crs(time_step.rio.crs)
 
-```
-
-
-Pre-compute images for easier plot development.
-```{python}
-# | eval" false
-# | cache: true
-# | cache-comments: "Cache computed images to avoid recomputation on plot tweaks"
-
-# this will take a couple minutes
-
-img_tstart = limg_tstart.compute()
-img_tearly = limg_tearly.compute()
-img_tmid = limg_tmid.compute()
-img_tlater = limg_tlater.compute()
-```
-
-
-
-### Visualize
-
-Plot time slices showing how flood coverage evolves and geographic gaps get filled over time.
-
-```{python}
-
-# Define colors for flood data visualization
-colors = ["lightgrey", "darkblue", "white"]  # 0=no flood, 1=flood, 255=nodata
-
-# compute_start = time.time()
-cmap = ListedColormap(colors)
-bounds = [0, 0.5, 1.5, 255.5]
-norm = BoundaryNorm(bounds, cmap.N)
-
-# Create 2x2 subplot grid
-fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(20, 16))
-
-# Define image data and metadata for loop processing
-images_data = [
-    {"img": img_tstart, "ax": ax1, "title": "Start Time - Flood Detection"},
-    {"img": img_tearly, "ax": ax2, "title": "Early Time - Flood Detection"},
-    {"img": img_tmid, "ax": ax3, "title": "Mid Time - Flood Detection"},
-    {"img": img_tlater, "ax": ax4, "title": "Later Time - Flood Detection"},
-]
-
-# Process all images in a loop to avoid code repetition
-processed_data = []
-for i, img_info in enumerate(images_data):
-    img_data = img_info["img"]
-    ax = img_info["ax"]
-    title = img_info["title"]
-
-    # Process data (handle NaN and downsample)
-    data_clean = np.where(np.isnan(img_data), 255, img_data)
-    data_clean = data_clean[::8, ::8]  # Downsample for speed
-    processed_data.append(data_clean)
-
-    # Get extent from the xarray data
-    extent = [
-        img_data.x.min().item(),
-        img_data.x.max().item(),
-        img_data.y.min().item(),
-        img_data.y.max().item(),
-    ]
-
-    # Plot the image
-    im = ax.imshow(
-        data_clean,
-        cmap=cmap,
-        norm=norm,
-        interpolation="nearest",
-        origin="upper",
-        extent=extent,
+    # Run zonal analysis
+    results_time = gfm_exact_workflow_zonal(
+        flood_20m=flood_binary,
+        population_100m=da_clip,
+        gdf_zones=gdf_aoi_copernicus,
+        zone_id_col='aoi_code'
     )
 
-    # Add AOI boundary
-    gdf_aoi.boundary.plot(ax=ax, color="black", linewidth=4, alpha=1.0)
+    # Add date column to results
+    results_time['date'] = date_str
+    oct_results_filled.append(results_time)
 
-    # Get the actual date from the image for the title
-    img_date = img_data.time.values
-    # Show just the date since we're now working with daily data
-    date_str = str(img_date)[:10]  # Extract YYYY-MM-DD format
+    # Display results for this time step
+    print(f"Total affected population for {date_str}: {results_time['affected_population'].sum():,}")
 
-    # Set title with date and labels
-    ax.set_title(f"{title}\n{date_str}", fontsize=12, fontweight="bold")
-    ax.set_xlabel("Longitude")
-    ax.set_ylabel("Latitude")
+# Combine all results
+oct_zonal_results = pd.concat(oct_results_filled, ignore_index=True)
 
-# total_compute = time.time() - compute_start
-# print(f"✅ 2x2 flood detection plots completed in {total_compute:.1f} seconds")
-for i, data in enumerate(processed_data):
-    img_name = ["Start", "Early", "Mid", "Later"][i]
-    print(f"{img_name} plot: {data.size:,} pixels rendered")
+# Store the latest date result for comparison
+oct_latest_img_zonal_date = oct_zonal_results[oct_zonal_results["date"] == notebook_config['october']['snapshot_dates'][0]]
 
-plt.tight_layout()
-plt.show()
-# Remove 'fig' to prevent duplicate display
+```
+
+### Flood Extent Visualizations
+
+```{python}
+#| cache: true
+# Visualize flood extent for October snapshot dates
+map_flood_extent_snapshots(
+    flood_data_computed=oct_flood_data_latest_computed,
+    snapshot_dates=notebook_config['october']['snapshot_dates'],
+    gdf_boundaries=gdf_aoi_copernicus,
+    event_name=notebook_config['october']['name']
+)
+```
+
+### System Comparisons
+
+FloodScan data not available for October event.
+
+```{python}
+# Hardcoded October 2024 CEMS reference data
+# TODO: Replace x, y, z with actual CEMS values for October
+oct_other_systems_data = {
+    'CEMS': {
+        'AOI 1': 8300,
+        'AOI 2': 6400,  # TODO: Add October CEMS value for AOI 2
+        'AOI 3': 26000   # TODO: Add October CEMS value for AOI 3
+    }
+}
+
+# Create comparison plot with CEMS and GFM only (no FloodScan)
+create_comparison_barplot(
+    gfm_results=oct_latest_img_zonal_date,
+    other_systems_data=oct_other_systems_data,
+    event_name=notebook_config['october']['name'],
+    systems=['CEMS', 'GFM (STAC)']  # Only CEMS and GFM
+)
+```
+
+
+## Appendix
+
+
+```{python}
+#| eval: false
+#| echo: false
+
+# All dates in ic_latest are actual observation dates (no filling needed)
+# Create binary flood masks and calculate population impacts for each time step
+ic_ready = stack_flood_max
+population_impacts = []
+dates = []
+
+for i, time_step in enumerate(ic_ready.time):
+    print(f"\nProcessing date: {str(time_step.values)[:10]}")
+
+    try:
+        # Get flood data for this time step
+        flood_data = ic_ready.sel(time=time_step)
+
+        # Compute the data first to handle network errors
+        print("  Computing flood data from EODC...")
+        flood_data_computed = flood_data.compute()
+
+        # Create binary flood mask (1 = flooded, 0 = not flooded)
+        # Use GFM's official binary classification: exactly 1 = flood
+        # (ensemble requires 2 out of 3 algorithms to agree)
+        flood_binary = (flood_data_computed == 1).astype(int)
+        flood_binary = flood_binary.rio.write_crs(flood_data_computed.rio.crs)
+
+        # DEBUG: Check flood mask BEFORE resampling
+        print(
+            f"    DEBUG - Unique values in flood_binary: {np.unique(flood_binary.values[~np.isnan(flood_binary.values)])}"
+        )
+        print(
+            f"    DEBUG - Flooded cells BEFORE resample: {(flood_binary == 1).sum().values:,}"
+        )
+
+        # Resample flood data to match population grid resolution
+        # Population data is at higher resolution, so we need to align grids
+        # Use nearest neighbor (resampling=0) per GFM methodology
+        # https://rasterio.readthedocs.io/en/stable/api/rasterio.enums.html#rasterio.enums.Resampling
+        print("  Reprojecting to match population grid...")
+        flood_resampled = flood_binary.rio.reproject_match(
+            da_clip, resampling=0
+        )  # 0 = Resampling.nearest (GFM spec)
+
+    except Exception as e:
+        print(f"  ⚠️  ERROR: Failed to process {str(time_step.values)[:10]}: {e}")
+        print(f"  Skipping this date...")
+        continue
+
+    # Calculate flooded population (multiply binary flood by population)
+    print("  Calculating affected population...")
+
+    # DEBUG: Check spatial extents and masking
+    print(f"    DEBUG - flood_resampled extent: {flood_resampled.rio.bounds()}")
+    print(f"    DEBUG - da_clip extent: {da_clip.rio.bounds()}")
+    print(f"    DEBUG - da_clip has NaNs: {da_clip.isnull().any().values}")
+    print(f"    DEBUG - da_clip non-null cells: {(~da_clip.isnull()).sum().values:,}")
+    print(f"    DEBUG - flooded cells (>0): {(flood_resampled > 0).sum().values:,}")
+    print(f"    DEBUG - flood_resampled sum: {flood_resampled.sum().values:,.0f}")
+    print(
+        f"    DEBUG - flood_resampled unique values: {np.unique(flood_resampled.values[~np.isnan(flood_resampled.values)])}"
+    )
+
+    pop_flooded = flood_resampled * da_clip
+
+    # DEBUG: Check population calculation
+    print(f"    DEBUG - pop_flooded > 0 cells: {(pop_flooded > 0).sum().values:,}")
+    print(
+        f"    DEBUG - pop_flooded sum (skipna=True): {pop_flooded.sum(skipna=True).values:,.0f}"
+    )
+    print(f"    DEBUG - pop_flooded max: {pop_flooded.max(skipna=True).values:.2f}")
+
+    # Store results
+    population_impacts.append(pop_flooded)
+    date_str = str(time_step.values)[:10]
+    dates.append(date_str)
+
+    print(f"  ✅ {date_str}: {pop_flooded.sum().values:,.0f} people affected")
+
+# Calculate zonal statistics (total flooded population per admin area)
+zonal_stats = []
+for i, pop_impact in enumerate(population_impacts):
+    # Sum population within the admin boundary
+    total_pop_flooded = pop_impact.sum().values
+
+    zonal_stats.append(
+        {
+            "date": dates[i],
+            "total_population_flooded": total_pop_flooded,
+            "admin_code": gdf_aoi.iloc[0]["adm1_src"],
+        }
+    )
+
+# Display results
+import pandas as pd
+
+df_results = pd.DataFrame(zonal_stats)
+print("\n=== Zonal Statistics Summary ===")
+print(df_results)
+```
+
+
+```{python}
+#| eval: false
+#| echo: false
+
+def gfm_exact_workflow(flood_20m, population_100m, aoi_geometry=None):
+    """
+    Replicate GFM's exact workflow for affected population calculation.
+
+    Parameters
+    ----------
+    flood_20m : xr.DataArray
+        Binary flood mask at 20m resolution (0 or 1)
+    population_100m : xr.DataArray
+        Population density at 100m resolution
+    aoi_geometry : gpd.GeoSeries, optional
+        Geometry to clip final results
+
+    Returns
+    -------
+    tuple
+        (affected_pop_raster_20m, total_affected_count)
+    """
+
+    print("GFM Exact Workflow:")
+    print("1. Flood data at 20m resolution")
+    print("2. Upsampling population from 100m to 20m...")
+
+    # Step 1: Resample population TO match flood grid (100m → 20m)
+    # Use nearest neighbor per GFM spec
+    population_20m = population_100m.rio.reproject_match(
+        flood_20m,
+        resampling=0  # nearest neighbor
+    )
+
+    # Step 2: Adjust population density for pixel area change
+    # When going from 100m to 20m, each 100m cell becomes 25 cells of 20m
+    # Population density needs to be divided by 25
+    print("3. Adjusting population density for resolution change...")
+    pixel_area_ratio = (100 / 20) ** 2  # = 25
+    population_20m_adjusted = population_20m / pixel_area_ratio
+
+    print(f"   Population adjustment factor: {pixel_area_ratio}")
+    print(f"   Original sum: {population_100m.sum(skipna=True).values:,.0f}")
+    print(f"   After resampling: {population_20m.sum(skipna=True).values:,.0f}")
+    print(f"   After adjustment: {population_20m_adjusted.sum(skipna=True).values:,.0f}")
+
+    # Step 3: Multiply flood mask (20m) × population (20m)
+    print("4. Calculating affected population at 20m resolution...")
+    affected_pop_20m = flood_20m * population_20m_adjusted
+
+    # Step 4: Clip to AOI if provided
+    if aoi_geometry is not None:
+        print("5. Clipping to AOI boundary...")
+        affected_pop_20m = affected_pop_20m.rio.clip(
+            aoi_geometry.values,
+            affected_pop_20m.rio.crs,
+            drop=False
+        )
+
+    # Step 5: Calculate total
+    total_affected = float(affected_pop_20m.sum(skipna=True).values)
+
+    print(f"\n✅ Total affected population: {int(total_affected):,}")
+
+    return affected_pop_20m, total_affected
+```
+```{python}
+#| eval: false
+#| echo: false
+
+
+# Process the latest time step as an example
+time_step = ic_ready.time[1]  # Get the last time step
+print(f"\nProcessing date: {str(time_step.values)[:10]}")
+da_clip_nd = da_clip.rio.write_nodata(None)
+
+try:
+    # Get flood data for this time step
+    flood_data = ic_ready.sel(time=time_step)
+
+    # Compute the data first to handle network errors
+    print("  Computing flood data from EODC...")
+    flood_data_computed = flood_data.compute()
+
+    # Create binary flood mask (1 = flooded, 0 = not flooded)
+    # Use GFM's official binary classification: exactly 1 = flood
+    # (ensemble requires 2 out of 3 algorithms to agree)
+    flood_binary = (flood_data_computed == 1).astype(int)
+    flood_binary = flood_binary.rio.write_crs(flood_data_computed.rio.crs)
+
+    # Run the GFM exact workflow
+    affected_pop_raster, total_affected = gfm_exact_workflow(
+        flood_20m=flood_binary,
+        population_100m=da_clip_nd,
+        aoi_geometry=gdf_aoi.geometry,
+    )
+
+    print(f"Analysis complete for {str(time_step.values)[:10]}")
+
+except Exception as e:
+    print(f"Error processing data: {e}")
 ```
 
 
 
-### Appendix  - GEE GHSL STuff
-Load GHSL population data from Earth Engine and visualize it alongside flood data.
+### Google Earth Engine GHSL stuff
+
 
 ```{python}
+#| eval: false
+#| echo: false
+
 import ee
 import geemap
 
 # Initialize Earth Engine
 ee.Initialize()
-```
 
-```{python}
 # | cache: true
 # | cache-lazy: true
 
@@ -1174,11 +1132,11 @@ print(f"Non-zero pixels: {np.count_nonzero(pop_2025 > 0):,}")
 ```
 
 
-### Population and Flood Overlay
-
-Compare the latest flood extent with population data to identify potential impacts.
 
 ```{python}
+#| eval: false
+#| echo: false
+# 
 # Create a static visualization combining population and flood data
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 8))
 

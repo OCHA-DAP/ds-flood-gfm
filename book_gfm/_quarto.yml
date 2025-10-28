@@ -22,7 +22,7 @@ book:
       chapters:
         - 01_poc_latst_image_composite.qmd
         - 02_poc_gfm_anomaly_flag.qmd
-        # - poc_coverage.qmd
+        - 03_cameroon_snapshots.qmd
     - part: "Historical Analyses"
       # chapters:
     #     - methodology.qmd
