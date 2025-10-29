@@ -956,35 +956,34 @@ def create_map_from_stac(target_date, flood_filled, provenance_filled, stack_flo
     # Extract flood pixels based on flood_mode
     if flood_mode == "cumulative":
         print("\nExtracting flood pixels (CUMULATIVE mode - all dates combined)...")
-        flood_points = []
-        seen_locations = set()  # Track (x, y) to avoid complete duplicates
 
+        # Compute once and use vectorized any() to find pixels flooded on ANY date
+        # This is much faster than looping and using set tracking
+        stack_flood_computed = stack_flood_max.compute()
+
+        # Print per-date stats for transparency
         for date in unique_dates:
-            # Get original flood data for this date
-            original_flood = stack_flood_max.sel(time=date).compute()
-
-            # Mask: just flood == 1 (ignore provenance)
-            is_flooded = (original_flood.values == 1)
-            flood_count = np.sum(is_flooded)
-
+            flood_count = np.sum(stack_flood_computed.sel(time=date).values == 1)
             print(f"  {str(pd.Timestamp(date))[:10]}: {flood_count:,} flood pixels")
 
-            # Convert to points (allow duplicates across dates for cumulative extent)
-            if flood_count > 0:
-                y_coords, x_coords = np.where(is_flooded)
-                x_geo = provenance_target.x.values[x_coords]
-                y_geo = provenance_target.y.values[y_coords]
+        # Vectorized union: find pixels where flood == 1 on ANY date
+        any_flooded = (stack_flood_computed == 1).any(dim='time').values
 
-                for x, y in zip(x_geo, y_geo):
-                    loc = (x, y)
-                    if loc not in seen_locations:
-                        seen_locations.add(loc)
-                        flood_points.append({
-                            'geometry': Point(x, y),
-                            'date': str(pd.Timestamp(date))[:10],
-                            'lon': x,
-                            'lat': y
-                        })
+        # Extract coordinates efficiently (single operation)
+        y_coords, x_coords = np.where(any_flooded)
+        x_geo = provenance_target.x.values[x_coords]
+        y_geo = provenance_target.y.values[y_coords]
+
+        # Create flood points (using list comprehension for efficiency)
+        flood_points = [
+            {
+                'geometry': Point(x, y),
+                'date': 'cumulative',  # No single date - it's a union across all dates
+                'lon': x,
+                'lat': y
+            }
+            for x, y in zip(x_geo, y_geo)
+        ]
 
         print(f"\nTotal unique flood pixels (cumulative across all dates): {len(flood_points):,}")
 
