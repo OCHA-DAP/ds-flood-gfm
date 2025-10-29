@@ -2,6 +2,7 @@ import geopandas as gpd
 from fsspec.implementations.http import HTTPFileSystem
 from shapely import wkb
 import pandas as pd
+from pathlib import Path
 
 
 def load_adm0_lowres():
@@ -304,3 +305,30 @@ def calculate_admin_population(flood_points_gdf, admin_gdf, adm_level):
             result.loc[len(result)] = pseudo_gdf.loc[0]
 
     return result
+
+
+def generate_cache_key(iso3, dates_list, population_raster, flood_mode="latest"):
+    """Generate unique cache key from parameters.
+
+    Returns a human-readable cache key like:
+    JAM_20241020_20241022_20241025_ghsl_cumulative
+    """
+    # Create abbreviated date strings (YYYYMMDD format)
+    dates_str = "_".join([str(d)[:10].replace('-', '') for d in dates_list])
+
+    # Extract population raster identifier
+    if population_raster:
+        # Get just the filename without path and extension
+        pop_filename = Path(population_raster).stem
+        # Abbreviate common patterns
+        if 'GHS_POP' in pop_filename:
+            pop_str = 'ghsl'
+        elif 'worldpop' in pop_filename.lower():
+            pop_str = 'wpop'
+        else:
+            pop_str = 'pop'
+    else:
+        pop_str = 'nopop'
+
+    # Combine into readable cache key
+    return f"{iso3}_{dates_str}_{pop_str}_{flood_mode}"

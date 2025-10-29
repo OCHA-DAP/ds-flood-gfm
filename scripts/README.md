@@ -326,6 +326,7 @@ Potential improvements:
 
 ## Gotchas 
 
+1. to run  scripts/03_generate_flooded_area_choropleths.py you must have already run scripts/02_generate_affected_population_choropleths.py using both flood modes 
 - If geometry footprint of STAC intersects AOI it is returned by the STAC search call. But as the STAC footprint is bigger thant the actual sentinel tile it does not mean that the actual flood data intersects. So if I run: 
 
 ```

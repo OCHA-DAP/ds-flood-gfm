@@ -51,40 +51,18 @@ try:
 except ImportError:
     stratus = None
 
-from ds_flood_gfm.geo_utils import get_highest_admin_level, calculate_admin_population, load_fieldmaps_parquet
+from ds_flood_gfm.geo_utils import (
+    get_highest_admin_level,
+    calculate_admin_population,
+    load_fieldmaps_parquet,
+    generate_cache_key
+)
 from ds_flood_gfm.country_config import get_country_config, get_bbox, GHSL_RASTER_BLOB_PATH
 
 # Constants
 PIXEL_AREA_RATIO = 25  # (100m GHSL pixel / 20m GFM pixel)² = (100/20)² = 25
 HISTOGRAM_BINS = 200  # Number of bins for 2D histogram density maps
 GAUSSIAN_SIGMA = 2  # Sigma for Gaussian smoothing filter
-
-
-def generate_cache_key(iso3, dates_list, population_raster, flood_mode="latest"):
-    """Generate unique cache key from parameters.
-
-    Returns a human-readable cache key like:
-    JAM_20241020_20241022_20241025_ghsl_cumulative
-    """
-    # Create abbreviated date strings (YYYYMMDD format)
-    dates_str = "_".join([str(d)[:10].replace('-', '') for d in dates_list])
-
-    # Extract population raster identifier
-    if population_raster:
-        # Get just the filename without path and extension
-        pop_filename = Path(population_raster).stem
-        # Abbreviate common patterns
-        if 'GHS_POP' in pop_filename:
-            pop_str = 'ghsl'
-        elif 'worldpop' in pop_filename.lower():
-            pop_str = 'wpop'
-        else:
-            pop_str = 'pop'
-    else:
-        pop_str = 'nopop'
-
-    # Combine into readable cache key
-    return f"{iso3}_{dates_str}_{pop_str}_{flood_mode}"
 
 
 def save_cache(cache_dir, cache_key, flood_points, provenance_indexed, provenance_target, unique_dates, metadata):
