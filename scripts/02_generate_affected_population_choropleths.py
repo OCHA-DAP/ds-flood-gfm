@@ -219,13 +219,19 @@ def main(end_date_str, n_latest, iso3="JAM", population_raster=None, cache_dir="
     # ========== STEP 1: Quick STAC query to get available dates (FAST!) ==========
     stac_api = "https://stac.eodc.eu/api/v1"
     client = pystac_client.Client.open(stac_api)
+
+    # Use intersects with actual geometry instead of bbox to avoid false positives
+    # (STAC catalog sometimes returns tiles that don't actually cover the AOI)
+    from shapely.geometry import mapping
+    aoi_geojson = mapping(gdf_aoi.geometry.iloc[0])
+
     search = client.search(
         collections=["GFM"],
-        bbox=bbox,
+        intersects=aoi_geojson,
         datetime=f"{start_date_str}/{end_date_str}"
     )
     items = search.item_collection()
-    print(f"Found {len(items)} STAC items")
+    print(f"Found {len(items)} STAC items (using intersects query)")
 
     if len(items) == 0:
         print("ERROR: No STAC items found for this date range!")
