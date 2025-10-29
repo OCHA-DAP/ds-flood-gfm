@@ -45,7 +45,7 @@ uv run python scripts/02_generate_affected_population_choropleths.py \
 
 **Runtime:**
 - First run: ~4-5 minutes for Jamaica (downloads and processes satellite data)
-  - Haiti: ~5-10 minutes
+  - Haiti: ~15-20 minutes
   - Cuba: ~45-50 minutes (143M pixels)
 - Subsequent runs: ~46 seconds (uses cached data if satellite observations unchanged)
 
