@@ -50,9 +50,9 @@ uv run python scripts/02_generate_affected_population_choropleths.py \
 - Subsequent runs: ~46 seconds (uses cached data if satellite observations unchanged)
 
 **Outputs:**
-Maps saved to `experiments/` directory:
-- `population_provenance_YYYYMMDD.png` - Flood density heatmap with data provenance
-- `choropleth_adm3_YYYYMMDD.png` - Affected population by admin division
+Maps saved to `outputs/plots/` directory:
+- `{ISO3}_population_provenance_{YYYYMMDD}.png` - Flood density heatmap with data provenance
+- `{ISO3}_population_{mode}_adm3_{YYYYMMDD}.png` - Affected population by admin division
 
 ### Generate Flooded Area Maps (Optional)
 
@@ -72,8 +72,9 @@ uv run python scripts/03_generate_flooded_area_choropleths.py \
 **Runtime:** ~30-40 seconds
 
 **Outputs:**
-- `choropleth_flooded_area_latest_YYYYMMDD.png` - Flooded area (km²) from latest mode
-- `choropleth_flooded_area_cumulative_YYYYMMDD.png` - Flooded area (km²) from cumulative mode
+Maps saved to `outputs/plots/` directory:
+- `{ISO3}_choropleth_flooded_area_latest_{YYYYMMDD}.png` - Flooded area (km²) from latest mode
+- `{ISO3}_choropleth_flooded_area_cumulative_{YYYYMMDD}.png` - Flooded area (km²) from cumulative mode
 
 ### Understanding the Cache
 

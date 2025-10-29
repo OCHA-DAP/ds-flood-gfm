@@ -55,73 +55,82 @@ Standalone script that reads cached flood points and generates flooded area visu
 
 ---
 
-## Workflow: Generate All 4 Choropleths
+## Workflow: Generate All Choropleths
 
 ### Prerequisites
 - Python 3.12.4 with `uv` for dependency management
 - Azure blob storage access (for admin boundaries and population data)
 - GFM STAC API access
 
-### Step 1: Generate Cumulative Affected Population
-This builds the cumulative cache with all flood points from all 3 dates combined.
+### Step 1: Generate Latest Mode Maps
 
 ```bash
 uv run python scripts/02_generate_affected_population_choropleths.py \
-  --end-date 2025-10-27 \
-  --n-latest 3 \
-  --population-raster "ghsl/pop/GHS_POP_E2025_GLOBE_R2023A_4326_3ss_V1_0.tif" \
-  --flood-mode cumulative
-```
-
-**Runtime:** ~4-5 minutes (first run), ~46 seconds (cached)
-
-**Outputs:**
-- `experiments/population_provenance_20251027.png` - Density heatmap
-- `experiments/choropleth_adm3_20251027.png` - Affected pop choropleth (cumulative)
-
-**What's cached:**
-- `data/cache/JAM_cumulative_<hash>/flood_points.parquet` - 419 flood pixels with population
-- `data/cache/JAM_cumulative_<hash>/provenance.tif` - Provenance raster
-- `data/cache/JAM_cumulative_<hash>/metadata.json` - Dates and extents
-
----
-
-### Step 2: Generate Latest Affected Population
-This builds the latest cache with only the most recent provenance pixels.
-
-```bash
-uv run python scripts/02_generate_affected_population_choropleths.py \
-  --end-date 2025-10-27 \
-  --n-latest 3 \
-  --population-raster "ghsl/pop/GHS_POP_E2025_GLOBE_R2023A_4326_3ss_V1_0.tif" \
+  --end-date 2025-10-29 \
+  --n-latest 4 \
+  --iso3 JAM \
   --flood-mode latest
 ```
 
 **Runtime:** ~4-5 minutes (first run), ~46 seconds (cached)
 
 **Outputs:**
-- `experiments/population_provenance_20251027.png` - Density heatmap (overwrites cumulative version)
-- `experiments/choropleth_adm3_20251027.png` - Affected pop choropleth (latest)
+- `outputs/plots/JAM_population_provenance_20251029.png` - Density heatmap
+- `outputs/plots/JAM_population_latest_adm3_20251029.png` - Affected population choropleth
 
 **What's cached:**
-- `data/cache/JAM_latest_<hash>/flood_points.parquet` - 343 flood pixels with population
-- `data/cache/JAM_latest_<hash>/provenance.tif` - Provenance raster
-- `data/cache/JAM_latest_<hash>/metadata.json` - Dates and extents
+- `data/cache/JAM_<dates>_ghsl_latest/flood_points.parquet` - Flood pixels with population
+- `data/cache/JAM_<dates>_ghsl_latest/provenance.tif` - Provenance raster
+- `data/cache/JAM_<dates>_ghsl_latest/metadata.json` - Dates and extents
 
 ---
 
-### Step 3: Generate Both Flooded Area Choropleths
-This reads both caches and generates flooded area maps in one go.
+### Step 2: Generate Cumulative Mode Maps
 
 ```bash
-uv run python scripts/03_generate_flooded_area_choropleths.py
+uv run python scripts/02_generate_affected_population_choropleths.py \
+  --end-date 2025-10-29 \
+  --n-latest 4 \
+  --iso3 JAM \
+  --flood-mode cumulative
 ```
+
+**Runtime:** 
+
+ - JAM first run : ~4-5 minutes
+ - HTI first run: 10-20 minutes 
+ - CUB first run: 40-60 minutes
+ - Cached they all run in  1-2 minutes
+
+**Outputs:**
+- `outputs/plots/JAM_population_provenance_20251029.png` - Density heatmap (overwrites latest)
+- `outputs/plots/JAM_population_cumulative_adm3_20251029.png` - Affected population choropleth
+
+**What's cached:**
+- `data/cache/JAM_<dates>_ghsl_cumulative/flood_points.parquet` - Flood pixels with population
+- `data/cache/JAM_<dates>_ghsl_cumulative/provenance.tif` - Provenance raster
+- `data/cache/JAM_<dates>_ghsl_cumulative/metadata.json` - Dates and extents
+
+---
+
+### Step 3: Generate Flooded Area Maps
+
+After running script 02 in **both** flood modes, generate flooded area choropleths:
+
+```bash
+uv run python scripts/03_generate_flooded_area_choropleths.py \
+  --end-date 2025-10-29 \
+  --n-latest 4 \
+  --iso3 JAM
+```
+
+**Prerequisites:** Must have run script 02 in both `latest` AND `cumulative` modes first.
 
 **Runtime:** ~30-40 seconds
 
 **Outputs:**
-- `experiments/choropleth_flooded_area_latest_20251027.png` - Latest flooded area (0.13 km²)
-- `experiments/choropleth_flooded_area_cumulative_20251027.png` - Cumulative flooded area (0.16 km²)
+- `outputs/plots/JAM_choropleth_flooded_area_latest_20251029.png` - Flooded area (km²)
+- `outputs/plots/JAM_choropleth_flooded_area_cumulative_20251029.png` - Flooded area (km²)
 
 ---
 
@@ -245,14 +254,20 @@ The choropleths use `population_adjusted` to display whole numbers: "59 people a
 
 ## Output File Naming
 
+All outputs are saved to `outputs/plots/` directory (configurable via `--output-dir`):
+
 | File | Description |
 |------|-------------|
-| `population_provenance_YYYYMMDD.png` | Density heatmap (latest or cumulative, gets overwritten) |
-| `choropleth_adm3_YYYYMMDD.png` | Affected pop choropleth (latest or cumulative, gets overwritten) |
-| `choropleth_flooded_area_latest_YYYYMMDD.png` | Flooded area km² (latest mode) |
-| `choropleth_flooded_area_cumulative_YYYYMMDD.png` | Flooded area km² (cumulative mode) |
+| `{ISO3}_population_provenance_{YYYYMMDD}.png` | Density heatmap (gets overwritten between modes) |
+| `{ISO3}_population_latest_adm3_{YYYYMMDD}.png` | Affected population choropleth (latest mode) |
+| `{ISO3}_population_cumulative_adm3_{YYYYMMDD}.png` | Affected population choropleth (cumulative mode) |
+| `{ISO3}_choropleth_flooded_area_latest_{YYYYMMDD}.png` | Flooded area km² (latest mode) |
+| `{ISO3}_choropleth_flooded_area_cumulative_{YYYYMMDD}.png` | Flooded area km² (cumulative mode) |
 
-**Note:** For production workflows, rename affected pop outputs to distinguish latest vs cumulative modes.
+**Examples:**
+- `JAM_population_provenance_20251029.png`
+- `JAM_population_cumulative_adm3_20251029.png`
+- `JAM_choropleth_flooded_area_latest_20251029.png`
 
 ---
 
