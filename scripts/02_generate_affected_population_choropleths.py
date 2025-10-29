@@ -213,6 +213,9 @@ def main(end_date_str, n_latest, iso3="JAM", population_raster=None, cache_dir="
         gdf_admin1 = load_fieldmaps_parquet(iso3, adm_level=1, admin_source="http")
         print(f"Loaded {len(gdf_admin1)} admin1 divisions from HTTP")
 
+    # Create ADM0 (country boundary) by dissolving admin1
+    gdf_aoi = gdf_admin1.dissolve()
+
     # ========== STEP 1: Quick STAC query to get available dates (FAST!) ==========
     stac_api = "https://stac.eodc.eu/api/v1"
     client = pystac_client.Client.open(stac_api)
@@ -277,7 +280,7 @@ def main(end_date_str, n_latest, iso3="JAM", population_raster=None, cache_dir="
             # Call visualization directly
             create_map_visualization_only(
                 latest_date, flood_points, provenance_indexed, provenance_target,
-                unique_dates, gdf_aoi, gdf_admin1, OUTPUT_DIR, population_raster, iso3
+                unique_dates, gdf_aoi, gdf_admin1, OUTPUT_DIR, population_raster, iso3, flood_mode
             )
 
             print("\n" + "="*80)
@@ -318,22 +321,12 @@ def main(end_date_str, n_latest, iso3="JAM", population_raster=None, cache_dir="
     print(f"  Pixels without data: {pixels_no_data:,}")
     print(f"  Coverage: {100 * pixels_with_data / (pixels_with_data + pixels_no_data):.1f}%")
 
-    # Track provenance
-    print("\nTracking provenance...")
-    provenance = xr.full_like(stack_flood_max, fill_value=np.datetime64('NaT'), dtype='datetime64[ns]')
-    for i, time_val in enumerate(dates):
-        has_data = ~np.isnan(stack_flood_max.isel(time=i))
-        provenance[i] = xr.where(has_data, time_val, np.datetime64('NaT'))
-
-    # Forward-fill
-    print("Forward-filling...")
+    # Track provenance (vectorized - NO LOOPS!)
+    print("\nTracking provenance (vectorized)...")
     flood_filled = stack_flood_max.ffill(dim="time")
-    provenance_filled = provenance.ffill(dim="time")
-
-    # Apply spatial mask
-    print("Applying spatial mask to provenance...")
-    for i in range(len(dates)):
-        provenance_filled[i] = xr.where(ever_has_data, provenance_filled[i], np.datetime64('NaT'))
+    provenance_filled = stack_flood_max.time.where(
+        ~stack_flood_max.isnull()
+    ).ffill(dim="time").where(ever_has_data)
 
     # Use the latest available date instead of the requested end_date
     latest_date = str(dates[-1])[:10]
@@ -360,7 +353,7 @@ def main(end_date_str, n_latest, iso3="JAM", population_raster=None, cache_dir="
 
 
 def create_map_visualization_only(target_date, flood_points, provenance_indexed, provenance_target,
-                                  unique_dates, gdf_aoi, gdf_admin1, output_dir, population_raster=None, iso3="JAM"):
+                                  unique_dates, gdf_aoi, gdf_admin1, output_dir, population_raster=None, iso3="JAM", flood_mode="latest"):
     """Create visualization from cached data (no processing - visualization only)."""
     from matplotlib.colors import LinearSegmentedColormap
 
@@ -538,7 +531,7 @@ def create_map_visualization_only(target_date, flood_points, provenance_indexed,
 
     # Save with descriptive filename
     density_type = "population" if (population_raster and len(flood_points) > 0 and 'population' in gdf_floods.columns) else "flood"
-    output_filename = f"{density_type}_provenance_{target_date.replace('-', '')}.png"
+    output_filename = f"{iso3}_{density_type}_provenance_{target_date.replace('-', '')}.png"
     output_path = f"{output_dir}/{output_filename}"
     plt.savefig(output_path, dpi=150, bbox_inches='tight', facecolor='white')
     print(f"\nSaved: {output_path}")
@@ -566,10 +559,20 @@ def create_map_visualization_only(target_date, flood_points, provenance_indexed,
             # Calculate affected population by admin division
             gdf_choropleth = calculate_admin_population(gdf_floods, gdf_admin, adm_level)
 
-            # Print summary
-            affected_divs = gdf_choropleth[gdf_choropleth['affected_pop'] > 0]
-            print(f"Divisions with affected population: {len(affected_divs)}/{len(gdf_choropleth)}")
-            print(f"Total affected population: {gdf_choropleth['affected_pop'].sum():,.0f}")
+            # Separate unassigned pseudo-divisions for reporting (but exclude from visualization)
+            adm_name_col = f"adm{adm_level}_name"
+            is_unassigned = gdf_choropleth[adm_name_col].str.contains('Unassigned', na=False)
+            gdf_unassigned = gdf_choropleth[is_unassigned].copy()
+            gdf_choropleth_viz = gdf_choropleth[~is_unassigned].copy()
+
+            # Print summary (including unassigned)
+            affected_divs_viz = gdf_choropleth_viz[gdf_choropleth_viz['affected_pop'] > 0]
+            total_pop = gdf_choropleth['affected_pop'].sum()
+            print(f"Divisions with affected population: {len(affected_divs_viz)}/{len(gdf_choropleth_viz)}")
+            if len(gdf_unassigned) > 0:
+                unassigned_pop = gdf_unassigned['affected_pop'].sum()
+                print(f"  + {len(gdf_unassigned)} unassigned pseudo-divisions: {unassigned_pop:.0f} people")
+            print(f"Total affected population: {total_pop:,.0f}")
 
             # Create choropleth figure
             fig, ax = plt.subplots(1, 1, figsize=(12, 10))
@@ -580,18 +583,18 @@ def create_map_visualization_only(target_date, flood_points, provenance_indexed,
             adm_name_col = f"adm{adm_level}_name"
 
             # Check if the primary name column has values, if not fallback to lower admin levels
-            if gdf_choropleth[adm_name_col].isna().all():
+            if gdf_choropleth_viz[adm_name_col].isna().all():
                 print(f"  Note: {adm_name_col} is empty, falling back to lower admin levels for labels")
                 for fallback_level in range(adm_level - 1, 0, -1):
                     fallback_col = f"adm{fallback_level}_name"
-                    if fallback_col in gdf_choropleth.columns and not gdf_choropleth[fallback_col].isna().all():
+                    if fallback_col in gdf_choropleth_viz.columns and not gdf_choropleth_viz[fallback_col].isna().all():
                         print(f"  Using {fallback_col} for labels")
                         adm_name_col = fallback_col
                         break
 
             # Plot choropleth with improved color scaling
             # Use vmin=0 and vmax=max_pop to ensure full color range is used
-            max_pop = gdf_choropleth['affected_pop'].max()
+            max_pop = gdf_choropleth_viz['affected_pop'].max()
 
             # For very small values, use a classification scheme instead of continuous
             if max_pop > 0 and max_pop < 100:
@@ -606,7 +609,7 @@ def create_map_visualization_only(target_date, flood_points, provenance_indexed,
                 colors_list = ['white', '#ffffcc', '#ffeda0', '#fed976', '#feb24c', '#fd8d3c', '#fc4e2a', '#e31a1c', '#bd0026', '#800026']
                 cmap_custom = LinearSegmentedColormap.from_list('white_ylorrd', colors_list, N=256)
 
-                gdf_choropleth.plot(
+                gdf_choropleth_viz.plot(
                     column='affected_pop',
                     ax=ax,
                     cmap=cmap_custom,
@@ -628,7 +631,7 @@ def create_map_visualization_only(target_date, flood_points, provenance_indexed,
                 colors_list = ['white', '#ffffcc', '#ffeda0', '#fed976', '#feb24c', '#fd8d3c', '#fc4e2a', '#e31a1c', '#bd0026', '#800026']
                 cmap_custom = LinearSegmentedColormap.from_list('white_ylorrd', colors_list, N=256)
 
-                gdf_choropleth.plot(
+                gdf_choropleth_viz.plot(
                     column='affected_pop',
                     ax=ax,
                     cmap=cmap_custom,
@@ -732,9 +735,10 @@ def create_map_visualization_only(target_date, flood_points, provenance_indexed,
             # Build legend in chronological order (oldest to newest, top to bottom)
             # Sort dates and add legend entries in that order
             sorted_dates = sorted(unique_dates)
+            unique_dates_list = list(unique_dates)  # Convert numpy array to list for .index()
             for date in sorted_dates:
                 # Find which index this date corresponds to
-                date_idx = unique_dates.index(date)
+                date_idx = unique_dates_list.index(date)
                 color = date_to_color.get(date_idx)
                 if color:
                     date_str = str(date)[:10]
@@ -755,12 +759,12 @@ def create_map_visualization_only(target_date, flood_points, provenance_indexed,
             gdf_admin1_overlay.plot(ax=ax, facecolor='none', edgecolor='black', linewidth=1.5, alpha=0.8)
 
             # Add labels for top affected divisions (using adjustText to avoid overlaps)
-            top_n = min(5, len(affected_divs))
+            top_n = min(5, len(affected_divs_viz))
             if top_n > 0:
                 from adjustText import adjust_text
                 from matplotlib.patheffects import withStroke
 
-                top_affected = affected_divs.nlargest(top_n, 'affected_pop')
+                top_affected = affected_divs_viz.nlargest(top_n, 'affected_pop')
                 texts = []
                 for idx, row in top_affected.iterrows():
                     centroid = row.geometry.centroid
@@ -788,9 +792,10 @@ def create_map_visualization_only(target_date, flood_points, provenance_indexed,
             ax.set_ylim(y_min - y_buffer, y_max + y_buffer)
 
             # Title and labels
+            mode_label = "Cumulative" if flood_mode == "cumulative" else "Latest"
             ax.set_title(
-                f"Affected Population by Admin{adm_level} Division - {target_date}\n"
-                f"Total: {gdf_choropleth['affected_pop'].sum():,.0f} people in {len(affected_divs)} divisions",
+                f"Affected Population by Admin{adm_level} Division ({mode_label} Mode) - {target_date}\n"
+                f"Total: {total_pop:,.0f} people in {len(affected_divs_viz)} divisions",
                 fontsize=14,
                 fontweight='bold',
                 pad=15
@@ -814,7 +819,8 @@ def create_map_visualization_only(target_date, flood_points, provenance_indexed,
             plt.tight_layout()
 
             # Save choropleth
-            choropleth_filename = f"{iso3}_choropleth_adm{adm_level}_{target_date.replace('-', '')}.png"
+            mode_suffix = "cumulative" if flood_mode == "cumulative" else "latest"
+            choropleth_filename = f"{iso3}_population_{mode_suffix}_adm{adm_level}_{target_date.replace('-', '')}.png"
             choropleth_path = f"{output_dir}/{choropleth_filename}"
             plt.savefig(choropleth_path, dpi=150, bbox_inches='tight', facecolor='white')
             print(f"Saved: {choropleth_path}")
@@ -1213,7 +1219,7 @@ def create_map(target_date, flood_filled, provenance_filled, stack_flood_max,
 
     # Save with descriptive filename
     density_type = "population" if (population_raster and len(flood_points) > 0 and 'population' in gpd.GeoDataFrame(flood_points).columns) else "flood"
-    output_filename = f"{density_type}_provenance_{target_date.replace('-', '')}.png"
+    output_filename = f"{iso3}_{density_type}_provenance_{target_date.replace('-', '')}.png"
     output_path = f"{output_dir}/{output_filename}"
     plt.savefig(output_path, dpi=150, bbox_inches='tight', facecolor='white')
     print(f"\nSaved: {output_path}")
@@ -1244,10 +1250,20 @@ def create_map(target_date, flood_filled, provenance_filled, stack_flood_max,
             # Calculate affected population by admin division
             gdf_choropleth = calculate_admin_population(gdf_floods, gdf_admin, adm_level)
 
-            # Print summary
-            affected_divs = gdf_choropleth[gdf_choropleth['affected_pop'] > 0]
-            print(f"Divisions with affected population: {len(affected_divs)}/{len(gdf_choropleth)}")
-            print(f"Total affected population: {gdf_choropleth['affected_pop'].sum():,.0f}")
+            # Separate unassigned pseudo-divisions for reporting (but exclude from visualization)
+            adm_name_col = f"adm{adm_level}_name"
+            is_unassigned = gdf_choropleth[adm_name_col].str.contains('Unassigned', na=False)
+            gdf_unassigned = gdf_choropleth[is_unassigned].copy()
+            gdf_choropleth_viz = gdf_choropleth[~is_unassigned].copy()
+
+            # Print summary (including unassigned)
+            affected_divs_viz = gdf_choropleth_viz[gdf_choropleth_viz['affected_pop'] > 0]
+            total_pop = gdf_choropleth['affected_pop'].sum()
+            print(f"Divisions with affected population: {len(affected_divs_viz)}/{len(gdf_choropleth_viz)}")
+            if len(gdf_unassigned) > 0:
+                unassigned_pop = gdf_unassigned['affected_pop'].sum()
+                print(f"  + {len(gdf_unassigned)} unassigned pseudo-divisions: {unassigned_pop:.0f} people")
+            print(f"Total affected population: {total_pop:,.0f}")
 
             # Create choropleth figure
             fig, ax = plt.subplots(1, 1, figsize=(12, 10))
@@ -1258,18 +1274,18 @@ def create_map(target_date, flood_filled, provenance_filled, stack_flood_max,
             adm_name_col = f"adm{adm_level}_name"
 
             # Check if the primary name column has values, if not fallback to lower admin levels
-            if gdf_choropleth[adm_name_col].isna().all():
+            if gdf_choropleth_viz[adm_name_col].isna().all():
                 print(f"  Note: {adm_name_col} is empty, falling back to lower admin levels for labels")
                 for fallback_level in range(adm_level - 1, 0, -1):
                     fallback_col = f"adm{fallback_level}_name"
-                    if fallback_col in gdf_choropleth.columns and not gdf_choropleth[fallback_col].isna().all():
+                    if fallback_col in gdf_choropleth_viz.columns and not gdf_choropleth_viz[fallback_col].isna().all():
                         print(f"  Using {fallback_col} for labels")
                         adm_name_col = fallback_col
                         break
 
             # Plot choropleth with improved color scaling
             # Use vmin=0 and vmax=max_pop to ensure full color range is used
-            max_pop = gdf_choropleth['affected_pop'].max()
+            max_pop = gdf_choropleth_viz['affected_pop'].max()
 
             # For very small values, use a classification scheme instead of continuous
             if max_pop > 0 and max_pop < 100:
@@ -1284,7 +1300,7 @@ def create_map(target_date, flood_filled, provenance_filled, stack_flood_max,
                 colors_list = ['white', '#ffffcc', '#ffeda0', '#fed976', '#feb24c', '#fd8d3c', '#fc4e2a', '#e31a1c', '#bd0026', '#800026']
                 cmap_custom = LinearSegmentedColormap.from_list('white_ylorrd', colors_list, N=256)
 
-                gdf_choropleth.plot(
+                gdf_choropleth_viz.plot(
                     column='affected_pop',
                     ax=ax,
                     cmap=cmap_custom,
@@ -1306,7 +1322,7 @@ def create_map(target_date, flood_filled, provenance_filled, stack_flood_max,
                 colors_list = ['white', '#ffffcc', '#ffeda0', '#fed976', '#feb24c', '#fd8d3c', '#fc4e2a', '#e31a1c', '#bd0026', '#800026']
                 cmap_custom = LinearSegmentedColormap.from_list('white_ylorrd', colors_list, N=256)
 
-                gdf_choropleth.plot(
+                gdf_choropleth_viz.plot(
                     column='affected_pop',
                     ax=ax,
                     cmap=cmap_custom,
@@ -1410,9 +1426,10 @@ def create_map(target_date, flood_filled, provenance_filled, stack_flood_max,
             # Build legend in chronological order (oldest to newest, top to bottom)
             # Sort dates and add legend entries in that order
             sorted_dates = sorted(unique_dates)
+            unique_dates_list = list(unique_dates)  # Convert numpy array to list for .index()
             for date in sorted_dates:
                 # Find which index this date corresponds to
-                date_idx = unique_dates.index(date)
+                date_idx = unique_dates_list.index(date)
                 color = date_to_color.get(date_idx)
                 if color:
                     date_str = str(date)[:10]
@@ -1433,12 +1450,12 @@ def create_map(target_date, flood_filled, provenance_filled, stack_flood_max,
             gdf_admin1_overlay.plot(ax=ax, facecolor='none', edgecolor='black', linewidth=1.5, alpha=0.8)
 
             # Add labels for top affected divisions (using adjustText to avoid overlaps)
-            top_n = min(5, len(affected_divs))
+            top_n = min(5, len(affected_divs_viz))
             if top_n > 0:
                 from adjustText import adjust_text
                 from matplotlib.patheffects import withStroke
 
-                top_affected = affected_divs.nlargest(top_n, 'affected_pop')
+                top_affected = affected_divs_viz.nlargest(top_n, 'affected_pop')
                 texts = []
                 for idx, row in top_affected.iterrows():
                     centroid = row.geometry.centroid
@@ -1466,9 +1483,10 @@ def create_map(target_date, flood_filled, provenance_filled, stack_flood_max,
             ax.set_ylim(y_min - y_buffer, y_max + y_buffer)
 
             # Title and labels
+            mode_label = "Cumulative" if flood_mode == "cumulative" else "Latest"
             ax.set_title(
-                f"Affected Population by Admin{adm_level} Division - {target_date}\n"
-                f"Total: {gdf_choropleth['affected_pop'].sum():,.0f} people in {len(affected_divs)} divisions",
+                f"Affected Population by Admin{adm_level} Division ({mode_label} Mode) - {target_date}\n"
+                f"Total: {total_pop:,.0f} people in {len(affected_divs_viz)} divisions",
                 fontsize=14,
                 fontweight='bold',
                 pad=15
@@ -1492,7 +1510,8 @@ def create_map(target_date, flood_filled, provenance_filled, stack_flood_max,
             plt.tight_layout()
 
             # Save choropleth
-            choropleth_filename = f"{iso3}_choropleth_adm{adm_level}_{target_date.replace('-', '')}.png"
+            mode_suffix = "cumulative" if flood_mode == "cumulative" else "latest"
+            choropleth_filename = f"{iso3}_population_{mode_suffix}_adm{adm_level}_{target_date.replace('-', '')}.png"
             choropleth_path = f"{output_dir}/{choropleth_filename}"
             plt.savefig(choropleth_path, dpi=150, bbox_inches='tight', facecolor='white')
             print(f"Saved: {choropleth_path}")

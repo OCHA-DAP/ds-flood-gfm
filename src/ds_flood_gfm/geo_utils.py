@@ -202,6 +202,9 @@ def calculate_admin_population(flood_points_gdf, admin_gdf, adm_level):
     Performs a spatial join between flood points (with population values) and
     administrative boundaries, then sums population by admin division.
 
+    Points outside admin boundaries are grouped into "Unassigned" pseudo-divisions.
+    Existing divisions with missing names are also labeled as "Unassigned_N".
+
     Args:
         flood_points_gdf: GeoDataFrame with flood point locations and 'population' column
         admin_gdf: GeoDataFrame with administrative boundaries
@@ -211,6 +214,7 @@ def calculate_admin_population(flood_points_gdf, admin_gdf, adm_level):
         gpd.GeoDataFrame: Admin boundaries with added columns:
             - affected_pop: Total affected population in each division
             - flood_pixels: Number of flood pixels in each division
+            Includes pseudo-divisions for points outside boundaries
 
     Example:
         >>> # Create flood points GeoDataFrame
@@ -221,30 +225,82 @@ def calculate_admin_population(flood_points_gdf, admin_gdf, adm_level):
         >>> gdf_choropleth = calculate_admin_population(gdf_floods, gdf_admin, adm_level)
         >>> print(gdf_choropleth[['adm2_name', 'affected_pop', 'flood_pixels']])
     """
+    import warnings
+
     # Ensure both have same CRS
     if flood_points_gdf.crs != admin_gdf.crs:
         flood_points_gdf = flood_points_gdf.to_crs(admin_gdf.crs)
 
-    # Spatial join: assign each flood point to an admin division
-    joined = gpd.sjoin(flood_points_gdf, admin_gdf, how='left', predicate='within')
-
-    # Column name for admin ID depends on level
-    adm_id_col = f"adm{adm_level}_id"
+    # Column names
     adm_name_col = f"adm{adm_level}_name"
+    adm_id_col = f"adm{adm_level}_id"
 
-    # Group by admin division and sum population
-    pop_by_admin = joined.groupby(adm_id_col).agg({
+    # Create a copy to avoid modifying original
+    admin_gdf_copy = admin_gdf.copy()
+
+    # Fill missing names in existing admin divisions
+    missing_names_mask = admin_gdf_copy[adm_name_col].isna() | (admin_gdf_copy[adm_name_col] == '')
+    unassigned_counter = 1
+    if missing_names_mask.any():
+        n_missing = missing_names_mask.sum()
+        print(f"  Found {n_missing} admin divisions with missing names - labeling as Unassigned")
+        for idx in admin_gdf_copy[missing_names_mask].index:
+            admin_gdf_copy.loc[idx, adm_name_col] = f"Unassigned_{unassigned_counter}"
+            unassigned_counter += 1
+
+    # Spatial join: assign each flood point to an admin division
+    joined = gpd.sjoin(flood_points_gdf, admin_gdf_copy, how='left', predicate='within')
+
+    # Separate matched and unmatched points
+    matched = joined[joined[adm_id_col].notna()].copy()
+    unmatched = joined[joined[adm_id_col].isna()].copy()
+
+    # Group by admin division and sum population for matched points
+    pop_by_admin = matched.groupby(adm_id_col).agg({
         'population': 'sum',
         'geometry': 'count'  # Count flood pixels
     }).reset_index()
-
     pop_by_admin.columns = [adm_id_col, 'affected_pop', 'flood_pixels']
 
     # Merge back to admin boundaries
-    result = admin_gdf.merge(pop_by_admin, on=adm_id_col, how='left')
+    result = admin_gdf_copy.merge(pop_by_admin, on=adm_id_col, how='left')
 
     # Fill NaN with 0 (divisions with no floods)
     result['affected_pop'] = result['affected_pop'].fillna(0)
     result['flood_pixels'] = result['flood_pixels'].fillna(0)
+
+    # Handle unmatched points by creating pseudo-divisions
+    if len(unmatched) > 0:
+        print(f"  Found {len(unmatched)} flood pixels outside admin boundaries")
+        print(f"  Creating pseudo-division for unassigned population: {unmatched['population'].sum():.0f} people")
+
+        # Create convex hull around unmatched points as pseudo-geometry
+        unmatched_geom = unmatched.geometry.unary_union.convex_hull
+
+        # Create a pseudo-division for unmatched points
+        pseudo_div = {
+            adm_id_col: f'UNASSIGNED_{unassigned_counter:02d}',
+            adm_name_col: f'Unassigned_{unassigned_counter}',
+            'affected_pop': unmatched['population'].sum(),
+            'flood_pixels': len(unmatched),
+            'geometry': unmatched_geom
+        }
+
+        # Add columns from lower admin levels
+        for level in range(0, adm_level):
+            pseudo_div[f'adm{level}_id'] = 'UNASSIGNED'
+            pseudo_div[f'adm{level}_name'] = 'Unassigned'
+
+        # Add any other columns from admin_gdf with defaults
+        for col in admin_gdf_copy.columns:
+            if col not in pseudo_div and col != 'geometry':
+                pseudo_div[col] = None
+
+        # Append pseudo-division to result
+        pseudo_gdf = gpd.GeoDataFrame([pseudo_div], crs=result.crs)
+        # Suppress FutureWarning for this operation
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', category=FutureWarning)
+            result.loc[len(result)] = pseudo_gdf.loc[0]
 
     return result
