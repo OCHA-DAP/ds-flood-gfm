@@ -17,30 +17,47 @@ Output:
 """
 
 import sys
-
 import argparse
 from datetime import datetime, timedelta
+import json
+import math
+import os
+import tempfile
+from pathlib import Path
+
 import pystac_client
 import stackstac
 import matplotlib.pyplot as plt
-from matplotlib.colors import ListedColormap
+from matplotlib.colors import ListedColormap, LinearSegmentedColormap, BoundaryNorm
 from matplotlib.patches import Patch
+from matplotlib.patheffects import withStroke
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 import numpy as np
 import geopandas as gpd
 import pandas as pd
 import xarray as xr
-from shapely.geometry import Point
+from shapely.geometry import Point, mapping
 from fsspec.implementations.http import HTTPFileSystem
-from matplotlib.colors import LinearSegmentedColormap
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 from scipy.ndimage import gaussian_filter
 import rasterio
 from rasterio.features import geometry_mask
-from pathlib import Path
-import json
+from rasterio.transform import from_bounds
+import rioxarray
 import exactextract
+from adjustText import adjust_text
+
+try:
+    import ocha_stratus as stratus
+except ImportError:
+    stratus = None
+
 from ds_flood_gfm.geo_utils import get_highest_admin_level, calculate_admin_population, load_fieldmaps_parquet
-from ds_flood_gfm.country_config import get_country_config
+from ds_flood_gfm.country_config import get_country_config, get_bbox, GHSL_RASTER_BLOB_PATH
+
+# Constants
+PIXEL_AREA_RATIO = 25  # (100m GHSL pixel / 20m GFM pixel)² = (100/20)² = 25
+HISTOGRAM_BINS = 200  # Number of bins for 2D histogram density maps
+GAUSSIAN_SIGMA = 2  # Sigma for Gaussian smoothing filter
 
 
 def generate_cache_key(iso3, dates_list, population_raster, flood_mode="latest"):
@@ -81,7 +98,6 @@ def save_cache(cache_dir, cache_key, flood_points, provenance_indexed, provenanc
         gdf_floods.to_parquet(cache_path / "flood_points.parquet")
 
     # Save provenance raster as GeoTIFF
-    from rasterio.transform import from_bounds
     transform = from_bounds(
         float(provenance_target.x.min()),
         float(provenance_target.y.min()),
@@ -165,7 +181,7 @@ def load_cache(cache_dir, cache_key):
     }
 
 
-def main(end_date_str, n_latest, iso3="JAM", cache_dir="data/cache", use_cache=True, flood_mode="latest"):
+def main(end_date_str, n_latest, iso3="JAM", cache_dir="data/cache", use_cache=True, flood_mode="latest", output_dir="outputs/plots"):
     """
     Run flood provenance analysis using the N most recent observations before end_date.
 
@@ -184,10 +200,11 @@ def main(end_date_str, n_latest, iso3="JAM", cache_dir="data/cache", use_cache=T
     flood_mode : str
         'latest' = only use flood pixels from latest provenance (default)
         'cumulative' = sum across all dates (conservative extent)
+    output_dir : str
+        Directory for output files (default: outputs/plots)
     """
 
-    # Import population raster constant
-    from ds_flood_gfm.country_config import GHSL_RASTER_BLOB_PATH
+    # Use population raster constant
     population_raster = GHSL_RASTER_BLOB_PATH
 
     # Parse dates - look back 15 days to find available data
@@ -202,12 +219,10 @@ def main(end_date_str, n_latest, iso3="JAM", cache_dir="data/cache", use_cache=T
     print(f"Searching for {n_latest} most recent observations (looking back 15 days)")
     print("="*80)
 
-    # Configuration
-    OUTPUT_DIR = "experiments"
+    # Ensure output directory exists
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
 
     # Get bounding box from country config
-    from ds_flood_gfm.geo_utils import load_fieldmaps_parquet
-    from ds_flood_gfm.country_config import get_bbox
     bbox = get_bbox(iso3)
     print(f"\nBounding box: {bbox}")
 
@@ -229,7 +244,6 @@ def main(end_date_str, n_latest, iso3="JAM", cache_dir="data/cache", use_cache=T
 
     # Use intersects with actual geometry instead of bbox to avoid false positives
     # (STAC catalog sometimes returns tiles that don't actually cover the AOI)
-    from shapely.geometry import mapping
     aoi_geojson = mapping(gdf_aoi.geometry.iloc[0])
 
     search = client.search(
@@ -293,7 +307,7 @@ def main(end_date_str, n_latest, iso3="JAM", cache_dir="data/cache", use_cache=T
             # Call visualization directly
             create_map_visualization_only(
                 latest_date, flood_points, provenance_indexed, provenance_target,
-                unique_dates, gdf_aoi, gdf_admin1, OUTPUT_DIR, population_raster, iso3, flood_mode
+                unique_dates, gdf_aoi, gdf_admin1, output_dir, population_raster, iso3, flood_mode
             )
 
             print("\n" + "="*80)
@@ -354,7 +368,7 @@ def main(end_date_str, n_latest, iso3="JAM", cache_dir="data/cache", use_cache=T
         dates,
         gdf_aoi,
         gdf_admin1,
-        OUTPUT_DIR,
+        output_dir,
         population_raster,
         cache_dir,
         cache_key,
@@ -370,8 +384,6 @@ def main(end_date_str, n_latest, iso3="JAM", cache_dir="data/cache", use_cache=T
 def create_map_visualization_only(target_date, flood_points, provenance_indexed, provenance_target,
                                   unique_dates, gdf_aoi, gdf_admin1, output_dir, population_raster=None, iso3="JAM", flood_mode="latest"):
     """Create visualization from cached data (no processing - visualization only)."""
-    from matplotlib.colors import LinearSegmentedColormap
-
     print("Creating visualization from cached data...")
 
     # Get country-specific legend placement
@@ -383,8 +395,8 @@ def create_map_visualization_only(target_date, flood_points, provenance_indexed,
     ax.set_facecolor('white')
     fig.patch.set_facecolor('white')
 
-    # Colors: oldest to most recent (red/orange -> yellow -> green)
-    colors = ['#fc8d59', '#f0c040', '#91cf60'][:len(unique_dates)]
+    # Colors: oldest to most recent (red -> orange -> yellow -> green)
+    colors = ['#d73027', '#fc8d59', '#f0c040', '#91cf60'][:len(unique_dates)]
     cmap_prov = ListedColormap(colors)
 
     # Plot grey background for no data
@@ -445,8 +457,8 @@ def create_map_visualization_only(target_date, flood_points, provenance_indexed,
         y_max_flood = float(provenance_target.y.max())
 
         # Create 2D histogram (density map)
-        bins_x = 200
-        bins_y = 200
+        bins_x = HISTOGRAM_BINS
+        bins_y = HISTOGRAM_BINS
 
         if has_population:
             # Population-weighted histogram
@@ -466,7 +478,7 @@ def create_map_visualization_only(target_date, flood_points, provenance_indexed,
             )
 
         # Apply Gaussian smoothing
-        heatmap_smooth = gaussian_filter(heatmap.T, sigma=2)
+        heatmap_smooth = gaussian_filter(heatmap.T, sigma=GAUSSIAN_SIGMA)
 
         # Mask zeros
         heatmap_smooth = np.ma.masked_where(heatmap_smooth == 0, heatmap_smooth)
@@ -528,7 +540,6 @@ def create_map_visualization_only(target_date, flood_points, provenance_indexed,
     ax.grid(True, alpha=0.2, linestyle='--', linewidth=0.5, zorder=0)
 
     # Legend
-    from matplotlib.patches import Patch
     legend_elements = [Patch(facecolor='#808080', label='No data')]
     for i, date in enumerate(unique_dates):
         legend_elements.append(
@@ -563,11 +574,9 @@ def create_map_visualization_only(target_date, flood_points, provenance_indexed,
         print("="*80)
 
         try:
-            # Import for legend patches
-            from matplotlib.patches import Patch
-
-            # Use ADM3 for choropleth
-            adm_level = 3
+            # Get admin level from country config
+            country_config = get_country_config(iso3)
+            adm_level = country_config['choropleth_adm_level']
             gdf_admin = load_fieldmaps_parquet(iso3, adm_level=adm_level)
             print(f"Using ADM{adm_level} boundaries: {len(gdf_admin)} divisions")
 
@@ -618,8 +627,6 @@ def create_map_visualization_only(target_date, flood_points, provenance_indexed,
             # For very small values, use a classification scheme instead of continuous
             if max_pop > 0 and max_pop < 100:
                 # Use a categorical/binned approach for small values
-                from matplotlib.colors import BoundaryNorm, LinearSegmentedColormap
-
                 # Create bins: 0, 1-5, 5-10, 10-20, 20+
                 bins = [0, 1, 5, 10, 20, max_pop + 1]
                 norm = BoundaryNorm(bins, ncolors=256)
@@ -644,8 +651,6 @@ def create_map_visualization_only(target_date, flood_points, provenance_indexed,
                 )
             else:
                 # Use continuous scale with vmin=0 for larger populations
-                from matplotlib.colors import LinearSegmentedColormap
-
                 # Create custom colormap with white for 0
                 colors_list = ['white', '#ffffcc', '#ffeda0', '#fed976', '#feb24c', '#fd8d3c', '#fc4e2a', '#e31a1c', '#bd0026', '#800026']
                 cmap_custom = LinearSegmentedColormap.from_list('white_ylorrd', colors_list, N=256)
@@ -669,18 +674,14 @@ def create_map_visualization_only(target_date, flood_points, provenance_indexed,
             # Add ADM3 boundaries colored by data provenance (using exactextract - blazingly fast!)
             print("  Extracting modal provenance for ADM3 boundaries (exactextract)...")
 
-            # Map provenance index to colors (darker yellow for better visibility)
-            colors = ['#91cf60', '#f0c040', '#fc8d59'][:len(unique_dates)]
+            # Map provenance index to colors: oldest=red, newest=green
+            # Full palette: red, orange, yellow, green. Use rightmost colors based on # of dates
+            full_palette = ['#d73027', '#fc8d59', '#f0c040', '#91cf60']  # red, orange, yellow, green
+            colors = full_palette[-len(unique_dates):]  # Take last N colors (newest always green)
             date_to_color = {i: colors[i] for i in range(len(unique_dates))}
 
             # Write provenance raster to temp file for exactextract
             # exactextract needs a file path, not in-memory array
-            import tempfile
-            import rasterio
-            from rasterio.transform import from_bounds
-            import xarray as xr
-            import os
-
             # Get provenance as numpy array (handle both xarray and numpy)
             if isinstance(provenance_indexed, xr.DataArray):
                 prov_data = provenance_indexed.values.astype('int16')
@@ -780,9 +781,6 @@ def create_map_visualization_only(target_date, flood_points, provenance_indexed,
             # Add labels for top affected divisions (using adjustText to avoid overlaps)
             top_n = min(5, len(affected_divs_viz))
             if top_n > 0:
-                from adjustText import adjust_text
-                from matplotlib.patheffects import withStroke
-
                 top_affected = affected_divs_viz.nlargest(top_n, 'affected_pop')
                 texts = []
                 for idx, row in top_affected.iterrows():
@@ -866,8 +864,6 @@ def create_map(target_date, flood_filled, provenance_filled, stack_flood_max,
     iso3:
         ISO3 country code (default: JAM) - used for loading admin boundaries in choropleth
     """
-    from matplotlib.colors import LinearSegmentedColormap
-
     # Get country-specific legend placement
     country_config = get_country_config(iso3)
     legend_loc = country_config['legend_location']
@@ -970,9 +966,8 @@ def create_map(target_date, flood_filled, provenance_filled, stack_flood_max,
         try:
             # Check if using blob storage (ocha_stratus) - assume blob if not a local file path
             if not population_raster.startswith("/") and not population_raster.startswith("./"):
-                import ocha_stratus as stratus
-                import rioxarray
-                import xarray as xr
+                if stratus is None:
+                    raise ImportError("ocha_stratus is required for blob storage access")
 
                 print(f"  Accessing blob: {population_raster}")
 
@@ -985,10 +980,6 @@ def create_map(target_date, flood_filled, provenance_filled, stack_flood_max,
 
                 # Sample at flood point locations using xarray selection
                 # GHSL is 100m res (10,000 m²), GFM is 20m res (400 m²)
-                # Pixel area ratio = (100/20)² = 25
-                import math
-                PIXEL_AREA_RATIO = 25
-
                 total_affected_pop_raw = 0
                 total_affected_pop_adjusted_raw = 0
                 total_affected_pop_adjusted = 0
@@ -1009,7 +1000,7 @@ def create_map(target_date, flood_filled, provenance_filled, stack_flood_max,
                         total_affected_pop_raw += pop_val_raw
                         total_affected_pop_adjusted_raw += fp['population_adjusted_raw']
                         total_affected_pop_adjusted += fp['population_adjusted']
-                    except:
+                    except Exception as e:
                         fp['population_raw'] = 0
                         fp['population_adjusted_raw'] = 0
                         fp['population_adjusted'] = 0
@@ -1023,10 +1014,6 @@ def create_map(target_date, flood_filled, provenance_filled, stack_flood_max,
             else:
                 # Local file using rasterio
                 # GHSL is 100m res (10,000 m²), GFM is 20m res (400 m²)
-                # Pixel area ratio = (100/20)² = 25
-                import math
-                PIXEL_AREA_RATIO = 25
-
                 with rasterio.open(population_raster) as pop_src:
                     # Extract coordinates
                     coords = [(fp['lon'], fp['lat']) for fp in flood_points]
@@ -1059,9 +1046,7 @@ def create_map(target_date, flood_filled, provenance_filled, stack_flood_max,
                     print(f"  Average population per flood pixel (adjusted): {total_affected_pop_adjusted/len(flood_points):.2f}")
 
         except Exception as e:
-            print(f"  WARNING: Could not sample population raster: {e}")
-            print(f"  Falling back to flood pixel density")
-            population_raster = None  # Fall back to flood pixel density
+            raise RuntimeError(f"Could not sample population raster: {e}") from e
 
     # Create indexed provenance array
     date_to_idx = {date: i for i, date in enumerate(unique_dates)}
@@ -1084,8 +1069,8 @@ def create_map(target_date, flood_filled, provenance_filled, stack_flood_max,
     ax.set_facecolor('white')
     fig.patch.set_facecolor('white')
 
-    # Colors: oldest to most recent (red/orange -> yellow -> green)
-    colors = ['#fc8d59', '#f0c040', '#91cf60'][:len(unique_dates)]
+    # Colors: oldest to most recent (red -> orange -> yellow -> green)
+    colors = ['#d73027', '#fc8d59', '#f0c040', '#91cf60'][:len(unique_dates)]
     cmap_prov = ListedColormap(colors)
 
     # Plot grey background for no data
@@ -1146,8 +1131,8 @@ def create_map(target_date, flood_filled, provenance_filled, stack_flood_max,
         y_max_flood = float(provenance_target.y.max())
 
         # Create 2D histogram (density map)
-        bins_x = 200
-        bins_y = 200
+        bins_x = HISTOGRAM_BINS
+        bins_y = HISTOGRAM_BINS
 
         if has_population:
             # Population-weighted histogram
@@ -1167,7 +1152,7 @@ def create_map(target_date, flood_filled, provenance_filled, stack_flood_max,
             )
 
         # Apply Gaussian smoothing
-        heatmap_smooth = gaussian_filter(heatmap.T, sigma=2)
+        heatmap_smooth = gaussian_filter(heatmap.T, sigma=GAUSSIAN_SIGMA)
 
         # Mask zeros
         heatmap_smooth = np.ma.masked_where(heatmap_smooth == 0, heatmap_smooth)
@@ -1229,7 +1214,6 @@ def create_map(target_date, flood_filled, provenance_filled, stack_flood_max,
     ax.grid(True, alpha=0.2, linestyle='--', linewidth=0.5, zorder=0)
 
     # Legend
-    from matplotlib.patches import Patch
     legend_elements = [Patch(facecolor='#808080', label='No data')]
     for i, date in enumerate(unique_dates):
         legend_elements.append(
@@ -1264,11 +1248,9 @@ def create_map(target_date, flood_filled, provenance_filled, stack_flood_max,
         print("="*80)
 
         try:
-            # Import for legend patches
-            from matplotlib.patches import Patch
-
-            # Use ADM3 for choropleth
-            adm_level = 3
+            # Get admin level from country config
+            country_config = get_country_config(iso3)
+            adm_level = country_config['choropleth_adm_level']
             gdf_admin = load_fieldmaps_parquet(iso3, adm_level=adm_level)
             print(f"Using ADM{adm_level} boundaries: {len(gdf_admin)} divisions")
 
@@ -1322,8 +1304,6 @@ def create_map(target_date, flood_filled, provenance_filled, stack_flood_max,
             # For very small values, use a classification scheme instead of continuous
             if max_pop > 0 and max_pop < 100:
                 # Use a categorical/binned approach for small values
-                from matplotlib.colors import BoundaryNorm, LinearSegmentedColormap
-
                 # Create bins: 0, 1-5, 5-10, 10-20, 20+
                 bins = [0, 1, 5, 10, 20, max_pop + 1]
                 norm = BoundaryNorm(bins, ncolors=256)
@@ -1348,8 +1328,6 @@ def create_map(target_date, flood_filled, provenance_filled, stack_flood_max,
                 )
             else:
                 # Use continuous scale with vmin=0 for larger populations
-                from matplotlib.colors import LinearSegmentedColormap
-
                 # Create custom colormap with white for 0
                 colors_list = ['white', '#ffffcc', '#ffeda0', '#fed976', '#feb24c', '#fd8d3c', '#fc4e2a', '#e31a1c', '#bd0026', '#800026']
                 cmap_custom = LinearSegmentedColormap.from_list('white_ylorrd', colors_list, N=256)
@@ -1373,18 +1351,14 @@ def create_map(target_date, flood_filled, provenance_filled, stack_flood_max,
             # Add ADM3 boundaries colored by data provenance (using exactextract - blazingly fast!)
             print("  Extracting modal provenance for ADM3 boundaries (exactextract)...")
 
-            # Map provenance index to colors (darker yellow for better visibility)
-            colors = ['#91cf60', '#f0c040', '#fc8d59'][:len(unique_dates)]
+            # Map provenance index to colors: oldest=red, newest=green
+            # Full palette: red, orange, yellow, green. Use rightmost colors based on # of dates
+            full_palette = ['#d73027', '#fc8d59', '#f0c040', '#91cf60']  # red, orange, yellow, green
+            colors = full_palette[-len(unique_dates):]  # Take last N colors (newest always green)
             date_to_color = {i: colors[i] for i in range(len(unique_dates))}
 
             # Write provenance raster to temp file for exactextract
             # exactextract needs a file path, not in-memory array
-            import tempfile
-            import rasterio
-            from rasterio.transform import from_bounds
-            import xarray as xr
-            import os
-
             # Get provenance as numpy array (handle both xarray and numpy)
             if isinstance(provenance_indexed, xr.DataArray):
                 prov_data = provenance_indexed.values.astype('int16')
@@ -1484,9 +1458,6 @@ def create_map(target_date, flood_filled, provenance_filled, stack_flood_max,
             # Add labels for top affected divisions (using adjustText to avoid overlaps)
             top_n = min(5, len(affected_divs_viz))
             if top_n > 0:
-                from adjustText import adjust_text
-                from matplotlib.patheffects import withStroke
-
                 top_affected = affected_divs_viz.nlargest(top_n, 'affected_pop')
                 texts = []
                 for idx, row in top_affected.iterrows():
@@ -1600,6 +1571,12 @@ if __name__ == "__main__":
         choices=["latest", "cumulative"],
         help="'latest' = only use flood pixels from latest provenance (default), 'cumulative' = sum across all dates (conservative extent)"
     )
+    parser.add_argument(
+        "--output-dir",
+        type=str,
+        default="outputs/plots",
+        help="Directory for output files (default: outputs/plots)"
+    )
 
     args = parser.parse_args()
 
@@ -1609,5 +1586,6 @@ if __name__ == "__main__":
         args.iso3,
         args.cache_dir,
         use_cache=not args.no_cache,
-        flood_mode=args.flood_mode
+        flood_mode=args.flood_mode,
+        output_dir=args.output_dir
     )
