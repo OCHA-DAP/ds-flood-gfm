@@ -3,6 +3,8 @@ from fsspec.implementations.http import HTTPFileSystem
 from shapely import wkb
 import pandas as pd
 from pathlib import Path
+import numpy as np
+from matplotlib.colors import LinearSegmentedColormap
 
 
 def load_adm0_lowres():
@@ -332,3 +334,60 @@ def generate_cache_key(iso3, dates_list, population_raster, flood_mode="latest")
 
     # Combine into readable cache key
     return f"{iso3}_{dates_str}_{pop_str}_{flood_mode}"
+
+
+def generate_rdylgn_colors(n_colors):
+    """
+    Generate N evenly-distributed colors from ColorBrewer RdYlGn palette.
+
+    Uses ColorBrewer RdYlGn color sequence: Red -> Orange -> Yellow -> Green
+    Maps to observation provenance: oldest -> ... -> newest
+
+    Parameters
+    ----------
+    n_colors : int
+        Number of colors to generate (must be >= 2)
+
+    Returns
+    -------
+    list of str
+        List of hex color strings
+
+    Examples
+    --------
+    >>> generate_rdylgn_colors(2)
+    ['#d73027', '#91cf60']
+    >>> generate_rdylgn_colors(3)
+    ['#d73027', '#fee08b', '#91cf60']
+    >>> generate_rdylgn_colors(4)
+    ['#d73027', '#fc8d59', '#fee08b', '#91cf60']
+    """
+    if n_colors < 2:
+        raise ValueError("Must request at least 2 colors")
+
+    # ColorBrewer RdYlGn 5-class palette (good balance of detail)
+    # Red (oldest) -> Orange -> Yellow -> Light Green -> Green (newest)
+    rdylgn_palette = [
+        "#d73027",  # Red
+        "#fc8d59",  # Orange
+        "#fee08b",  # Yellow
+        "#d9ef8b",  # Light green
+        "#91cf60",  # Green
+    ]
+
+    if n_colors <= len(rdylgn_palette):
+        # Sample evenly from the discrete palette
+        indices = np.linspace(0, len(rdylgn_palette) - 1, n_colors, dtype=int)
+        return [rdylgn_palette[i] for i in indices]
+    else:
+        # For more colors than palette size, interpolate smoothly
+        cmap = LinearSegmentedColormap.from_list("RdYlGn", rdylgn_palette)
+        sample_positions = np.linspace(0, 1, n_colors)
+        colors = [cmap(pos) for pos in sample_positions]
+        # Convert RGBA tuples to hex
+        return [
+            "#{:02x}{:02x}{:02x}".format(
+                int(c[0] * 255), int(c[1] * 255), int(c[2] * 255)
+            )
+            for c in colors
+        ]

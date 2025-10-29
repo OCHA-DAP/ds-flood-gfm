@@ -45,19 +45,20 @@ from rasterio.transform import from_bounds
 import rioxarray
 import exactextract
 from adjustText import adjust_text
-
-try:
-    import ocha_stratus as stratus
-except ImportError:
-    stratus = None
+import ocha_stratus as stratus
 
 from ds_flood_gfm.geo_utils import (
     get_highest_admin_level,
     calculate_admin_population,
     load_fieldmaps_parquet,
-    generate_cache_key
+    generate_cache_key,
+    generate_rdylgn_colors,
 )
-from ds_flood_gfm.country_config import get_country_config, get_bbox, GHSL_RASTER_BLOB_PATH
+from ds_flood_gfm.country_config import (
+    get_country_config,
+    get_bbox,
+    GHSL_RASTER_BLOB_PATH,
+)
 
 # Constants
 PIXEL_AREA_RATIO = 25  # (100m GHSL pixel / 20m GFM pixel)² = (100/20)² = 25
@@ -65,68 +66,22 @@ HISTOGRAM_BINS = 200  # Number of bins for 2D histogram density maps
 GAUSSIAN_SIGMA = 2  # Sigma for Gaussian smoothing filter
 
 
-def generate_rdylgn_colors(n_colors):
-    """
-    Generate N evenly-distributed colors from ColorBrewer RdYlGn diverging palette.
-
-    Uses ColorBrewer RdYlGn color sequence: Red -> Orange -> Yellow -> Green
-    Maps to observation provenance: oldest -> ... -> newest
-
-    Parameters
-    ----------
-    n_colors : int
-        Number of colors to generate (must be >= 2)
-
-    Returns
-    -------
-    list of str
-        List of hex color strings
-
-    Examples
-    --------
-    >>> generate_rdylgn_colors(2)
-    ['#d73027', '#91cf60']
-    >>> generate_rdylgn_colors(3)
-    ['#d73027', '#fee08b', '#91cf60']
-    >>> generate_rdylgn_colors(4)
-    ['#d73027', '#fc8d59', '#fee08b', '#91cf60']
-    """
-    if n_colors < 2:
-        raise ValueError("Must request at least 2 colors")
-
-    # ColorBrewer RdYlGn 5-class palette (good balance of detail)
-    # Red (oldest) -> Orange -> Yellow -> Light Green -> Green (newest)
-    rdylgn_palette = [
-        '#d73027',  # Red
-        '#fc8d59',  # Orange
-        '#fee08b',  # Yellow
-        '#d9ef8b',  # Light green
-        '#91cf60'   # Green
-    ]
-
-    if n_colors <= len(rdylgn_palette):
-        # Sample evenly from the discrete palette
-        indices = np.linspace(0, len(rdylgn_palette) - 1, n_colors, dtype=int)
-        return [rdylgn_palette[i] for i in indices]
-    else:
-        # For more colors than palette size, interpolate smoothly
-        cmap = LinearSegmentedColormap.from_list('RdYlGn', rdylgn_palette)
-        sample_positions = np.linspace(0, 1, n_colors)
-        colors = [cmap(pos) for pos in sample_positions]
-        # Convert RGBA tuples to hex
-        return ['#{:02x}{:02x}{:02x}'.format(
-            int(c[0]*255), int(c[1]*255), int(c[2]*255)
-        ) for c in colors]
-
-
-def save_cache(cache_dir, cache_key, flood_points, provenance_indexed, provenance_target, unique_dates, metadata):
+def save_cache(
+    cache_dir,
+    cache_key,
+    flood_points,
+    provenance_indexed,
+    provenance_target,
+    unique_dates,
+    metadata,
+):
     """Save processed data to cache."""
     cache_path = Path(cache_dir) / cache_key
     cache_path.mkdir(parents=True, exist_ok=True)
 
     # Save flood points as GeoParquet
     if len(flood_points) > 0:
-        gdf_floods = gpd.GeoDataFrame(flood_points, crs='EPSG:4326')
+        gdf_floods = gpd.GeoDataFrame(flood_points, crs="EPSG:4326")
         gdf_floods.to_parquet(cache_path / "flood_points.parquet")
 
     # Save provenance raster as GeoTIFF
@@ -136,34 +91,34 @@ def save_cache(cache_dir, cache_key, flood_points, provenance_indexed, provenanc
         float(provenance_target.x.max()),
         float(provenance_target.y.max()),
         provenance_indexed.shape[1],
-        provenance_indexed.shape[0]
+        provenance_indexed.shape[0],
     )
 
     with rasterio.open(
         cache_path / "provenance.tif",
-        'w',
-        driver='GTiff',
+        "w",
+        driver="GTiff",
         height=provenance_indexed.shape[0],
         width=provenance_indexed.shape[1],
         count=1,
         dtype=provenance_indexed.dtype,
-        crs='EPSG:4326',
+        crs="EPSG:4326",
         transform=transform,
-        compress='lzw'
+        compress="lzw",
     ) as dst:
         dst.write(provenance_indexed, 1)
 
     # Save metadata as JSON
     metadata_serializable = {
-        'unique_dates': [str(d) for d in unique_dates],
-        'x_min': float(provenance_target.x.min()),
-        'x_max': float(provenance_target.x.max()),
-        'y_min': float(provenance_target.y.min()),
-        'y_max': float(provenance_target.y.max()),
-        **metadata
+        "unique_dates": [str(d) for d in unique_dates],
+        "x_min": float(provenance_target.x.min()),
+        "x_max": float(provenance_target.x.max()),
+        "y_min": float(provenance_target.y.min()),
+        "y_max": float(provenance_target.y.max()),
+        **metadata,
     }
 
-    with open(cache_path / "metadata.json", 'w') as f:
+    with open(cache_path / "metadata.json", "w") as f:
         json.dump(metadata_serializable, f, indent=2)
 
     print(f"\n✓ Saved cache to: {cache_path}")
@@ -184,17 +139,17 @@ def load_cache(cache_dir, cache_key):
     print(f"\n✓ Loading from cache: {cache_path}")
 
     # Load metadata
-    with open(cache_path / "metadata.json", 'r') as f:
+    with open(cache_path / "metadata.json", "r") as f:
         metadata = json.load(f)
 
     # Load flood points if they exist
     flood_points_file = cache_path / "flood_points.parquet"
     if flood_points_file.exists():
         gdf_floods = gpd.read_parquet(flood_points_file)
-        flood_points = gdf_floods.to_dict('records')
+        flood_points = gdf_floods.to_dict("records")
         # Restore geometry as Point objects
         for fp in flood_points:
-            fp['geometry'] = Point(fp['lon'], fp['lat'])
+            fp["geometry"] = Point(fp["lon"], fp["lat"])
     else:
         flood_points = []
 
@@ -203,17 +158,25 @@ def load_cache(cache_dir, cache_key):
         provenance_indexed = src.read(1)
 
     # Convert unique_dates back to datetime
-    unique_dates = [np.datetime64(d) for d in metadata['unique_dates']]
+    unique_dates = [np.datetime64(d) for d in metadata["unique_dates"]]
 
     return {
-        'flood_points': flood_points,
-        'provenance_indexed': provenance_indexed,
-        'unique_dates': unique_dates,
-        'metadata': metadata
+        "flood_points": flood_points,
+        "provenance_indexed": provenance_indexed,
+        "unique_dates": unique_dates,
+        "metadata": metadata,
     }
 
 
-def main(end_date_str, n_latest, iso3="JAM", cache_dir="data/cache", use_cache=True, flood_mode="latest", output_dir="outputs/plots"):
+def main(
+    end_date_str,
+    n_latest,
+    iso3="JAM",
+    cache_dir="data/cache",
+    use_cache=True,
+    flood_mode="latest",
+    output_dir="outputs/plots",
+):
     """
     Run flood provenance analysis using the N most recent observations before end_date.
 
@@ -245,11 +208,11 @@ def main(end_date_str, n_latest, iso3="JAM", cache_dir="data/cache", use_cache=T
 
     start_date_str = search_start_date.strftime("%Y-%m-%d")
 
-    print("="*80)
+    print("=" * 80)
     print(f"FLOOD PROVENANCE ANALYSIS: {iso3}")
     print(f"End date: {end_date_str}")
     print(f"Searching for {n_latest} most recent observations (looking back 15 days)")
-    print("="*80)
+    print("=" * 80)
 
     # Ensure output directory exists
     Path(output_dir).mkdir(parents=True, exist_ok=True)
@@ -281,7 +244,7 @@ def main(end_date_str, n_latest, iso3="JAM", cache_dir="data/cache", use_cache=T
     search = client.search(
         collections=["GFM"],
         intersects=aoi_geojson,
-        datetime=f"{start_date_str}/{end_date_str}"
+        datetime=f"{start_date_str}/{end_date_str}",
     )
     items = search.item_collection()
     print(f"Found {len(items)} STAC items (using intersects query)")
@@ -306,7 +269,9 @@ def main(end_date_str, n_latest, iso3="JAM", cache_dir="data/cache", use_cache=T
 
     # Select only the N most recent dates
     dates_to_use = all_dates[-n_latest:] if len(all_dates) >= n_latest else all_dates
-    print(f"Using {len(dates_to_use)} most recent dates: {[str(d) for d in dates_to_use]}")
+    print(
+        f"Using {len(dates_to_use)} most recent dates: {[str(d) for d in dates_to_use]}"
+    )
 
     # Convert to numpy datetime64 for cache key generation
     dates = np.array([np.datetime64(d) for d in dates_to_use])
@@ -322,29 +287,42 @@ def main(end_date_str, n_latest, iso3="JAM", cache_dir="data/cache", use_cache=T
             latest_date = str(dates[-1])[:10]
 
             # Reconstruct minimal objects for visualization
-            flood_points = cached_data['flood_points']
-            provenance_indexed = cached_data['provenance_indexed']
-            unique_dates = cached_data['unique_dates']
-            metadata = cached_data['metadata']
+            flood_points = cached_data["flood_points"]
+            provenance_indexed = cached_data["provenance_indexed"]
+            unique_dates = cached_data["unique_dates"]
+            metadata = cached_data["metadata"]
 
             # Create mock xarray for extent info
-            x_coords = np.linspace(metadata['x_min'], metadata['x_max'], provenance_indexed.shape[1])
-            y_coords = np.linspace(metadata['y_max'], metadata['y_min'], provenance_indexed.shape[0])
+            x_coords = np.linspace(
+                metadata["x_min"], metadata["x_max"], provenance_indexed.shape[1]
+            )
+            y_coords = np.linspace(
+                metadata["y_max"], metadata["y_min"], provenance_indexed.shape[0]
+            )
             provenance_target = xr.DataArray(
                 provenance_indexed,
-                coords={'y': y_coords, 'x': x_coords},
-                dims=['y', 'x']
+                coords={"y": y_coords, "x": x_coords},
+                dims=["y", "x"],
             )
 
             # Call visualization directly
             create_map_from_cache(
-                latest_date, flood_points, provenance_indexed, provenance_target,
-                unique_dates, gdf_aoi, gdf_admin1, output_dir, population_raster, iso3, flood_mode
+                latest_date,
+                flood_points,
+                provenance_indexed,
+                provenance_target,
+                unique_dates,
+                gdf_aoi,
+                gdf_admin1,
+                output_dir,
+                population_raster,
+                iso3,
+                flood_mode,
             )
 
-            print("\n" + "="*80)
+            print("\n" + "=" * 80)
             print("ANALYSIS COMPLETE (from cache)")
-            print("="*80)
+            print("=" * 80)
             return
     # ========== END CACHE CHECK ==========
 
@@ -352,15 +330,12 @@ def main(end_date_str, n_latest, iso3="JAM", cache_dir="data/cache", use_cache=T
     print("\n✗ Cache miss - building xarray stack...")
     print("Building xarray stack...")
     stack = stackstac.stack(
-        items,
-        epsg=4326,
-        chunksize=512  # 512×512 spatial chunks for memory efficiency
+        items, epsg=4326, chunksize=512  # 512×512 spatial chunks for memory efficiency
     )
     print(f"Stack created with chunks: {stack.chunks}")
     stack_flood = stack.sel(band="ensemble_flood_extent")
     stack_flood_clipped = stack_flood.sel(
-        x=slice(bbox[0], bbox[2]),
-        y=slice(bbox[3], bbox[1])
+        x=slice(bbox[0], bbox[2]), y=slice(bbox[3], bbox[1])
     )
 
     # Create daily composites
@@ -374,20 +349,24 @@ def main(end_date_str, n_latest, iso3="JAM", cache_dir="data/cache", use_cache=T
 
     # Create 'ever_has_data' mask (vectorized - single operation instead of loop)
     print("\nCreating 'ever_has_data' mask (vectorized)...")
-    ever_has_data = (~stack_flood_max.isnull()).any(dim='time')
+    ever_has_data = (~stack_flood_max.isnull()).any(dim="time")
 
     pixels_with_data = ever_has_data.sum().values
     pixels_no_data = (~ever_has_data).sum().values
     print(f"  Pixels with data: {pixels_with_data:,}")
     print(f"  Pixels without data: {pixels_no_data:,}")
-    print(f"  Coverage: {100 * pixels_with_data / (pixels_with_data + pixels_no_data):.1f}%")
+    print(
+        f"  Coverage: {100 * pixels_with_data / (pixels_with_data + pixels_no_data):.1f}%"
+    )
 
     # Track provenance (vectorized - NO LOOPS!)
     print("\nTracking provenance (vectorized)...")
     flood_filled = stack_flood_max.ffill(dim="time")
-    provenance_filled = stack_flood_max.time.where(
-        ~stack_flood_max.isnull()
-    ).ffill(dim="time").where(ever_has_data)
+    provenance_filled = (
+        stack_flood_max.time.where(~stack_flood_max.isnull())
+        .ffill(dim="time")
+        .where(ever_has_data)
+    )
 
     # Use the latest available date instead of the requested end_date
     latest_date = str(dates[-1])[:10]
@@ -405,27 +384,38 @@ def main(end_date_str, n_latest, iso3="JAM", cache_dir="data/cache", use_cache=T
         cache_dir,
         cache_key,
         flood_mode,
-        iso3
+        iso3,
     )
 
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("ANALYSIS COMPLETE")
-    print("="*80)
+    print("=" * 80)
 
 
-def create_map_from_cache(target_date, flood_points, provenance_indexed, provenance_target,
-                          unique_dates, gdf_aoi, gdf_admin1, output_dir, population_raster=None, iso3="JAM", flood_mode="latest"):
+def create_map_from_cache(
+    target_date,
+    flood_points,
+    provenance_indexed,
+    provenance_target,
+    unique_dates,
+    gdf_aoi,
+    gdf_admin1,
+    output_dir,
+    population_raster=None,
+    iso3="JAM",
+    flood_mode="latest",
+):
     """Create visualization from cached data (no processing - visualization only)."""
     print("Creating visualization from cached data...")
 
     # Get country-specific legend placement
     country_config = get_country_config(iso3)
-    legend_loc = country_config['legend_location']
+    legend_loc = country_config["legend_location"]
 
     # Create figure
     fig, ax = plt.subplots(1, 1, figsize=(12, 7))
-    ax.set_facecolor('white')
-    fig.patch.set_facecolor('white')
+    ax.set_facecolor("white")
+    fig.patch.set_facecolor("white")
 
     # Colors: oldest to most recent (red -> orange -> yellow -> green)
     colors = generate_rdylgn_colors(len(unique_dates))
@@ -435,17 +425,17 @@ def create_map_from_cache(target_date, flood_points, provenance_indexed, provena
     grey_layer = np.ones(provenance_indexed.shape) * 0.5
     ax.imshow(
         grey_layer,
-        cmap='Greys',
+        cmap="Greys",
         extent=[
             float(provenance_target.x.min()),
             float(provenance_target.x.max()),
             float(provenance_target.y.min()),
-            float(provenance_target.y.max())
+            float(provenance_target.y.max()),
         ],
-        origin='upper',
+        origin="upper",
         vmin=0,
         vmax=1,
-        zorder=1
+        zorder=1,
     )
 
     # Plot provenance
@@ -457,26 +447,30 @@ def create_map_from_cache(target_date, flood_points, provenance_indexed, provena
             float(provenance_target.x.min()),
             float(provenance_target.x.max()),
             float(provenance_target.y.min()),
-            float(provenance_target.y.max())
+            float(provenance_target.y.max()),
         ],
-        origin='upper',
-        interpolation='nearest',
+        origin="upper",
+        interpolation="nearest",
         vmin=0,
-        vmax=len(unique_dates)-1,
-        zorder=2
+        vmax=len(unique_dates) - 1,
+        zorder=2,
     )
 
     # Create flood density heatmap (population-weighted if available)
     if len(flood_points) > 0:
-        gdf_floods = gpd.GeoDataFrame(flood_points, crs='EPSG:4326')
+        gdf_floods = gpd.GeoDataFrame(flood_points, crs="EPSG:4326")
 
         # Check if we have population data
-        has_population = population_raster and 'population' in gdf_floods.columns
+        has_population = population_raster and "population" in gdf_floods.columns
 
         if has_population:
-            print(f"Creating AFFECTED POPULATION density heatmap from {len(gdf_floods)} points...")
+            print(
+                f"Creating AFFECTED POPULATION density heatmap from {len(gdf_floods)} points..."
+            )
         else:
-            print(f"Creating FLOOD PIXEL density heatmap from {len(gdf_floods)} points...")
+            print(
+                f"Creating FLOOD PIXEL density heatmap from {len(gdf_floods)} points..."
+            )
 
         # Extract coordinates
         x_coords = gdf_floods.geometry.x.values
@@ -494,19 +488,21 @@ def create_map_from_cache(target_date, flood_points, provenance_indexed, provena
 
         if has_population:
             # Population-weighted histogram
-            weights = gdf_floods['population'].values
+            weights = gdf_floods["population"].values
             heatmap, xedges, yedges = np.histogram2d(
-                x_coords, y_coords,
+                x_coords,
+                y_coords,
                 bins=[bins_x, bins_y],
                 range=[[x_min_flood, x_max_flood], [y_min_flood, y_max_flood]],
-                weights=weights
+                weights=weights,
             )
         else:
             # Simple pixel count histogram
             heatmap, xedges, yedges = np.histogram2d(
-                x_coords, y_coords,
+                x_coords,
+                y_coords,
                 bins=[bins_x, bins_y],
-                range=[[x_min_flood, x_max_flood], [y_min_flood, y_max_flood]]
+                range=[[x_min_flood, x_max_flood], [y_min_flood, y_max_flood]],
             )
 
         # Apply Gaussian smoothing
@@ -518,22 +514,24 @@ def create_map_from_cache(target_date, flood_points, provenance_indexed, provena
         # Colormap: purple for population, blue for flood pixels
         if has_population:
             # Purple colormap for population density
-            colors_density = ['#00000000', '#E8DAEF', '#BB8FCE', '#8E44AD', '#5B2C6F']
+            colors_density = ["#00000000", "#E8DAEF", "#BB8FCE", "#8E44AD", "#5B2C6F"]
         else:
             # Electric blue colormap for flood pixel density
-            colors_density = ['#00000000', '#00BFFF', '#0080FF', '#0040FF']
+            colors_density = ["#00000000", "#00BFFF", "#0080FF", "#0040FF"]
 
-        cmap_density = LinearSegmentedColormap.from_list('density', colors_density, N=100)
+        cmap_density = LinearSegmentedColormap.from_list(
+            "density", colors_density, N=100
+        )
 
         # Plot density heatmap
         im_density = ax.imshow(
             heatmap_smooth,
             extent=[x_min_flood, x_max_flood, y_min_flood, y_max_flood],
-            origin='lower',
+            origin="lower",
             cmap=cmap_density,
             alpha=0.7,
-            interpolation='bilinear',
-            zorder=4
+            interpolation="bilinear",
+            zorder=4,
         )
 
         # Add colorbar for density
@@ -542,15 +540,19 @@ def create_map_from_cache(target_date, flood_points, provenance_indexed, provena
         cbar = plt.colorbar(im_density, cax=cax)
 
         if has_population:
-            cbar.set_label('Affected Population Density', rotation=270, labelpad=20, fontsize=10)
+            cbar.set_label(
+                "Affected Population Density", rotation=270, labelpad=20, fontsize=10
+            )
             print(f"Plotted affected population density heatmap")
         else:
-            cbar.set_label('Flood Point Density', rotation=270, labelpad=20, fontsize=10)
+            cbar.set_label(
+                "Flood Point Density", rotation=270, labelpad=20, fontsize=10
+            )
             print(f"Plotted flood pixel density heatmap")
 
     # Add boundaries
-    gdf_aoi.boundary.plot(ax=ax, color='black', linewidth=1.5, alpha=0.8, zorder=5)
-    gdf_admin1.boundary.plot(ax=ax, color='black', linewidth=0.8, alpha=0.6, zorder=5)
+    gdf_aoi.boundary.plot(ax=ax, color="black", linewidth=1.5, alpha=0.8, zorder=5)
+    gdf_admin1.boundary.plot(ax=ax, color="black", linewidth=0.8, alpha=0.6, zorder=5)
 
     # Set extent
     x_min, x_max = float(provenance_target.x.min()), float(provenance_target.x.max())
@@ -564,15 +566,15 @@ def create_map_from_cache(target_date, flood_points, provenance_indexed, provena
     ax.set_title(
         f"Data Provenance Map - {target_date}\n(Latest observation date per pixel)",
         fontsize=14,
-        fontweight='bold',
-        pad=15
+        fontweight="bold",
+        pad=15,
     )
     ax.set_xlabel("Longitude", fontsize=11)
     ax.set_ylabel("Latitude", fontsize=11)
-    ax.grid(True, alpha=0.2, linestyle='--', linewidth=0.5, zorder=0)
+    ax.grid(True, alpha=0.2, linestyle="--", linewidth=0.5, zorder=0)
 
     # Legend
-    legend_elements = [Patch(facecolor='#808080', label='No data')]
+    legend_elements = [Patch(facecolor="#808080", label="No data")]
     for i, date in enumerate(unique_dates):
         legend_elements.append(
             Patch(facecolor=colors[i], label=str(pd.Timestamp(date))[:10])
@@ -580,81 +582,114 @@ def create_map_from_cache(target_date, flood_points, provenance_indexed, provena
 
     ax.legend(
         handles=legend_elements,
-        title='Latest Observation Date',
-        loc='upper right',
+        title="Latest Observation Date",
+        loc="upper right",
         fontsize=10,
         title_fontsize=11,
         framealpha=0.95,
-        edgecolor='black',
-        fancybox=False
+        edgecolor="black",
+        fancybox=False,
     )
 
     plt.tight_layout()
 
     # Save with descriptive filename
-    density_type = "population" if (population_raster and len(flood_points) > 0 and 'population' in gdf_floods.columns) else "flood"
-    output_filename = f"{iso3}_{density_type}_provenance_{target_date.replace('-', '')}.png"
+    density_type = (
+        "population"
+        if (
+            population_raster
+            and len(flood_points) > 0
+            and "population" in gdf_floods.columns
+        )
+        else "flood"
+    )
+    output_filename = (
+        f"{iso3}_{density_type}_provenance_{target_date.replace('-', '')}.png"
+    )
     output_path = f"{output_dir}/{output_filename}"
-    plt.savefig(output_path, dpi=150, bbox_inches='tight', facecolor='white')
+    plt.savefig(output_path, dpi=150, bbox_inches="tight", facecolor="white")
     print(f"\nSaved: {output_path}")
     plt.close()
 
     # ========== GENERATE CHOROPLETH (if population data available) ==========
-    if population_raster and len(flood_points) > 0 and 'population' in gdf_floods.columns:
-        print("\n" + "="*80)
+    if (
+        population_raster
+        and len(flood_points) > 0
+        and "population" in gdf_floods.columns
+    ):
+        print("\n" + "=" * 80)
         print("GENERATING CHOROPLETH MAP")
-        print("="*80)
+        print("=" * 80)
 
         try:
             # Get admin level from country config
             country_config = get_country_config(iso3)
-            adm_level = country_config['choropleth_adm_level']
-            gdf_admin = load_fieldmaps_parquet(iso3, adm_level=adm_level)
+            adm_level = country_config["choropleth_adm_level"]
+            gdf_admin = load_fieldmaps_parquet(
+                iso3, adm_level=adm_level, admin_source="blob"
+            )
             print(f"Using ADM{adm_level} boundaries: {len(gdf_admin)} divisions")
 
             # Load ADM1 for overlay
-            gdf_admin1_overlay = load_fieldmaps_parquet(iso3, adm_level=1)
+            gdf_admin1_overlay = load_fieldmaps_parquet(
+                iso3, adm_level=1, admin_source="blob"
+            )
             print(f"Loading ADM1 for overlay: {len(gdf_admin1_overlay)} divisions")
 
             # Calculate affected population by admin division
-            gdf_choropleth = calculate_admin_population(gdf_floods, gdf_admin, adm_level)
+            gdf_choropleth = calculate_admin_population(
+                gdf_floods, gdf_admin, adm_level
+            )
 
             # Separate unassigned pseudo-divisions for reporting (but exclude from visualization)
             adm_name_col = f"adm{adm_level}_name"
-            is_unassigned = gdf_choropleth[adm_name_col].str.contains('Unassigned', na=False)
+            is_unassigned = gdf_choropleth[adm_name_col].str.contains(
+                "Unassigned", na=False
+            )
             gdf_unassigned = gdf_choropleth[is_unassigned].copy()
             gdf_choropleth_viz = gdf_choropleth[~is_unassigned].copy()
 
             # Print summary (including unassigned)
-            affected_divs_viz = gdf_choropleth_viz[gdf_choropleth_viz['affected_pop'] > 0]
-            total_pop = gdf_choropleth['affected_pop'].sum()
-            print(f"Divisions with affected population: {len(affected_divs_viz)}/{len(gdf_choropleth_viz)}")
+            affected_divs_viz = gdf_choropleth_viz[
+                gdf_choropleth_viz["affected_pop"] > 0
+            ]
+            total_pop = gdf_choropleth["affected_pop"].sum()
+            print(
+                f"Divisions with affected population: {len(affected_divs_viz)}/{len(gdf_choropleth_viz)}"
+            )
             if len(gdf_unassigned) > 0:
-                unassigned_pop = gdf_unassigned['affected_pop'].sum()
-                print(f"  + {len(gdf_unassigned)} unassigned pseudo-divisions: {unassigned_pop:.0f} people")
+                unassigned_pop = gdf_unassigned["affected_pop"].sum()
+                print(
+                    f"  + {len(gdf_unassigned)} unassigned pseudo-divisions: {unassigned_pop:.0f} people"
+                )
             print(f"Total affected population: {total_pop:,.0f}")
 
             # Create choropleth figure
             fig, ax = plt.subplots(1, 1, figsize=(12, 10))
-            ax.set_facecolor('white')
-            fig.patch.set_facecolor('white')
+            ax.set_facecolor("white")
+            fig.patch.set_facecolor("white")
 
             # Find best available name column (fallback if adm_name is None)
             adm_name_col = f"adm{adm_level}_name"
 
             # Check if the primary name column has values, if not fallback to lower admin levels
             if gdf_choropleth_viz[adm_name_col].isna().all():
-                print(f"  Note: {adm_name_col} is empty, falling back to lower admin levels for labels")
+                print(
+                    f"  Note: {adm_name_col} is empty, falling back to lower admin levels for labels"
+                )
                 for fallback_level in range(adm_level - 1, 0, -1):
                     fallback_col = f"adm{fallback_level}_name"
-                    if fallback_col in gdf_choropleth_viz.columns and not gdf_choropleth_viz[fallback_col].isna().all():
+                    if (
+                        fallback_col in gdf_choropleth_viz.columns
+                        and not gdf_choropleth_viz[fallback_col].isna().all()
+                    ):
                         print(f"  Using {fallback_col} for labels")
                         adm_name_col = fallback_col
                         break
 
             # Plot choropleth with improved color scaling
             # Use vmin=0 and vmax=max_pop to ensure full color range is used
-            max_pop = gdf_choropleth_viz['affected_pop'].max()
+            max_pop = gdf_choropleth_viz["affected_pop"].max()
 
             # For very small values, use a classification scheme instead of continuous
             if max_pop > 0 and max_pop < 100:
@@ -664,43 +699,69 @@ def create_map_from_cache(target_date, flood_points, provenance_indexed, provena
                 norm = BoundaryNorm(bins, ncolors=256)
 
                 # Create custom colormap with white for 0
-                colors_list = ['white', '#ffffcc', '#ffeda0', '#fed976', '#feb24c', '#fd8d3c', '#fc4e2a', '#e31a1c', '#bd0026', '#800026']
-                cmap_custom = LinearSegmentedColormap.from_list('white_ylorrd', colors_list, N=256)
+                colors_list = [
+                    "white",
+                    "#ffffcc",
+                    "#ffeda0",
+                    "#fed976",
+                    "#feb24c",
+                    "#fd8d3c",
+                    "#fc4e2a",
+                    "#e31a1c",
+                    "#bd0026",
+                    "#800026",
+                ]
+                cmap_custom = LinearSegmentedColormap.from_list(
+                    "white_ylorrd", colors_list, N=256
+                )
 
                 gdf_choropleth_viz.plot(
-                    column='affected_pop',
+                    column="affected_pop",
                     ax=ax,
                     cmap=cmap_custom,
-                    edgecolor='#c0c0c0',  # Happy medium - darker grey, visible but not distracting
+                    edgecolor="#c0c0c0",  # Happy medium - darker grey, visible but not distracting
                     linewidth=0.15,
                     legend=True,
                     norm=norm,
                     legend_kwds={
-                        'label': 'Affected Population',
-                        'orientation': 'vertical',
-                        'shrink': 0.6
-                    }
+                        "label": "Affected Population",
+                        "orientation": "vertical",
+                        "shrink": 0.6,
+                    },
                 )
             else:
                 # Use continuous scale with vmin=0 for larger populations
                 # Create custom colormap with white for 0
-                colors_list = ['white', '#ffffcc', '#ffeda0', '#fed976', '#feb24c', '#fd8d3c', '#fc4e2a', '#e31a1c', '#bd0026', '#800026']
-                cmap_custom = LinearSegmentedColormap.from_list('white_ylorrd', colors_list, N=256)
+                colors_list = [
+                    "white",
+                    "#ffffcc",
+                    "#ffeda0",
+                    "#fed976",
+                    "#feb24c",
+                    "#fd8d3c",
+                    "#fc4e2a",
+                    "#e31a1c",
+                    "#bd0026",
+                    "#800026",
+                ]
+                cmap_custom = LinearSegmentedColormap.from_list(
+                    "white_ylorrd", colors_list, N=256
+                )
 
                 gdf_choropleth_viz.plot(
-                    column='affected_pop',
+                    column="affected_pop",
                     ax=ax,
                     cmap=cmap_custom,
-                    edgecolor='#c0c0c0',  # Happy medium - darker grey, visible but not distracting
+                    edgecolor="#c0c0c0",  # Happy medium - darker grey, visible but not distracting
                     linewidth=0.15,
                     legend=True,
                     vmin=0,
                     vmax=max_pop,
                     legend_kwds={
-                        'label': 'Affected Population',
-                        'orientation': 'vertical',
-                        'shrink': 0.6
-                    }
+                        "label": "Affected Population",
+                        "orientation": "vertical",
+                        "shrink": 0.6,
+                    },
                 )
 
             # Add ADM3 boundaries colored by data provenance (using exactextract - blazingly fast!)
@@ -714,26 +775,43 @@ def create_map_from_cache(target_date, flood_points, provenance_indexed, provena
             # exactextract needs a file path, not in-memory array
             # Get provenance as numpy array (handle both xarray and numpy)
             if isinstance(provenance_indexed, xr.DataArray):
-                prov_data = provenance_indexed.values.astype('int16')
-                x_min, x_max = float(provenance_indexed.x.min()), float(provenance_indexed.x.max())
-                y_min, y_max = float(provenance_indexed.y.min()), float(provenance_indexed.y.max())
+                prov_data = provenance_indexed.values.astype("int16")
+                x_min, x_max = float(provenance_indexed.x.min()), float(
+                    provenance_indexed.x.max()
+                )
+                y_min, y_max = float(provenance_indexed.y.min()), float(
+                    provenance_indexed.y.max()
+                )
             else:
                 # Already a numpy array (from cache)
-                prov_data = provenance_indexed.astype('int16')
+                prov_data = provenance_indexed.astype("int16")
                 # Get bounds from provenance_target
-                x_min, x_max = float(provenance_target.x.min()), float(provenance_target.x.max())
-                y_min, y_max = float(provenance_target.y.min()), float(provenance_target.y.max())
+                x_min, x_max = float(provenance_target.x.min()), float(
+                    provenance_target.x.max()
+                )
+                y_min, y_max = float(provenance_target.y.min()), float(
+                    provenance_target.y.max()
+                )
 
             # Create affine transform from coordinates
             height, width = prov_data.shape
             transform = from_bounds(x_min, y_min, x_max, y_max, width, height)
 
             # Write to temporary file
-            with tempfile.NamedTemporaryFile(suffix='.tif', delete=False) as tmp:
+            with tempfile.NamedTemporaryFile(suffix=".tif", delete=False) as tmp:
                 tmp_raster_path = tmp.name
 
-            with rasterio.open(tmp_raster_path, 'w', driver='GTiff', height=height, width=width,
-                             count=1, dtype='int16', crs='EPSG:4326', transform=transform) as dst:
+            with rasterio.open(
+                tmp_raster_path,
+                "w",
+                driver="GTiff",
+                height=height,
+                width=width,
+                count=1,
+                dtype="int16",
+                crs="EPSG:4326",
+                transform=transform,
+            ) as dst:
                 dst.write(prov_data, 1)
 
             # Use exactextract to get mode of provenance_indexed for each polygon
@@ -741,9 +819,9 @@ def create_map_from_cache(target_date, flood_points, provenance_indexed, provena
             modal_prov = exactextract.exact_extract(
                 tmp_raster_path,
                 gdf_admin,
-                ['mode'],
-                include_cols=[f'adm{adm_level}_id'],
-                output='pandas'
+                ["mode"],
+                include_cols=[f"adm{adm_level}_id"],
+                output="pandas",
             )
 
             # Clean up temp file
@@ -752,32 +830,38 @@ def create_map_from_cache(target_date, flood_points, provenance_indexed, provena
             # Map results to colors
             prov_colors = []
             for _, row in modal_prov.iterrows():
-                mode_val = row['mode']
+                mode_val = row["mode"]
                 if pd.isna(mode_val) or mode_val == -1:
-                    prov_colors.append('lightgray')
+                    prov_colors.append("lightgray")
                 else:
-                    prov_colors.append(date_to_color.get(int(mode_val), 'lightgray'))
+                    prov_colors.append(date_to_color.get(int(mode_val), "lightgray"))
 
-            gdf_admin['prov_color'] = prov_colors
+            gdf_admin["prov_color"] = prov_colors
 
             # Dissolve by provenance color to create one polygon per color group
             print("  Dissolving by provenance color...")
-            dissolved_provenance = gdf_admin.dissolve(by='prov_color', as_index=False)
+            dissolved_provenance = gdf_admin.dissolve(by="prov_color", as_index=False)
 
             # Create mapping from color back to date for legend
-            color_to_date = {color: unique_dates[i] for i, color in date_to_color.items()}
+            color_to_date = {
+                color: unique_dates[i] for i, color in date_to_color.items()
+            }
 
             # Plot no-data areas with grey fill (70% opacity)
-            no_data_polys = dissolved_provenance[dissolved_provenance['prov_color'] == 'lightgray']
+            no_data_polys = dissolved_provenance[
+                dissolved_provenance["prov_color"] == "lightgray"
+            ]
             if len(no_data_polys) > 0:
-                no_data_polys.plot(ax=ax, facecolor='lightgrey', edgecolor='none', alpha=0.7, zorder=1)
+                no_data_polys.plot(
+                    ax=ax, facecolor="lightgrey", edgecolor="none", alpha=0.7, zorder=1
+                )
 
             # Plot dissolved provenance boundaries (thick colored lines)
             legend_elements = []
 
             for idx, row in dissolved_provenance.iterrows():
-                color = row['prov_color']
-                if color != 'lightgray':  # Plot colored provenance zones
+                color = row["prov_color"]
+                if color != "lightgray":  # Plot colored provenance zones
                     gpd.GeoSeries([row.geometry]).boundary.plot(
                         ax=ax, edgecolor=color, linewidth=2.5, alpha=0.9, zorder=3
                     )
@@ -785,54 +869,83 @@ def create_map_from_cache(target_date, flood_points, provenance_indexed, provena
             # Build legend in chronological order (oldest to newest, top to bottom)
             # Sort dates and add legend entries in that order
             sorted_dates = sorted(unique_dates)
-            unique_dates_list = list(unique_dates)  # Convert numpy array to list for .index()
+            unique_dates_list = list(
+                unique_dates
+            )  # Convert numpy array to list for .index()
             for date in sorted_dates:
                 # Find which index this date corresponds to
                 date_idx = unique_dates_list.index(date)
                 color = date_to_color.get(date_idx)
                 if color:
                     date_str = str(date)[:10]
-                    legend_elements.append(Patch(facecolor='none', edgecolor=color, linewidth=2.5,
-                                                label=date_str))
+                    legend_elements.append(
+                        Patch(
+                            facecolor="none",
+                            edgecolor=color,
+                            linewidth=2.5,
+                            label=date_str,
+                        )
+                    )
 
             # Add no-data to legend
             if len(no_data_polys) > 0:
-                legend_elements.append(Patch(facecolor='lightgrey', alpha=0.7, edgecolor='none',
-                                            label='No data'))
+                legend_elements.append(
+                    Patch(
+                        facecolor="lightgrey",
+                        alpha=0.7,
+                        edgecolor="none",
+                        label="No data",
+                    )
+                )
 
             # Plot all ADM3 boundaries in light grey (happy medium)
-            gdf_admin.boundary.plot(ax=ax, edgecolor='#c0c0c0', linewidth=0.15, alpha=0.4, zorder=2)
+            gdf_admin.boundary.plot(
+                ax=ax, edgecolor="#c0c0c0", linewidth=0.15, alpha=0.4, zorder=2
+            )
 
             print(f"  Provenance boundaries (dissolved) and ADM3 borders plotted")
 
             # Add ADM1 boundaries on top (transparent fill, thicker lines)
-            gdf_admin1_overlay.plot(ax=ax, facecolor='none', edgecolor='black', linewidth=1.5, alpha=0.8)
+            gdf_admin1_overlay.plot(
+                ax=ax, facecolor="none", edgecolor="black", linewidth=1.5, alpha=0.8
+            )
 
             # Add labels for top affected divisions (using adjustText to avoid overlaps)
             top_n = min(5, len(affected_divs_viz))
             if top_n > 0:
-                top_affected = affected_divs_viz.nlargest(top_n, 'affected_pop')
+                top_affected = affected_divs_viz.nlargest(top_n, "affected_pop")
                 texts = []
                 for idx, row in top_affected.iterrows():
                     centroid = row.geometry.centroid
                     text = ax.text(
-                        centroid.x, centroid.y,
+                        centroid.x,
+                        centroid.y,
                         f"{row[adm_name_col]}\n({row['affected_pop']:.0f})",
                         fontsize=8,
-                        weight='bold',
-                        ha='center', va='center',
-                        color='black',
-                        path_effects=[withStroke(linewidth=3, foreground='white', alpha=0.7)]
+                        weight="bold",
+                        ha="center",
+                        va="center",
+                        color="black",
+                        path_effects=[
+                            withStroke(linewidth=3, foreground="white", alpha=0.7)
+                        ],
                     )
                     texts.append(text)
 
                 # Adjust text positions to avoid overlaps (like ggrepel!)
-                adjust_text(texts, ax=ax,
-                           arrowprops=dict(arrowstyle='->', color='black', lw=0.5, alpha=0.6))
+                adjust_text(
+                    texts,
+                    ax=ax,
+                    arrowprops=dict(arrowstyle="->", color="black", lw=0.5, alpha=0.6),
+                )
 
             # Set axis limits to match provenance target extent (with 2% buffer)
-            x_min, x_max = float(provenance_target.x.min()), float(provenance_target.x.max())
-            y_min, y_max = float(provenance_target.y.min()), float(provenance_target.y.max())
+            x_min, x_max = float(provenance_target.x.min()), float(
+                provenance_target.x.max()
+            )
+            y_min, y_max = float(provenance_target.y.min()), float(
+                provenance_target.y.max()
+            )
             x_buffer = (x_max - x_min) * 0.02
             y_buffer = (y_max - y_min) * 0.02
             ax.set_xlim(x_min - x_buffer, x_max + x_buffer)
@@ -844,8 +957,8 @@ def create_map_from_cache(target_date, flood_points, provenance_indexed, provena
                 f"Affected Population by Admin{adm_level} Division ({mode_label} Mode) - {target_date}\n"
                 f"Total: {total_pop:,.0f} people in {len(affected_divs_viz)} divisions",
                 fontsize=14,
-                fontweight='bold',
-                pad=15
+                fontweight="bold",
+                pad=15,
             )
             # Remove axis labels and tick labels for cleaner map
             ax.set_xlabel("")
@@ -853,19 +966,19 @@ def create_map_from_cache(target_date, flood_points, provenance_indexed, provena
             ax.set_xticklabels([])
             ax.set_yticklabels([])
             ax.tick_params(left=False, bottom=False)
-            ax.grid(True, alpha=0.2, linestyle='--', linewidth=0.5, zorder=0)
+            ax.grid(True, alpha=0.2, linestyle="--", linewidth=0.5, zorder=0)
 
             # Add provenance legend
             if legend_elements:
                 legend = ax.legend(
                     handles=legend_elements,
-                    title='Data Provenance',
+                    title="Data Provenance",
                     loc=legend_loc,  # From country config: JAM='lower left', HTI='upper left', CUB='lower right'
                     fontsize=9,
                     title_fontsize=10,
                     framealpha=0.85,  # Transparent white background (0=transparent, 1=opaque)
-                    facecolor='white',
-                    edgecolor='black'
+                    facecolor="white",
+                    edgecolor="black",
                 )
 
             plt.tight_layout()
@@ -874,7 +987,9 @@ def create_map_from_cache(target_date, flood_points, provenance_indexed, provena
             mode_suffix = "cumulative" if flood_mode == "cumulative" else "latest"
             choropleth_filename = f"{iso3}_population_{mode_suffix}_adm{adm_level}_{target_date.replace('-', '')}.png"
             choropleth_path = f"{output_dir}/{choropleth_filename}"
-            plt.savefig(choropleth_path, dpi=150, bbox_inches='tight', facecolor='white')
+            plt.savefig(
+                choropleth_path, dpi=150, bbox_inches="tight", facecolor="white"
+            )
             print(f"Saved: {choropleth_path}")
             plt.close()
 
@@ -882,8 +997,21 @@ def create_map_from_cache(target_date, flood_points, provenance_indexed, provena
             print(f"WARNING: Could not generate choropleth: {e}")
 
 
-def create_map_from_stac(target_date, flood_filled, provenance_filled, stack_flood_max,
-                         dates, gdf_aoi, gdf_admin1, output_dir, population_raster=None, cache_dir=None, cache_key=None, flood_mode="latest", iso3="JAM"):
+def create_map_from_stac(
+    target_date,
+    flood_filled,
+    provenance_filled,
+    stack_flood_max,
+    dates,
+    gdf_aoi,
+    gdf_admin1,
+    output_dir,
+    population_raster=None,
+    cache_dir=None,
+    cache_key=None,
+    flood_mode="latest",
+    iso3="JAM",
+):
     """Process STAC flood data, extract flood pixels, cache results, and create visualizations.
 
     This function:
@@ -930,7 +1058,7 @@ def create_map_from_stac(target_date, flood_filled, provenance_filled, stack_flo
     """
     # Get country-specific legend placement
     country_config = get_country_config(iso3)
-    legend_loc = country_config['legend_location']
+    legend_loc = country_config["legend_location"]
 
     # Extract data for target date
     # Use .compute() to load into memory (persist() would keep in distributed memory but requires dask.distributed)
@@ -967,7 +1095,7 @@ def create_map_from_stac(target_date, flood_filled, provenance_filled, stack_flo
             print(f"  {str(pd.Timestamp(date))[:10]}: {flood_count:,} flood pixels")
 
         # Vectorized union: find pixels where flood == 1 on ANY date
-        any_flooded = (stack_flood_computed == 1).any(dim='time').values
+        any_flooded = (stack_flood_computed == 1).any(dim="time").values
 
         # Extract coordinates efficiently (single operation)
         y_coords, x_coords = np.where(any_flooded)
@@ -977,15 +1105,17 @@ def create_map_from_stac(target_date, flood_filled, provenance_filled, stack_flo
         # Create flood points (using list comprehension for efficiency)
         flood_points = [
             {
-                'geometry': Point(x, y),
-                'date': 'cumulative',  # No single date - it's a union across all dates
-                'lon': x,
-                'lat': y
+                "geometry": Point(x, y),
+                "date": "cumulative",  # No single date - it's a union across all dates
+                "lon": x,
+                "lat": y,
             }
             for x, y in zip(x_geo, y_geo)
         ]
 
-        print(f"\nTotal unique flood pixels (cumulative across all dates): {len(flood_points):,}")
+        print(
+            f"\nTotal unique flood pixels (cumulative across all dates): {len(flood_points):,}"
+        )
 
     else:  # flood_mode == "latest"
         print("\nExtracting flood pixels (LATEST mode - by provenance date)...")
@@ -999,8 +1129,8 @@ def create_map_from_stac(target_date, flood_filled, provenance_filled, stack_flo
             original_flood = stack_flood_computed.sel(time=date)
 
             # Mask: provenance == date AND flood == 1
-            is_this_provenance = (provenance_target.values == date)
-            is_flooded = (original_flood.values == 1)
+            is_this_provenance = provenance_target.values == date
+            is_flooded = original_flood.values == 1
 
             flood_mask = is_this_provenance & is_flooded
             flood_count = np.sum(flood_mask)
@@ -1014,99 +1144,86 @@ def create_map_from_stac(target_date, flood_filled, provenance_filled, stack_flo
                 y_geo = provenance_target.y.values[y_coords]
 
                 for x, y in zip(x_geo, y_geo):
-                    flood_points.append({
-                        'geometry': Point(x, y),
-                        'date': str(pd.Timestamp(date))[:10],
-                        'lon': x,
-                        'lat': y
-                    })
+                    flood_points.append(
+                        {
+                            "geometry": Point(x, y),
+                            "date": str(pd.Timestamp(date))[:10],
+                            "lon": x,
+                            "lat": y,
+                        }
+                    )
 
-        print(f"\nTotal unique flood pixels (latest provenance only): {len(flood_points):,}")
+        print(
+            f"\nTotal unique flood pixels (latest provenance only): {len(flood_points):,}"
+        )
 
     # Sample population values at flood locations if raster provided
     if population_raster and len(flood_points) > 0:
         print(f"\nSampling population values from: {population_raster}")
         try:
-            # Check if using blob storage (ocha_stratus) - assume blob if not a local file path
-            if not population_raster.startswith("/") and not population_raster.startswith("./"):
-                if stratus is None:
-                    raise ImportError("ocha_stratus is required for blob storage access")
+            print(f"  Accessing blob: {population_raster}")
 
-                print(f"  Accessing blob: {population_raster}")
+            # Open blob COG directly (no "blob://" prefix needed)
+            da_pop = stratus.open_blob_cog(
+                population_raster, container_name="raster"
+            ).squeeze(drop=True)
 
-                # Open blob COG directly (no "blob://" prefix needed)
-                da_pop = stratus.open_blob_cog(population_raster, container_name='raster').squeeze(drop=True)
+            # Clip to country bbox for faster processing
+            min_x, min_y, max_x, max_y = gdf_aoi.total_bounds
+            da_pop_clip = da_pop.rio.clip_box(
+                minx=min_x, miny=min_y, maxx=max_x, maxy=max_y
+            )
 
-                # Clip to Jamaica bbox for faster processing
-                min_x, min_y, max_x, max_y = gdf_aoi.total_bounds
-                da_pop_clip = da_pop.rio.clip_box(minx=min_x, miny=min_y, maxx=max_x, maxy=max_y)
+            # Sample at flood point locations using xarray selection
+            # GHSL is 100m res (10,000 m²), GFM is 20m res (400 m²)
+            total_affected_pop_raw = 0
+            total_affected_pop_adjusted_raw = 0
+            total_affected_pop_adjusted = 0
+            for fp in flood_points:
+                lon, lat = fp["lon"], fp["lat"]
+                try:
+                    # Use sel with nearest neighbor
+                    pop_val_raw = float(
+                        da_pop_clip.sel(x=lon, y=lat, method="nearest").values
+                    )
+                    if np.isnan(pop_val_raw) or pop_val_raw < 0:
+                        pop_val_raw = 0
 
-                # Sample at flood point locations using xarray selection
-                # GHSL is 100m res (10,000 m²), GFM is 20m res (400 m²)
-                total_affected_pop_raw = 0
-                total_affected_pop_adjusted_raw = 0
-                total_affected_pop_adjusted = 0
-                for fp in flood_points:
-                    lon, lat = fp['lon'], fp['lat']
-                    try:
-                        # Use sel with nearest neighbor
-                        pop_val_raw = float(da_pop_clip.sel(x=lon, y=lat, method='nearest').values)
-                        if np.isnan(pop_val_raw) or pop_val_raw < 0:
-                            pop_val_raw = 0
+                    # Store all three population values
+                    fp["population_raw"] = (
+                        pop_val_raw  # Raw GHSL value (100m pixel = 10,000 m²)
+                    )
+                    fp["population_adjusted_raw"] = (
+                        pop_val_raw / PIXEL_AREA_RATIO
+                    )  # Fractional adjusted value
+                    fp["population_adjusted"] = math.ceil(
+                        fp["population_adjusted_raw"]
+                    )  # Round up to nearest integer
+                    fp["population"] = fp[
+                        "population_adjusted"
+                    ]  # Default to adjusted (integer)
 
-                        # Store all three population values
-                        fp['population_raw'] = pop_val_raw  # Raw GHSL value (100m pixel = 10,000 m²)
-                        fp['population_adjusted_raw'] = pop_val_raw / PIXEL_AREA_RATIO  # Fractional adjusted value
-                        fp['population_adjusted'] = math.ceil(fp['population_adjusted_raw'])  # Round up to nearest integer
-                        fp['population'] = fp['population_adjusted']  # Default to adjusted (integer)
+                    total_affected_pop_raw += pop_val_raw
+                    total_affected_pop_adjusted_raw += fp["population_adjusted_raw"]
+                    total_affected_pop_adjusted += fp["population_adjusted"]
+                except Exception as e:
+                    fp["population_raw"] = 0
+                    fp["population_adjusted_raw"] = 0
+                    fp["population_adjusted"] = 0
+                    fp["population"] = 0
 
-                        total_affected_pop_raw += pop_val_raw
-                        total_affected_pop_adjusted_raw += fp['population_adjusted_raw']
-                        total_affected_pop_adjusted += fp['population_adjusted']
-                    except Exception as e:
-                        fp['population_raw'] = 0
-                        fp['population_adjusted_raw'] = 0
-                        fp['population_adjusted'] = 0
-                        fp['population'] = 0
-
-                print(f"  Total affected population (raw GHSL values): {total_affected_pop_raw:,.1f}")
-                print(f"  Total affected population (adjusted raw): {total_affected_pop_adjusted_raw:,.2f}")
-                print(f"  Total affected population (adjusted, rounded up): {total_affected_pop_adjusted:,.0f}")
-                print(f"  Average population per flood pixel (adjusted): {total_affected_pop_adjusted/len(flood_points):.2f}")
-
-            else:
-                # Local file using rasterio
-                # GHSL is 100m res (10,000 m²), GFM is 20m res (400 m²)
-                with rasterio.open(population_raster) as pop_src:
-                    # Extract coordinates
-                    coords = [(fp['lon'], fp['lat']) for fp in flood_points]
-
-                    # Sample population raster at flood point locations
-                    pop_values = list(pop_src.sample(coords))
-
-                    # Add population to flood_points
-                    total_affected_pop_raw = 0
-                    total_affected_pop_adjusted_raw = 0
-                    total_affected_pop_adjusted = 0
-                    for i, fp in enumerate(flood_points):
-                        pop_val_raw = float(pop_values[i][0])
-                        if pop_val_raw < 0:  # Handle nodata values
-                            pop_val_raw = 0
-
-                        # Store all three population values
-                        fp['population_raw'] = pop_val_raw  # Raw GHSL value (100m pixel = 10,000 m²)
-                        fp['population_adjusted_raw'] = pop_val_raw / PIXEL_AREA_RATIO  # Fractional adjusted value
-                        fp['population_adjusted'] = math.ceil(fp['population_adjusted_raw'])  # Round up to nearest integer
-                        fp['population'] = fp['population_adjusted']  # Default to adjusted (integer)
-
-                        total_affected_pop_raw += pop_val_raw
-                        total_affected_pop_adjusted_raw += fp['population_adjusted_raw']
-                        total_affected_pop_adjusted += fp['population_adjusted']
-
-                    print(f"  Total affected population (raw GHSL values): {total_affected_pop_raw:,.1f}")
-                    print(f"  Total affected population (adjusted raw): {total_affected_pop_adjusted_raw:,.2f}")
-                    print(f"  Total affected population (adjusted, rounded up): {total_affected_pop_adjusted:,.0f}")
-                    print(f"  Average population per flood pixel (adjusted): {total_affected_pop_adjusted/len(flood_points):.2f}")
+            print(
+                f"  Total affected population (raw GHSL values): {total_affected_pop_raw:,.1f}"
+            )
+            print(
+                f"  Total affected population (adjusted raw): {total_affected_pop_adjusted_raw:,.2f}"
+            )
+            print(
+                f"  Total affected population (adjusted, rounded up): {total_affected_pop_adjusted:,.0f}"
+            )
+            print(
+                f"  Average population per flood pixel (adjusted): {total_affected_pop_adjusted/len(flood_points):.2f}"
+            )
 
         except Exception as e:
             raise RuntimeError(f"Could not sample population raster: {e}") from e
@@ -1120,17 +1237,30 @@ def create_map_from_stac(target_date, flood_filled, provenance_filled, stack_flo
     # ========== SAVE TO CACHE ==========
     if cache_dir and cache_key:
         metadata = {
-            'total_pixels': len(flood_points),
-            'provenance_breakdown': {str(pd.Timestamp(date))[:10]: int(np.sum(provenance_target.values == date)) for date in unique_dates},
-            'no_data_pixels': int(np.sum(pd.isna(provenance_target.values)))
+            "total_pixels": len(flood_points),
+            "provenance_breakdown": {
+                str(pd.Timestamp(date))[:10]: int(
+                    np.sum(provenance_target.values == date)
+                )
+                for date in unique_dates
+            },
+            "no_data_pixels": int(np.sum(pd.isna(provenance_target.values))),
         }
-        save_cache(cache_dir, cache_key, flood_points, provenance_indexed, provenance_target, unique_dates, metadata)
+        save_cache(
+            cache_dir,
+            cache_key,
+            flood_points,
+            provenance_indexed,
+            provenance_target,
+            unique_dates,
+            metadata,
+        )
     # ========== END SAVE CACHE ==========
 
     # Create figure
     fig, ax = plt.subplots(1, 1, figsize=(12, 7))
-    ax.set_facecolor('white')
-    fig.patch.set_facecolor('white')
+    ax.set_facecolor("white")
+    fig.patch.set_facecolor("white")
 
     # Colors: oldest to most recent (red -> orange -> yellow -> green)
     colors = generate_rdylgn_colors(len(unique_dates))
@@ -1140,17 +1270,17 @@ def create_map_from_stac(target_date, flood_filled, provenance_filled, stack_flo
     grey_layer = np.ones(provenance_indexed.shape) * 0.5
     ax.imshow(
         grey_layer,
-        cmap='Greys',
+        cmap="Greys",
         extent=[
             float(provenance_target.x.min()),
             float(provenance_target.x.max()),
             float(provenance_target.y.min()),
-            float(provenance_target.y.max())
+            float(provenance_target.y.max()),
         ],
-        origin='upper',
+        origin="upper",
         vmin=0,
         vmax=1,
-        zorder=1
+        zorder=1,
     )
 
     # Plot provenance
@@ -1162,26 +1292,30 @@ def create_map_from_stac(target_date, flood_filled, provenance_filled, stack_flo
             float(provenance_target.x.min()),
             float(provenance_target.x.max()),
             float(provenance_target.y.min()),
-            float(provenance_target.y.max())
+            float(provenance_target.y.max()),
         ],
-        origin='upper',
-        interpolation='nearest',
+        origin="upper",
+        interpolation="nearest",
         vmin=0,
-        vmax=len(unique_dates)-1,
-        zorder=2
+        vmax=len(unique_dates) - 1,
+        zorder=2,
     )
 
     # Create flood density heatmap (population-weighted if available)
     if len(flood_points) > 0:
-        gdf_floods = gpd.GeoDataFrame(flood_points, crs='EPSG:4326')
+        gdf_floods = gpd.GeoDataFrame(flood_points, crs="EPSG:4326")
 
         # Check if we have population data
-        has_population = population_raster and 'population' in gdf_floods.columns
+        has_population = population_raster and "population" in gdf_floods.columns
 
         if has_population:
-            print(f"Creating AFFECTED POPULATION density heatmap from {len(gdf_floods)} points...")
+            print(
+                f"Creating AFFECTED POPULATION density heatmap from {len(gdf_floods)} points..."
+            )
         else:
-            print(f"Creating FLOOD PIXEL density heatmap from {len(gdf_floods)} points...")
+            print(
+                f"Creating FLOOD PIXEL density heatmap from {len(gdf_floods)} points..."
+            )
 
         # Extract coordinates
         x_coords = gdf_floods.geometry.x.values
@@ -1199,19 +1333,21 @@ def create_map_from_stac(target_date, flood_filled, provenance_filled, stack_flo
 
         if has_population:
             # Population-weighted histogram
-            weights = gdf_floods['population'].values
+            weights = gdf_floods["population"].values
             heatmap, xedges, yedges = np.histogram2d(
-                x_coords, y_coords,
+                x_coords,
+                y_coords,
                 bins=[bins_x, bins_y],
                 range=[[x_min_flood, x_max_flood], [y_min_flood, y_max_flood]],
-                weights=weights
+                weights=weights,
             )
         else:
             # Simple pixel count histogram
             heatmap, xedges, yedges = np.histogram2d(
-                x_coords, y_coords,
+                x_coords,
+                y_coords,
                 bins=[bins_x, bins_y],
-                range=[[x_min_flood, x_max_flood], [y_min_flood, y_max_flood]]
+                range=[[x_min_flood, x_max_flood], [y_min_flood, y_max_flood]],
             )
 
         # Apply Gaussian smoothing
@@ -1223,22 +1359,24 @@ def create_map_from_stac(target_date, flood_filled, provenance_filled, stack_flo
         # Colormap: purple for population, blue for flood pixels
         if has_population:
             # Purple colormap for population density
-            colors_density = ['#00000000', '#E8DAEF', '#BB8FCE', '#8E44AD', '#5B2C6F']
+            colors_density = ["#00000000", "#E8DAEF", "#BB8FCE", "#8E44AD", "#5B2C6F"]
         else:
             # Electric blue colormap for flood pixel density
-            colors_density = ['#00000000', '#00BFFF', '#0080FF', '#0040FF']
+            colors_density = ["#00000000", "#00BFFF", "#0080FF", "#0040FF"]
 
-        cmap_density = LinearSegmentedColormap.from_list('density', colors_density, N=100)
+        cmap_density = LinearSegmentedColormap.from_list(
+            "density", colors_density, N=100
+        )
 
         # Plot density heatmap
         im_density = ax.imshow(
             heatmap_smooth,
             extent=[x_min_flood, x_max_flood, y_min_flood, y_max_flood],
-            origin='lower',
+            origin="lower",
             cmap=cmap_density,
             alpha=0.7,
-            interpolation='bilinear',
-            zorder=4
+            interpolation="bilinear",
+            zorder=4,
         )
 
         # Add colorbar for density
@@ -1247,15 +1385,19 @@ def create_map_from_stac(target_date, flood_filled, provenance_filled, stack_flo
         cbar = plt.colorbar(im_density, cax=cax)
 
         if has_population:
-            cbar.set_label('Affected Population Density', rotation=270, labelpad=20, fontsize=10)
+            cbar.set_label(
+                "Affected Population Density", rotation=270, labelpad=20, fontsize=10
+            )
             print(f"Plotted affected population density heatmap")
         else:
-            cbar.set_label('Flood Point Density', rotation=270, labelpad=20, fontsize=10)
+            cbar.set_label(
+                "Flood Point Density", rotation=270, labelpad=20, fontsize=10
+            )
             print(f"Plotted flood pixel density heatmap")
 
     # Add boundaries
-    gdf_aoi.boundary.plot(ax=ax, color='black', linewidth=1.5, alpha=0.8, zorder=5)
-    gdf_admin1.boundary.plot(ax=ax, color='black', linewidth=0.8, alpha=0.6, zorder=5)
+    gdf_aoi.boundary.plot(ax=ax, color="black", linewidth=1.5, alpha=0.8, zorder=5)
+    gdf_admin1.boundary.plot(ax=ax, color="black", linewidth=0.8, alpha=0.6, zorder=5)
 
     # Set extent
     x_min, x_max = float(provenance_target.x.min()), float(provenance_target.x.max())
@@ -1269,15 +1411,15 @@ def create_map_from_stac(target_date, flood_filled, provenance_filled, stack_flo
     ax.set_title(
         f"Data Provenance Map - {target_date}\n(Latest observation date per pixel)",
         fontsize=14,
-        fontweight='bold',
-        pad=15
+        fontweight="bold",
+        pad=15,
     )
     ax.set_xlabel("Longitude", fontsize=11)
     ax.set_ylabel("Latitude", fontsize=11)
-    ax.grid(True, alpha=0.2, linestyle='--', linewidth=0.5, zorder=0)
+    ax.grid(True, alpha=0.2, linestyle="--", linewidth=0.5, zorder=0)
 
     # Legend
-    legend_elements = [Patch(facecolor='#808080', label='No data')]
+    legend_elements = [Patch(facecolor="#808080", label="No data")]
     for i, date in enumerate(unique_dates):
         legend_elements.append(
             Patch(facecolor=colors[i], label=str(pd.Timestamp(date))[:10])
@@ -1285,84 +1427,117 @@ def create_map_from_stac(target_date, flood_filled, provenance_filled, stack_flo
 
     ax.legend(
         handles=legend_elements,
-        title='Latest Observation Date',
-        loc='upper right',
+        title="Latest Observation Date",
+        loc="upper right",
         fontsize=10,
         title_fontsize=11,
         framealpha=0.95,
-        edgecolor='black',
-        fancybox=False
+        edgecolor="black",
+        fancybox=False,
     )
 
     plt.tight_layout()
 
     # Save with descriptive filename
-    density_type = "population" if (population_raster and len(flood_points) > 0 and 'population' in gpd.GeoDataFrame(flood_points).columns) else "flood"
-    output_filename = f"{iso3}_{density_type}_provenance_{target_date.replace('-', '')}.png"
+    density_type = (
+        "population"
+        if (
+            population_raster
+            and len(flood_points) > 0
+            and "population" in gpd.GeoDataFrame(flood_points).columns
+        )
+        else "flood"
+    )
+    output_filename = (
+        f"{iso3}_{density_type}_provenance_{target_date.replace('-', '')}.png"
+    )
     output_path = f"{output_dir}/{output_filename}"
-    plt.savefig(output_path, dpi=150, bbox_inches='tight', facecolor='white')
+    plt.savefig(output_path, dpi=150, bbox_inches="tight", facecolor="white")
     print(f"\nSaved: {output_path}")
     plt.close()
 
     # ========== GENERATE CHOROPLETH (if population data available) ==========
-    if population_raster and len(flood_points) > 0 and 'population' in gpd.GeoDataFrame(flood_points).columns:
-        print("\n" + "="*80)
+    if (
+        population_raster
+        and len(flood_points) > 0
+        and "population" in gpd.GeoDataFrame(flood_points).columns
+    ):
+        print("\n" + "=" * 80)
         print("GENERATING CHOROPLETH MAP")
-        print("="*80)
+        print("=" * 80)
 
         try:
             # Get admin level from country config
             country_config = get_country_config(iso3)
-            adm_level = country_config['choropleth_adm_level']
-            gdf_admin = load_fieldmaps_parquet(iso3, adm_level=adm_level)
+            adm_level = country_config["choropleth_adm_level"]
+            gdf_admin = load_fieldmaps_parquet(
+                iso3, adm_level=adm_level, admin_source="blob"
+            )
             print(f"Using ADM{adm_level} boundaries: {len(gdf_admin)} divisions")
 
             # Load ADM1 for overlay
-            gdf_admin1_overlay = load_fieldmaps_parquet(iso3, adm_level=1)
+            gdf_admin1_overlay = load_fieldmaps_parquet(
+                iso3, adm_level=1, admin_source="blob"
+            )
             print(f"Loading ADM1 for overlay: {len(gdf_admin1_overlay)} divisions")
 
             # Create GeoDataFrame from flood points
-            gdf_floods = gpd.GeoDataFrame(flood_points, crs='EPSG:4326')
+            gdf_floods = gpd.GeoDataFrame(flood_points, crs="EPSG:4326")
 
             # Calculate affected population by admin division
-            gdf_choropleth = calculate_admin_population(gdf_floods, gdf_admin, adm_level)
+            gdf_choropleth = calculate_admin_population(
+                gdf_floods, gdf_admin, adm_level
+            )
 
             # Separate unassigned pseudo-divisions for reporting (but exclude from visualization)
             adm_name_col = f"adm{adm_level}_name"
-            is_unassigned = gdf_choropleth[adm_name_col].str.contains('Unassigned', na=False)
+            is_unassigned = gdf_choropleth[adm_name_col].str.contains(
+                "Unassigned", na=False
+            )
             gdf_unassigned = gdf_choropleth[is_unassigned].copy()
             gdf_choropleth_viz = gdf_choropleth[~is_unassigned].copy()
 
             # Print summary (including unassigned)
-            affected_divs_viz = gdf_choropleth_viz[gdf_choropleth_viz['affected_pop'] > 0]
-            total_pop = gdf_choropleth['affected_pop'].sum()
-            print(f"Divisions with affected population: {len(affected_divs_viz)}/{len(gdf_choropleth_viz)}")
+            affected_divs_viz = gdf_choropleth_viz[
+                gdf_choropleth_viz["affected_pop"] > 0
+            ]
+            total_pop = gdf_choropleth["affected_pop"].sum()
+            print(
+                f"Divisions with affected population: {len(affected_divs_viz)}/{len(gdf_choropleth_viz)}"
+            )
             if len(gdf_unassigned) > 0:
-                unassigned_pop = gdf_unassigned['affected_pop'].sum()
-                print(f"  + {len(gdf_unassigned)} unassigned pseudo-divisions: {unassigned_pop:.0f} people")
+                unassigned_pop = gdf_unassigned["affected_pop"].sum()
+                print(
+                    f"  + {len(gdf_unassigned)} unassigned pseudo-divisions: {unassigned_pop:.0f} people"
+                )
             print(f"Total affected population: {total_pop:,.0f}")
 
             # Create choropleth figure
             fig, ax = plt.subplots(1, 1, figsize=(12, 10))
-            ax.set_facecolor('white')
-            fig.patch.set_facecolor('white')
+            ax.set_facecolor("white")
+            fig.patch.set_facecolor("white")
 
             # Find best available name column (fallback if adm_name is None)
             adm_name_col = f"adm{adm_level}_name"
 
             # Check if the primary name column has values, if not fallback to lower admin levels
             if gdf_choropleth_viz[adm_name_col].isna().all():
-                print(f"  Note: {adm_name_col} is empty, falling back to lower admin levels for labels")
+                print(
+                    f"  Note: {adm_name_col} is empty, falling back to lower admin levels for labels"
+                )
                 for fallback_level in range(adm_level - 1, 0, -1):
                     fallback_col = f"adm{fallback_level}_name"
-                    if fallback_col in gdf_choropleth_viz.columns and not gdf_choropleth_viz[fallback_col].isna().all():
+                    if (
+                        fallback_col in gdf_choropleth_viz.columns
+                        and not gdf_choropleth_viz[fallback_col].isna().all()
+                    ):
                         print(f"  Using {fallback_col} for labels")
                         adm_name_col = fallback_col
                         break
 
             # Plot choropleth with improved color scaling
             # Use vmin=0 and vmax=max_pop to ensure full color range is used
-            max_pop = gdf_choropleth_viz['affected_pop'].max()
+            max_pop = gdf_choropleth_viz["affected_pop"].max()
 
             # For very small values, use a classification scheme instead of continuous
             if max_pop > 0 and max_pop < 100:
@@ -1372,43 +1547,69 @@ def create_map_from_stac(target_date, flood_filled, provenance_filled, stack_flo
                 norm = BoundaryNorm(bins, ncolors=256)
 
                 # Create custom colormap with white for 0
-                colors_list = ['white', '#ffffcc', '#ffeda0', '#fed976', '#feb24c', '#fd8d3c', '#fc4e2a', '#e31a1c', '#bd0026', '#800026']
-                cmap_custom = LinearSegmentedColormap.from_list('white_ylorrd', colors_list, N=256)
+                colors_list = [
+                    "white",
+                    "#ffffcc",
+                    "#ffeda0",
+                    "#fed976",
+                    "#feb24c",
+                    "#fd8d3c",
+                    "#fc4e2a",
+                    "#e31a1c",
+                    "#bd0026",
+                    "#800026",
+                ]
+                cmap_custom = LinearSegmentedColormap.from_list(
+                    "white_ylorrd", colors_list, N=256
+                )
 
                 gdf_choropleth_viz.plot(
-                    column='affected_pop',
+                    column="affected_pop",
                     ax=ax,
                     cmap=cmap_custom,
-                    edgecolor='#c0c0c0',  # Happy medium - darker grey, visible but not distracting
+                    edgecolor="#c0c0c0",  # Happy medium - darker grey, visible but not distracting
                     linewidth=0.15,
                     legend=True,
                     norm=norm,
                     legend_kwds={
-                        'label': 'Affected Population',
-                        'orientation': 'vertical',
-                        'shrink': 0.6
-                    }
+                        "label": "Affected Population",
+                        "orientation": "vertical",
+                        "shrink": 0.6,
+                    },
                 )
             else:
                 # Use continuous scale with vmin=0 for larger populations
                 # Create custom colormap with white for 0
-                colors_list = ['white', '#ffffcc', '#ffeda0', '#fed976', '#feb24c', '#fd8d3c', '#fc4e2a', '#e31a1c', '#bd0026', '#800026']
-                cmap_custom = LinearSegmentedColormap.from_list('white_ylorrd', colors_list, N=256)
+                colors_list = [
+                    "white",
+                    "#ffffcc",
+                    "#ffeda0",
+                    "#fed976",
+                    "#feb24c",
+                    "#fd8d3c",
+                    "#fc4e2a",
+                    "#e31a1c",
+                    "#bd0026",
+                    "#800026",
+                ]
+                cmap_custom = LinearSegmentedColormap.from_list(
+                    "white_ylorrd", colors_list, N=256
+                )
 
                 gdf_choropleth_viz.plot(
-                    column='affected_pop',
+                    column="affected_pop",
                     ax=ax,
                     cmap=cmap_custom,
-                    edgecolor='#c0c0c0',  # Happy medium - darker grey, visible but not distracting
+                    edgecolor="#c0c0c0",  # Happy medium - darker grey, visible but not distracting
                     linewidth=0.15,
                     legend=True,
                     vmin=0,
                     vmax=max_pop,
                     legend_kwds={
-                        'label': 'Affected Population',
-                        'orientation': 'vertical',
-                        'shrink': 0.6
-                    }
+                        "label": "Affected Population",
+                        "orientation": "vertical",
+                        "shrink": 0.6,
+                    },
                 )
 
             # Add ADM3 boundaries colored by data provenance (using exactextract - blazingly fast!)
@@ -1422,26 +1623,43 @@ def create_map_from_stac(target_date, flood_filled, provenance_filled, stack_flo
             # exactextract needs a file path, not in-memory array
             # Get provenance as numpy array (handle both xarray and numpy)
             if isinstance(provenance_indexed, xr.DataArray):
-                prov_data = provenance_indexed.values.astype('int16')
-                x_min, x_max = float(provenance_indexed.x.min()), float(provenance_indexed.x.max())
-                y_min, y_max = float(provenance_indexed.y.min()), float(provenance_indexed.y.max())
+                prov_data = provenance_indexed.values.astype("int16")
+                x_min, x_max = float(provenance_indexed.x.min()), float(
+                    provenance_indexed.x.max()
+                )
+                y_min, y_max = float(provenance_indexed.y.min()), float(
+                    provenance_indexed.y.max()
+                )
             else:
                 # Already a numpy array (from cache)
-                prov_data = provenance_indexed.astype('int16')
+                prov_data = provenance_indexed.astype("int16")
                 # Get bounds from provenance_target
-                x_min, x_max = float(provenance_target.x.min()), float(provenance_target.x.max())
-                y_min, y_max = float(provenance_target.y.min()), float(provenance_target.y.max())
+                x_min, x_max = float(provenance_target.x.min()), float(
+                    provenance_target.x.max()
+                )
+                y_min, y_max = float(provenance_target.y.min()), float(
+                    provenance_target.y.max()
+                )
 
             # Create affine transform from coordinates
             height, width = prov_data.shape
             transform = from_bounds(x_min, y_min, x_max, y_max, width, height)
 
             # Write to temporary file
-            with tempfile.NamedTemporaryFile(suffix='.tif', delete=False) as tmp:
+            with tempfile.NamedTemporaryFile(suffix=".tif", delete=False) as tmp:
                 tmp_raster_path = tmp.name
 
-            with rasterio.open(tmp_raster_path, 'w', driver='GTiff', height=height, width=width,
-                             count=1, dtype='int16', crs='EPSG:4326', transform=transform) as dst:
+            with rasterio.open(
+                tmp_raster_path,
+                "w",
+                driver="GTiff",
+                height=height,
+                width=width,
+                count=1,
+                dtype="int16",
+                crs="EPSG:4326",
+                transform=transform,
+            ) as dst:
                 dst.write(prov_data, 1)
 
             # Use exactextract to get mode of provenance_indexed for each polygon
@@ -1449,9 +1667,9 @@ def create_map_from_stac(target_date, flood_filled, provenance_filled, stack_flo
             modal_prov = exactextract.exact_extract(
                 tmp_raster_path,
                 gdf_admin,
-                ['mode'],
-                include_cols=[f'adm{adm_level}_id'],
-                output='pandas'
+                ["mode"],
+                include_cols=[f"adm{adm_level}_id"],
+                output="pandas",
             )
 
             # Clean up temp file
@@ -1460,32 +1678,38 @@ def create_map_from_stac(target_date, flood_filled, provenance_filled, stack_flo
             # Map results to colors
             prov_colors = []
             for _, row in modal_prov.iterrows():
-                mode_val = row['mode']
+                mode_val = row["mode"]
                 if pd.isna(mode_val) or mode_val == -1:
-                    prov_colors.append('lightgray')
+                    prov_colors.append("lightgray")
                 else:
-                    prov_colors.append(date_to_color.get(int(mode_val), 'lightgray'))
+                    prov_colors.append(date_to_color.get(int(mode_val), "lightgray"))
 
-            gdf_admin['prov_color'] = prov_colors
+            gdf_admin["prov_color"] = prov_colors
 
             # Dissolve by provenance color to create one polygon per color group
             print("  Dissolving by provenance color...")
-            dissolved_provenance = gdf_admin.dissolve(by='prov_color', as_index=False)
+            dissolved_provenance = gdf_admin.dissolve(by="prov_color", as_index=False)
 
             # Create mapping from color back to date for legend
-            color_to_date = {color: unique_dates[i] for i, color in date_to_color.items()}
+            color_to_date = {
+                color: unique_dates[i] for i, color in date_to_color.items()
+            }
 
             # Plot no-data areas with grey fill (70% opacity)
-            no_data_polys = dissolved_provenance[dissolved_provenance['prov_color'] == 'lightgray']
+            no_data_polys = dissolved_provenance[
+                dissolved_provenance["prov_color"] == "lightgray"
+            ]
             if len(no_data_polys) > 0:
-                no_data_polys.plot(ax=ax, facecolor='lightgrey', edgecolor='none', alpha=0.7, zorder=1)
+                no_data_polys.plot(
+                    ax=ax, facecolor="lightgrey", edgecolor="none", alpha=0.7, zorder=1
+                )
 
             # Plot dissolved provenance boundaries (thick colored lines)
             legend_elements = []
 
             for idx, row in dissolved_provenance.iterrows():
-                color = row['prov_color']
-                if color != 'lightgray':  # Plot colored provenance zones
+                color = row["prov_color"]
+                if color != "lightgray":  # Plot colored provenance zones
                     gpd.GeoSeries([row.geometry]).boundary.plot(
                         ax=ax, edgecolor=color, linewidth=2.5, alpha=0.9, zorder=3
                     )
@@ -1493,54 +1717,83 @@ def create_map_from_stac(target_date, flood_filled, provenance_filled, stack_flo
             # Build legend in chronological order (oldest to newest, top to bottom)
             # Sort dates and add legend entries in that order
             sorted_dates = sorted(unique_dates)
-            unique_dates_list = list(unique_dates)  # Convert numpy array to list for .index()
+            unique_dates_list = list(
+                unique_dates
+            )  # Convert numpy array to list for .index()
             for date in sorted_dates:
                 # Find which index this date corresponds to
                 date_idx = unique_dates_list.index(date)
                 color = date_to_color.get(date_idx)
                 if color:
                     date_str = str(date)[:10]
-                    legend_elements.append(Patch(facecolor='none', edgecolor=color, linewidth=2.5,
-                                                label=date_str))
+                    legend_elements.append(
+                        Patch(
+                            facecolor="none",
+                            edgecolor=color,
+                            linewidth=2.5,
+                            label=date_str,
+                        )
+                    )
 
             # Add no-data to legend
             if len(no_data_polys) > 0:
-                legend_elements.append(Patch(facecolor='lightgrey', alpha=0.7, edgecolor='none',
-                                            label='No data'))
+                legend_elements.append(
+                    Patch(
+                        facecolor="lightgrey",
+                        alpha=0.7,
+                        edgecolor="none",
+                        label="No data",
+                    )
+                )
 
             # Plot all ADM3 boundaries in light grey (happy medium)
-            gdf_admin.boundary.plot(ax=ax, edgecolor='#c0c0c0', linewidth=0.15, alpha=0.4, zorder=2)
+            gdf_admin.boundary.plot(
+                ax=ax, edgecolor="#c0c0c0", linewidth=0.15, alpha=0.4, zorder=2
+            )
 
             print(f"  Provenance boundaries (dissolved) and ADM3 borders plotted")
 
             # Add ADM1 boundaries on top (transparent fill, thicker lines)
-            gdf_admin1_overlay.plot(ax=ax, facecolor='none', edgecolor='black', linewidth=1.5, alpha=0.8)
+            gdf_admin1_overlay.plot(
+                ax=ax, facecolor="none", edgecolor="black", linewidth=1.5, alpha=0.8
+            )
 
             # Add labels for top affected divisions (using adjustText to avoid overlaps)
             top_n = min(5, len(affected_divs_viz))
             if top_n > 0:
-                top_affected = affected_divs_viz.nlargest(top_n, 'affected_pop')
+                top_affected = affected_divs_viz.nlargest(top_n, "affected_pop")
                 texts = []
                 for idx, row in top_affected.iterrows():
                     centroid = row.geometry.centroid
                     text = ax.text(
-                        centroid.x, centroid.y,
+                        centroid.x,
+                        centroid.y,
                         f"{row[adm_name_col]}\n({row['affected_pop']:.0f})",
                         fontsize=8,
-                        weight='bold',
-                        ha='center', va='center',
-                        color='black',
-                        path_effects=[withStroke(linewidth=3, foreground='white', alpha=0.7)]
+                        weight="bold",
+                        ha="center",
+                        va="center",
+                        color="black",
+                        path_effects=[
+                            withStroke(linewidth=3, foreground="white", alpha=0.7)
+                        ],
                     )
                     texts.append(text)
 
                 # Adjust text positions to avoid overlaps (like ggrepel!)
-                adjust_text(texts, ax=ax,
-                           arrowprops=dict(arrowstyle='->', color='black', lw=0.5, alpha=0.6))
+                adjust_text(
+                    texts,
+                    ax=ax,
+                    arrowprops=dict(arrowstyle="->", color="black", lw=0.5, alpha=0.6),
+                )
 
             # Set axis limits to match provenance target extent (with 2% buffer)
-            x_min, x_max = float(provenance_target.x.min()), float(provenance_target.x.max())
-            y_min, y_max = float(provenance_target.y.min()), float(provenance_target.y.max())
+            x_min, x_max = float(provenance_target.x.min()), float(
+                provenance_target.x.max()
+            )
+            y_min, y_max = float(provenance_target.y.min()), float(
+                provenance_target.y.max()
+            )
             x_buffer = (x_max - x_min) * 0.02
             y_buffer = (y_max - y_min) * 0.02
             ax.set_xlim(x_min - x_buffer, x_max + x_buffer)
@@ -1552,8 +1805,8 @@ def create_map_from_stac(target_date, flood_filled, provenance_filled, stack_flo
                 f"Affected Population by Admin{adm_level} Division ({mode_label} Mode) - {target_date}\n"
                 f"Total: {total_pop:,.0f} people in {len(affected_divs_viz)} divisions",
                 fontsize=14,
-                fontweight='bold',
-                pad=15
+                fontweight="bold",
+                pad=15,
             )
             # Remove axis labels and tick labels for cleaner map
             ax.set_xlabel("")
@@ -1561,19 +1814,19 @@ def create_map_from_stac(target_date, flood_filled, provenance_filled, stack_flo
             ax.set_xticklabels([])
             ax.set_yticklabels([])
             ax.tick_params(left=False, bottom=False)
-            ax.grid(True, alpha=0.2, linestyle='--', linewidth=0.5, zorder=0)
+            ax.grid(True, alpha=0.2, linestyle="--", linewidth=0.5, zorder=0)
 
             # Add provenance legend
             if legend_elements:
                 legend = ax.legend(
                     handles=legend_elements,
-                    title='Data Provenance',
+                    title="Data Provenance",
                     loc=legend_loc,  # From country config: JAM='lower left', HTI='upper left', CUB='lower right'
                     fontsize=9,
                     title_fontsize=10,
                     framealpha=0.85,  # Transparent white background (0=transparent, 1=opaque)
-                    facecolor='white',
-                    edgecolor='black'
+                    facecolor="white",
+                    edgecolor="black",
                 )
 
             plt.tight_layout()
@@ -1582,14 +1835,16 @@ def create_map_from_stac(target_date, flood_filled, provenance_filled, stack_flo
             mode_suffix = "cumulative" if flood_mode == "cumulative" else "latest"
             choropleth_filename = f"{iso3}_population_{mode_suffix}_adm{adm_level}_{target_date.replace('-', '')}.png"
             choropleth_path = f"{output_dir}/{choropleth_filename}"
-            plt.savefig(choropleth_path, dpi=150, bbox_inches='tight', facecolor='white')
+            plt.savefig(
+                choropleth_path, dpi=150, bbox_inches="tight", facecolor="white"
+            )
             print(f"Saved: {choropleth_path}")
             plt.close()
 
         except Exception as e:
             print(f"WARNING: Could not generate choropleth: {e}")
 
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
 
 
 if __name__ == "__main__":
@@ -1600,43 +1855,38 @@ if __name__ == "__main__":
         "--end-date",
         type=str,
         required=True,
-        help="End date in YYYY-MM-DD format (e.g., 2025-10-27 or 2024-07-15)"
+        help="End date in YYYY-MM-DD format (e.g., 2025-10-27 or 2024-07-15)",
     )
     parser.add_argument(
         "--n-latest",
         type=int,
         default=3,
-        help="Number of most recent observations to use (default: 3)"
+        help="Number of most recent observations to use (default: 3)",
     )
     parser.add_argument(
-        "--iso3",
-        type=str,
-        default="JAM",
-        help="ISO3 country code (default: JAM)"
+        "--iso3", type=str, default="JAM", help="ISO3 country code (default: JAM)"
     )
     parser.add_argument(
         "--cache-dir",
         type=str,
         default="data/cache",
-        help="Directory for caching processed data (default: data/cache)"
+        help="Directory for caching processed data (default: data/cache)",
     )
     parser.add_argument(
-        "--no-cache",
-        action="store_true",
-        help="Force recompute and bypass cache"
+        "--no-cache", action="store_true", help="Force recompute and bypass cache"
     )
     parser.add_argument(
         "--flood-mode",
         type=str,
         default="latest",
         choices=["latest", "cumulative"],
-        help="'latest' = only use flood pixels from latest provenance (default), 'cumulative' = sum across all dates (conservative extent)"
+        help="'latest' = only use flood pixels from latest provenance (default), 'cumulative' = sum across all dates (conservative extent)",
     )
     parser.add_argument(
         "--output-dir",
         type=str,
         default="outputs/plots",
-        help="Directory for output files (default: outputs/plots)"
+        help="Directory for output files (default: outputs/plots)",
     )
 
     args = parser.parse_args()
@@ -1648,5 +1898,5 @@ if __name__ == "__main__":
         args.cache_dir,
         use_cache=not args.no_cache,
         flood_mode=args.flood_mode,
-        output_dir=args.output_dir
+        output_dir=args.output_dir,
     )

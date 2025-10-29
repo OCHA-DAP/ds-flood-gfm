@@ -27,7 +27,11 @@ from datetime import datetime, timedelta
 import pystac_client
 
 # Import custom geo utils
-from ds_flood_gfm.geo_utils import load_admin_from_blob, generate_cache_key
+from ds_flood_gfm.geo_utils import (
+    load_admin_from_blob,
+    generate_cache_key,
+    generate_rdylgn_colors,
+)
 from ds_flood_gfm.country_config import get_bbox, GHSL_RASTER_BLOB_PATH
 
 # Constants
@@ -128,8 +132,8 @@ def create_flooded_area_choropleth(flood_points, provenance_indexed, transform, 
     # Extract modal provenance for admin boundaries using exactextract
     print(f"  Extracting modal provenance for ADM{adm_level} boundaries (exactextract)...")
 
-    # Map provenance index to colors (darker yellow for better visibility)
-    colors = ['#91cf60', '#f0c040', '#fc8d59'][:len(unique_dates)]
+    # Generate colors for provenance dates (oldest=red, newest=green)
+    colors = generate_rdylgn_colors(len(unique_dates))
     date_to_color = {i: colors[i] for i in range(len(unique_dates))}
 
     # Write provenance raster to temp file for exactextract
@@ -349,19 +353,29 @@ def main(end_date_str, n_latest, iso3="JAM", adm_level=3, output_dir="outputs/pl
     print(f"Looking for {n_latest} most recent observations")
     print("="*80)
 
-    # Query STAC to get available dates (same as script 02)
-    bbox = get_bbox(iso3)
+    # Query STAC to get available dates (MUST use same query method as script 02!)
+    # Load admin boundaries to get exact AOI geometry (same as script 02)
+    from ds_flood_gfm.geo_utils import load_fieldmaps_parquet
+    from shapely.geometry import mapping
+
+    print("\nLoading AOI geometry...")
+    gdf_aoi = load_fieldmaps_parquet(iso3, adm_level=1, admin_source="blob")
+    gdf_aoi = gdf_aoi.dissolve()  # Merge all admin1 into single country polygon
+
     stac_api = "https://stac.eodc.eu/api/v1"
     client = pystac_client.Client.open(stac_api)
 
-    # Simple bbox search to get dates
+    # Use intersects with actual geometry (SAME AS SCRIPT 02)
+    # This avoids false positives from bbox queries
+    aoi_geojson = mapping(gdf_aoi.geometry.iloc[0])
+
     search = client.search(
         collections=["GFM"],
-        bbox=bbox,
+        intersects=aoi_geojson,
         datetime=f"{start_date_str}/{end_date_str}"
     )
     items = search.item_collection()
-    print(f"\nFound {len(items)} STAC items")
+    print(f"Found {len(items)} STAC items (using intersects query)")
 
     # Extract unique dates
     all_dates_set = set()
