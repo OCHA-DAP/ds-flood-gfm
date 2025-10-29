@@ -165,7 +165,7 @@ def load_cache(cache_dir, cache_key):
     }
 
 
-def main(end_date_str, n_latest, iso3="JAM", population_raster=None, cache_dir="data/cache", use_cache=True, flood_mode="latest"):
+def main(end_date_str, n_latest, iso3="JAM", cache_dir="data/cache", use_cache=True, flood_mode="latest"):
     """
     Run flood provenance analysis using the N most recent observations before end_date.
 
@@ -177,12 +177,18 @@ def main(end_date_str, n_latest, iso3="JAM", population_raster=None, cache_dir="
         Number of most recent observations to use
     iso3 : str
         ISO3 country code (default: JAM for Jamaica)
-    population_raster : str, optional
-        Path to GHSL population raster. If provided, creates affected population density map.
+    cache_dir : str
+        Directory for caching processed data
+    use_cache : bool
+        Whether to use cached data if available
     flood_mode : str
         'latest' = only use flood pixels from latest provenance (default)
         'cumulative' = sum across all dates (conservative extent)
     """
+
+    # Import population raster constant
+    from ds_flood_gfm.country_config import GHSL_RASTER_BLOB_PATH
+    population_raster = GHSL_RASTER_BLOB_PATH
 
     # Parse dates - look back 15 days to find available data
     end_date = datetime.strptime(end_date_str, "%Y-%m-%d")
@@ -299,7 +305,12 @@ def main(end_date_str, n_latest, iso3="JAM", population_raster=None, cache_dir="
     # ========== STEP 3: Cache miss - build xarray stack (SLOW!) ==========
     print("\n✗ Cache miss - building xarray stack...")
     print("Building xarray stack...")
-    stack = stackstac.stack(items, epsg=4326)
+    stack = stackstac.stack(
+        items,
+        epsg=4326,
+        chunksize=512  # 512×512 spatial chunks for memory efficiency
+    )
+    print(f"Stack created with chunks: {stack.chunks}")
     stack_flood = stack.sel(band="ensemble_flood_extent")
     stack_flood_clipped = stack_flood.sel(
         x=slice(bbox[0], bbox[2]),
@@ -315,12 +326,9 @@ def main(end_date_str, n_latest, iso3="JAM", population_raster=None, cache_dir="
     # Filter stack to only selected dates
     stack_flood_max = stack_flood_max.sel(time=dates)
 
-    # Create 'ever_has_data' mask
-    print("\nCreating 'ever_has_data' mask...")
-    ever_has_data = xr.full_like(stack_flood_max.isel(time=0), fill_value=False, dtype=bool)
-    for i in range(len(dates)):
-        has_data_this_time = ~np.isnan(stack_flood_max.isel(time=i))
-        ever_has_data = ever_has_data | has_data_this_time
+    # Create 'ever_has_data' mask (vectorized - single operation instead of loop)
+    print("\nCreating 'ever_has_data' mask (vectorized)...")
+    ever_has_data = (~stack_flood_max.isnull()).any(dim='time')
 
     pixels_with_data = ever_has_data.sum().values
     pixels_no_data = (~ever_has_data).sum().values
@@ -865,6 +873,7 @@ def create_map(target_date, flood_filled, provenance_filled, stack_flood_max,
     legend_loc = country_config['legend_location']
 
     # Extract data for target date
+    # Use .compute() to load into memory (persist() would keep in distributed memory but requires dask.distributed)
     flood_target = flood_filled.sel(time=target_date).compute()
     provenance_target = provenance_filled.sel(time=target_date).compute()
 
@@ -923,9 +932,12 @@ def create_map(target_date, flood_filled, provenance_filled, stack_flood_max,
         print("\nExtracting flood pixels (LATEST mode - by provenance date)...")
         flood_points = []
 
+        # Compute all dates once outside loop to avoid redundant computation
+        stack_flood_computed = stack_flood_max.compute()
+
         for date in unique_dates:
-            # Get original flood data for this date
-            original_flood = stack_flood_max.sel(time=date).compute()
+            # Get original flood data for this date (no compute - just indexing)
+            original_flood = stack_flood_computed.sel(time=date)
 
             # Mask: provenance == date AND flood == 1
             is_this_provenance = (provenance_target.values == date)
@@ -1571,12 +1583,6 @@ if __name__ == "__main__":
         help="ISO3 country code (default: JAM)"
     )
     parser.add_argument(
-        "--population-raster",
-        type=str,
-        default=None,
-        help="Path to GHSL population raster for affected population density (optional)"
-    )
-    parser.add_argument(
         "--cache-dir",
         type=str,
         default="data/cache",
@@ -1601,7 +1607,6 @@ if __name__ == "__main__":
         args.end_date,
         args.n_latest,
         args.iso3,
-        args.population_raster,
         args.cache_dir,
         use_cache=not args.no_cache,
         flood_mode=args.flood_mode

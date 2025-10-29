@@ -6,11 +6,14 @@ This module provides configuration settings for different countries including:
 - Country names and ISO codes
 
 Usage:
-    from ds_flood_gfm.country_config import get_country_config
+    from ds_flood_gfm.country_config import get_country_config, GHSL_RASTER_BLOB_PATH
 
     config = get_country_config('JAM')
     bbox = config['bbox']
 """
+
+# GHSL population raster path in blob storage
+GHSL_RASTER_BLOB_PATH = 'ghsl/pop/GHS_POP_E2025_GLOBE_R2023A_4326_3ss_V1_0.tif'
 
 # Country configurations
 COUNTRY_CONFIGS = {
