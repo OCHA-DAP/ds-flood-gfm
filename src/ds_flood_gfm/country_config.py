@@ -21,6 +21,7 @@ COUNTRY_CONFIGS = {
         'bbox': [-78.3689286, 17.7055633, -76.1829608, 18.5251491],  # [min_lon, min_lat, max_lon, max_lat]
         'choropleth_adm_level': 3,  # Preferred admin level for choropleth maps
         'population_raster': 'ghsl/pop/GHS_POP_E2025_GLOBE_R2023A_4326_3ss_V1_0.tif',
+        'legend_location': 'lower left',  # Legend placement for choropleth maps
     },
     'HTI': {
         'name': 'Haiti',
@@ -29,6 +30,7 @@ COUNTRY_CONFIGS = {
         'bbox': [-74.5, 18.0, -71.6, 20.1],  # [min_lon, min_lat, max_lon, max_lat]
         'choropleth_adm_level': 3,
         'population_raster': 'ghsl/pop/GHS_POP_E2025_GLOBE_R2023A_4326_3ss_V1_0.tif',
+        'legend_location': 'upper left',  # Legend placement for choropleth maps
     },
     'CUB': {
         'name': 'Cuba',
@@ -37,6 +39,7 @@ COUNTRY_CONFIGS = {
         'bbox': [-85.0, 19.8, -74.0, 23.3],  # [min_lon, min_lat, max_lon, max_lat]
         'choropleth_adm_level': 2,  # Cuba may have different admin structure
         'population_raster': 'ghsl/pop/GHS_POP_E2025_GLOBE_R2023A_4326_3ss_V1_0.tif',
+        'legend_location': 'lower right',  # Legend placement for choropleth maps (default)
     },
 }
 

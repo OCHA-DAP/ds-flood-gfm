@@ -40,6 +40,7 @@ from pathlib import Path
 import json
 import exactextract
 from ds_flood_gfm.geo_utils import get_highest_admin_level, calculate_admin_population, load_fieldmaps_parquet
+from ds_flood_gfm.country_config import get_country_config
 
 
 def generate_cache_key(iso3, dates_list, population_raster, flood_mode="latest"):
@@ -365,13 +366,17 @@ def create_map_visualization_only(target_date, flood_points, provenance_indexed,
 
     print("Creating visualization from cached data...")
 
+    # Get country-specific legend placement
+    country_config = get_country_config(iso3)
+    legend_loc = country_config['legend_location']
+
     # Create figure
     fig, ax = plt.subplots(1, 1, figsize=(12, 7))
     ax.set_facecolor('white')
     fig.patch.set_facecolor('white')
 
-    # Colors: oldest to most recent (green -> darker yellow -> orange)
-    colors = ['#91cf60', '#f0c040', '#fc8d59'][:len(unique_dates)]
+    # Colors: oldest to most recent (red/orange -> yellow -> green)
+    colors = ['#fc8d59', '#f0c040', '#91cf60'][:len(unique_dates)]
     cmap_prov = ListedColormap(colors)
 
     # Plot grey background for no data
@@ -806,8 +811,12 @@ def create_map_visualization_only(target_date, flood_points, provenance_indexed,
                 fontweight='bold',
                 pad=15
             )
-            ax.set_xlabel("Longitude", fontsize=11)
-            ax.set_ylabel("Latitude", fontsize=11)
+            # Remove axis labels and tick labels for cleaner map
+            ax.set_xlabel("")
+            ax.set_ylabel("")
+            ax.set_xticklabels([])
+            ax.set_yticklabels([])
+            ax.tick_params(left=False, bottom=False)
             ax.grid(True, alpha=0.2, linestyle='--', linewidth=0.5, zorder=0)
 
             # Add provenance legend
@@ -815,10 +824,11 @@ def create_map_visualization_only(target_date, flood_points, provenance_indexed,
                 legend = ax.legend(
                     handles=legend_elements,
                     title='Data Provenance',
-                    loc='lower right',
+                    loc=legend_loc,  # From country config: JAM='lower left', HTI='upper left', CUB='lower right'
                     fontsize=9,
                     title_fontsize=10,
-                    framealpha=0.9,
+                    framealpha=0.85,  # Transparent white background (0=transparent, 1=opaque)
+                    facecolor='white',
                     edgecolor='black'
                 )
 
@@ -849,6 +859,10 @@ def create_map(target_date, flood_filled, provenance_filled, stack_flood_max,
         ISO3 country code (default: JAM) - used for loading admin boundaries in choropleth
     """
     from matplotlib.colors import LinearSegmentedColormap
+
+    # Get country-specific legend placement
+    country_config = get_country_config(iso3)
+    legend_loc = country_config['legend_location']
 
     # Extract data for target date
     flood_target = flood_filled.sel(time=target_date).compute()
@@ -1058,8 +1072,8 @@ def create_map(target_date, flood_filled, provenance_filled, stack_flood_max,
     ax.set_facecolor('white')
     fig.patch.set_facecolor('white')
 
-    # Colors: oldest to most recent (green -> darker yellow -> orange)
-    colors = ['#91cf60', '#f0c040', '#fc8d59'][:len(unique_dates)]
+    # Colors: oldest to most recent (red/orange -> yellow -> green)
+    colors = ['#fc8d59', '#f0c040', '#91cf60'][:len(unique_dates)]
     cmap_prov = ListedColormap(colors)
 
     # Plot grey background for no data
@@ -1497,8 +1511,12 @@ def create_map(target_date, flood_filled, provenance_filled, stack_flood_max,
                 fontweight='bold',
                 pad=15
             )
-            ax.set_xlabel("Longitude", fontsize=11)
-            ax.set_ylabel("Latitude", fontsize=11)
+            # Remove axis labels and tick labels for cleaner map
+            ax.set_xlabel("")
+            ax.set_ylabel("")
+            ax.set_xticklabels([])
+            ax.set_yticklabels([])
+            ax.tick_params(left=False, bottom=False)
             ax.grid(True, alpha=0.2, linestyle='--', linewidth=0.5, zorder=0)
 
             # Add provenance legend
@@ -1506,10 +1524,11 @@ def create_map(target_date, flood_filled, provenance_filled, stack_flood_max,
                 legend = ax.legend(
                     handles=legend_elements,
                     title='Data Provenance',
-                    loc='lower right',
+                    loc=legend_loc,  # From country config: JAM='lower left', HTI='upper left', CUB='lower right'
                     fontsize=9,
                     title_fontsize=10,
-                    framealpha=0.9,
+                    framealpha=0.85,  # Transparent white background (0=transparent, 1=opaque)
+                    facecolor='white',
                     edgecolor='black'
                 )
 
