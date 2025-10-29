@@ -65,6 +65,60 @@ HISTOGRAM_BINS = 200  # Number of bins for 2D histogram density maps
 GAUSSIAN_SIGMA = 2  # Sigma for Gaussian smoothing filter
 
 
+def generate_rdylgn_colors(n_colors):
+    """
+    Generate N evenly-distributed colors from ColorBrewer RdYlGn diverging palette.
+
+    Uses ColorBrewer RdYlGn color sequence: Red -> Orange -> Yellow -> Green
+    Maps to observation provenance: oldest -> ... -> newest
+
+    Parameters
+    ----------
+    n_colors : int
+        Number of colors to generate (must be >= 2)
+
+    Returns
+    -------
+    list of str
+        List of hex color strings
+
+    Examples
+    --------
+    >>> generate_rdylgn_colors(2)
+    ['#d73027', '#91cf60']
+    >>> generate_rdylgn_colors(3)
+    ['#d73027', '#fee08b', '#91cf60']
+    >>> generate_rdylgn_colors(4)
+    ['#d73027', '#fc8d59', '#fee08b', '#91cf60']
+    """
+    if n_colors < 2:
+        raise ValueError("Must request at least 2 colors")
+
+    # ColorBrewer RdYlGn 5-class palette (good balance of detail)
+    # Red (oldest) -> Orange -> Yellow -> Light Green -> Green (newest)
+    rdylgn_palette = [
+        '#d73027',  # Red
+        '#fc8d59',  # Orange
+        '#fee08b',  # Yellow
+        '#d9ef8b',  # Light green
+        '#91cf60'   # Green
+    ]
+
+    if n_colors <= len(rdylgn_palette):
+        # Sample evenly from the discrete palette
+        indices = np.linspace(0, len(rdylgn_palette) - 1, n_colors, dtype=int)
+        return [rdylgn_palette[i] for i in indices]
+    else:
+        # For more colors than palette size, interpolate smoothly
+        cmap = LinearSegmentedColormap.from_list('RdYlGn', rdylgn_palette)
+        sample_positions = np.linspace(0, 1, n_colors)
+        colors = [cmap(pos) for pos in sample_positions]
+        # Convert RGBA tuples to hex
+        return ['#{:02x}{:02x}{:02x}'.format(
+            int(c[0]*255), int(c[1]*255), int(c[2]*255)
+        ) for c in colors]
+
+
 def save_cache(cache_dir, cache_key, flood_points, provenance_indexed, provenance_target, unique_dates, metadata):
     """Save processed data to cache."""
     cache_path = Path(cache_dir) / cache_key
@@ -283,7 +337,7 @@ def main(end_date_str, n_latest, iso3="JAM", cache_dir="data/cache", use_cache=T
             )
 
             # Call visualization directly
-            create_map_visualization_only(
+            create_map_from_cache(
                 latest_date, flood_points, provenance_indexed, provenance_target,
                 unique_dates, gdf_aoi, gdf_admin1, output_dir, population_raster, iso3, flood_mode
             )
@@ -338,7 +392,7 @@ def main(end_date_str, n_latest, iso3="JAM", cache_dir="data/cache", use_cache=T
     # Use the latest available date instead of the requested end_date
     latest_date = str(dates[-1])[:10]
     print(f"\nCreating provenance + flood map for {latest_date} (latest available)...")
-    create_map(
+    create_map_from_stac(
         latest_date,
         flood_filled,
         provenance_filled,
@@ -359,8 +413,8 @@ def main(end_date_str, n_latest, iso3="JAM", cache_dir="data/cache", use_cache=T
     print("="*80)
 
 
-def create_map_visualization_only(target_date, flood_points, provenance_indexed, provenance_target,
-                                  unique_dates, gdf_aoi, gdf_admin1, output_dir, population_raster=None, iso3="JAM", flood_mode="latest"):
+def create_map_from_cache(target_date, flood_points, provenance_indexed, provenance_target,
+                          unique_dates, gdf_aoi, gdf_admin1, output_dir, population_raster=None, iso3="JAM", flood_mode="latest"):
     """Create visualization from cached data (no processing - visualization only)."""
     print("Creating visualization from cached data...")
 
@@ -374,7 +428,7 @@ def create_map_visualization_only(target_date, flood_points, provenance_indexed,
     fig.patch.set_facecolor('white')
 
     # Colors: oldest to most recent (red -> orange -> yellow -> green)
-    colors = ['#d73027', '#fc8d59', '#f0c040', '#91cf60'][:len(unique_dates)]
+    colors = generate_rdylgn_colors(len(unique_dates))
     cmap_prov = ListedColormap(colors)
 
     # Plot grey background for no data
@@ -653,9 +707,7 @@ def create_map_visualization_only(target_date, flood_points, provenance_indexed,
             print("  Extracting modal provenance for ADM3 boundaries (exactextract)...")
 
             # Map provenance index to colors: oldest=red, newest=green
-            # Full palette: red, orange, yellow, green. Use rightmost colors based on # of dates
-            full_palette = ['#d73027', '#fc8d59', '#f0c040', '#91cf60']  # red, orange, yellow, green
-            colors = full_palette[-len(unique_dates):]  # Take last N colors (newest always green)
+            colors = generate_rdylgn_colors(len(unique_dates))
             date_to_color = {i: colors[i] for i in range(len(unique_dates))}
 
             # Write provenance raster to temp file for exactextract
@@ -830,17 +882,51 @@ def create_map_visualization_only(target_date, flood_points, provenance_indexed,
             print(f"WARNING: Could not generate choropleth: {e}")
 
 
-def create_map(target_date, flood_filled, provenance_filled, stack_flood_max,
-               dates, gdf_aoi, gdf_admin1, output_dir, population_raster=None, cache_dir=None, cache_key=None, flood_mode="latest", iso3="JAM"):
-    """Create provenance + flood density map for target date.
+def create_map_from_stac(target_date, flood_filled, provenance_filled, stack_flood_max,
+                         dates, gdf_aoi, gdf_admin1, output_dir, population_raster=None, cache_dir=None, cache_key=None, flood_mode="latest", iso3="JAM"):
+    """Process STAC flood data, extract flood pixels, cache results, and create visualizations.
 
-    If population_raster is provided, creates affected population density instead of flood pixel density.
+    This function:
+    1. Extracts flood pixels from STAC xarray data based on provenance
+    2. Samples population values at flood locations (if population_raster provided)
+    3. Saves processed data to cache (flood points, provenance raster, metadata)
+    4. Creates provenance + density heatmap visualization
+    5. Creates affected population choropleth by admin division
 
-    flood_mode:
-        'latest' - Only extract flood pixels from their latest provenance date (default)
-        'cumulative' - Extract all flood pixels across all dates (conservative maximum extent)
-    iso3:
-        ISO3 country code (default: JAM) - used for loading admin boundaries in choropleth
+    Cache location: {cache_dir}/{cache_key}/ containing:
+        - flood_points.parquet: GeoDataFrame of flood pixel locations with population
+        - provenance.tif: Raster showing latest observation date per pixel
+        - metadata.json: Processing metadata (dates, pixel counts, etc.)
+
+    Parameters:
+    -----------
+    target_date : str
+        Target date for visualization (YYYY-MM-DD)
+    flood_filled : xr.DataArray
+        Forward-filled flood extent data
+    provenance_filled : xr.DataArray
+        Forward-filled provenance dates
+    stack_flood_max : xr.DataArray
+        Original flood stack (daily max composites)
+    dates : np.array
+        Array of observation dates
+    gdf_aoi : gpd.GeoDataFrame
+        Area of interest boundary
+    gdf_admin1 : gpd.GeoDataFrame
+        Admin1 boundaries for overlay
+    output_dir : str
+        Directory for output PNG files
+    population_raster : str, optional
+        Path to population raster (if None, creates flood pixel density instead)
+    cache_dir : str, optional
+        Base cache directory
+    cache_key : str, optional
+        Cache subdirectory key
+    flood_mode : str
+        'latest' = only use flood pixels from latest provenance (default)
+        'cumulative' = sum across all dates (conservative extent)
+    iso3 : str
+        ISO3 country code (default: JAM)
     """
     # Get country-specific legend placement
     country_config = get_country_config(iso3)
@@ -1048,7 +1134,7 @@ def create_map(target_date, flood_filled, provenance_filled, stack_flood_max,
     fig.patch.set_facecolor('white')
 
     # Colors: oldest to most recent (red -> orange -> yellow -> green)
-    colors = ['#d73027', '#fc8d59', '#f0c040', '#91cf60'][:len(unique_dates)]
+    colors = generate_rdylgn_colors(len(unique_dates))
     cmap_prov = ListedColormap(colors)
 
     # Plot grey background for no data
@@ -1330,9 +1416,7 @@ def create_map(target_date, flood_filled, provenance_filled, stack_flood_max,
             print("  Extracting modal provenance for ADM3 boundaries (exactextract)...")
 
             # Map provenance index to colors: oldest=red, newest=green
-            # Full palette: red, orange, yellow, green. Use rightmost colors based on # of dates
-            full_palette = ['#d73027', '#fc8d59', '#f0c040', '#91cf60']  # red, orange, yellow, green
-            colors = full_palette[-len(unique_dates):]  # Take last N colors (newest always green)
+            colors = generate_rdylgn_colors(len(unique_dates))
             date_to_color = {i: colors[i] for i in range(len(unique_dates))}
 
             # Write provenance raster to temp file for exactextract

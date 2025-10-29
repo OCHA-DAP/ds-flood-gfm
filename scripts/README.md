@@ -334,3 +334,13 @@ Potential improvements:
 ```
 
 what happens is that the STAC search returns 3 dates (2025-10-24, 2025-10-27, 2025-10-29) as the footprints intersect the AOI, but when building the xarray stack only 2 dates have actual flood data intersecting the AOI (2025-10-24, 2025-10-27). So the cache key is built with 3 dates but the actual data only has 2 dates. This causes confusion as the cache key indicates there should be 3 dates but the data only has 2. Causes confusion in provenance date colors as well.
+
+```bash
+source ~/.zshrc && uv run python scripts/02_generate_affected_population_choropleths.py \
+  --end-date 2025-10-29 \
+  --n-latest 4 \
+  --iso3 JAM \
+  --flood-mode latest
+  ```
+
+  mention that there are more than 1 timestamps per date and many images per date.
