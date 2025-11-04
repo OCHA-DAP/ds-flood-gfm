@@ -1,9 +1,3 @@
-"""Shared GFM Processing Utilities.
-
-Common functions for STAC querying, temporal compositing, and raster processing
-that can be used across multiple scripts in the GFM pipeline.
-"""
-
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -15,6 +9,9 @@ import pystac_client
 import stackstac
 import xarray as xr
 import pandas as pd
+from rasterio import features
+from shapely.geometry import shape
+import ocha_stratus as stratus
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +42,7 @@ def query_gfm_stac(bbox: list, end_date: str, n_search: int = 15) -> list:
 
     # Parse dates - look back 15 days to find available data
     _end_date = datetime.strptime(end_date, "%Y-%m-%d")
-    search_start_date = _end_date - timedelta(days=15)
+    search_start_date = _end_date - timedelta(days=n_search)
     start_date = search_start_date.strftime("%Y-%m-%d")
     
     search = client.search(
@@ -86,15 +83,15 @@ def create_flood_composite(items: list, bbox: list, n_latest: int, mode: str = "
         all_dates_set.add(dt.date())
 
     all_dates = sorted(list(all_dates_set))
-    print(f"All dates found: {[str(d) for d in all_dates]}")
+    logger.info(f"All dates found: {[str(d) for d in all_dates]}")
 
     if len(all_dates) == 0:
-        print("ERROR: No valid dates in STAC items!")
+        logger.info("ERROR: No valid dates in STAC items!")
         return
 
     # Select only the N most recent dates
     dates_to_use = all_dates[-n_latest:] if len(all_dates) >= n_latest else all_dates
-    print(
+    logger.info(
         f"Using {len(dates_to_use)} most recent dates: {[str(d) for d in dates_to_use]}"
     )
 
@@ -140,17 +137,13 @@ def create_flood_composite(items: list, bbox: list, n_latest: int, mode: str = "
     flood_pixels = int((flood_composite == 1).sum())
     logger.info(f"  Flood pixels: {flood_pixels:,}")
     
-    return flood_composite
+    return flood_composite, dates
 
 
 def raster_to_polygons(flood_raster: xr.DataArray) -> gpd.GeoDataFrame:
     """Convert flood raster to vector polygons."""
-    from rasterio import features
-    from shapely.geometry import shape
-    
     # Get raster properties  
     transform = flood_raster.rio.transform()
-    crs = flood_raster.rio.crs
     
     # Convert to binary array
     flood_array = (flood_raster.values == 1).astype(np.uint8)
@@ -166,10 +159,10 @@ def raster_to_polygons(flood_raster: xr.DataArray) -> gpd.GeoDataFrame:
     # Convert to geometries
     geometries = [shape(geom) for geom, value in shapes_gen if value == 1]
     
-    return gpd.GeoDataFrame({'geometry': geometries}, crs=crs)
+    return gpd.GeoDataFrame({'geometry': geometries}, crs="EPSG:4326")
 
 
-def export_polygons(gdf: gpd.GeoDataFrame, output_path: Path, formats: list = ['shapefile']) -> dict:
+def export_polygons(gdf: gpd.GeoDataFrame, output_path: Path, local=False, blob=True) -> dict:
     """Export polygons to vector formats.
     
     Parameters
@@ -178,52 +171,20 @@ def export_polygons(gdf: gpd.GeoDataFrame, output_path: Path, formats: list = ['
         GeoDataFrame to export.
     output_path : Path
         Output file path (without extension).
-    formats : list, default ['shapefile']
-        Output formats ('shapefile', 'geojson').
         
     Returns
     -------
     dict
         Mapping of format to output file path.
     """
-    output_path = Path(output_path)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    
-    output_files = {}
-    
-    for fmt in formats:
-        if fmt == 'shapefile':
-            file_path = output_path.with_suffix('.shp')
-            gdf.to_file(file_path, driver='ESRI Shapefile')
-            
-        elif fmt == 'geojson':
-            file_path = output_path.with_suffix('.geojson')
-            gdf.to_file(file_path, driver='GeoJSON')
-        
-        output_files[fmt] = file_path
-        file_size_mb = file_path.stat().st_size / (1024 * 1024)
-        logger.info(f"  Exported {fmt}: {file_path} ({file_size_mb:.1f} MB)")
-    
-    return output_files
 
-
-def calculate_date_range(end_date: str, n_latest: int) -> tuple[str, str]:
-    """Calculate start date from end date and number of days.
-    
-    Parameters
-    ----------
-    end_date : str
-        End date (YYYY-MM-DD).
-    n_latest : int
-        Number of days to look back.
-        
-    Returns
-    -------
-    tuple[str, str]
-        Start and end dates as YYYY-MM-DD strings.
-    """
-    end_dt = datetime.strptime(end_date, '%Y-%m-%d')
-    start_dt = end_dt - timedelta(days=n_latest)
-    start_date = start_dt.strftime('%Y-%m-%d')
-    
-    return start_date, end_date
+    if local:
+        output_path = Path(output_path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        file_path = output_path.with_suffix('.shp')
+        gdf.to_file(file_path, driver='ESRI Shapefile') 
+        logger.info(f"Output shapefile locally: {file_path}")
+    if blob:
+        blob_name = f"ds-flood-gfm/processed/polygon/{output_path}.shp.zip"
+        stratus.upload_shp_to_blob(gdf, blob_name)
+        logger.info(f"Output shapefile to blob: {blob_name}")
