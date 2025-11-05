@@ -26,14 +26,12 @@ def _():
 
     GHSL_RASTER_BLOB_PATH_3s = 'ghsl/pop/GHS_POP_E2025_GLOBE_R2023A_4326_3ss_V1_0.tif'
     GHSL_RASTER_BLOB_PATH_30s = 'ghsl/pop/GHS_POP_E2025_GLOBE_R2023A_4326_30ss_V1_0.tif'
-    JRC_FLOOD_ZIP = "ds-flood-gfm/jrc/JRC_20251031_CompositeFloodedAreas_CEMS_GLOFASGFM_UNOSAT.zip"
-    JRC_FLOOD_SHP = "Flooded/EMSR_GLOFAS_31102025.shp"
+    # JRC_FLOOD_ZIP = "ds-flood-gfm/processed/polygon/CUB_20251102_20251103_20251104_20251105_nopop_cumulative.shp.zip"
+    # JRC_FLOOD_SHP = "data/data.shp"
 
     _ = load_dotenv(find_dotenv(usecwd=True))
     return (
         GHSL_RASTER_BLOB_PATH_3s,
-        JRC_FLOOD_SHP,
-        JRC_FLOOD_ZIP,
         exactextract,
         geometry_mask,
         gpd,
@@ -51,6 +49,21 @@ def _(mo):
 
     mo.hstack([iso3_dropdown, adm_dropdown], justify="start")
     return adm_dropdown, iso3_dropdown
+
+
+@app.cell
+def _(iso3_dropdown, stratus):
+    cnt = stratus.get_container_client("projects")
+    blob_list = cnt.list_blobs(name_starts_with=f"ds-flood-gfm/processed/polygon/{iso3_dropdown.value}")
+    blob_names = [blob.name for blob in blob_list]
+    return (blob_names,)
+
+
+@app.cell
+def _(blob_names, mo):
+    shp_dropdown = mo.ui.dropdown(label="Select a shapefile", options=blob_names, value=blob_names[0])
+    shp_dropdown
+    return (shp_dropdown,)
 
 
 @app.cell
@@ -72,20 +85,19 @@ def _(mo, stratus):
 @app.cell
 def _(
     GHSL_RASTER_BLOB_PATH_3s,
-    JRC_FLOOD_SHP,
-    JRC_FLOOD_ZIP,
     adm_dropdown,
     get_adm,
     get_flood,
     get_pop,
     iso3_dropdown,
+    shp_dropdown,
 ):
     target_crs = 'EPSG:32618'  # UTM Zone 17N
 
     # Get the data
     gdf_adm = get_adm(iso3_dropdown.value, adm_dropdown.value)
     da_pop = get_pop(GHSL_RASTER_BLOB_PATH_3s)
-    gdf_flood = get_flood(JRC_FLOOD_ZIP, JRC_FLOOD_SHP)
+    gdf_flood = get_flood(shp_dropdown.value, "data/data.shp")
     return da_pop, gdf_adm, gdf_flood, target_crs
 
 
@@ -191,7 +203,7 @@ def _(adm_dropdown, buffer_dropdown, gdf_result, np, px):
 @app.cell
 def _(adm_dropdown, gdf_result, mo):
     adms = sorted(list(gdf_result[f"adm{adm_dropdown.value}_name"].unique()))
-    check_dropdown = mo.ui.dropdown(label="Select an admin to check", options=adms, value=adms[0])
+    check_dropdown = mo.ui.dropdown(label="Select an admin to check", options=adms, value=adms[0], searchable=True)
     check_dropdown
     return (check_dropdown,)
 
@@ -233,7 +245,7 @@ def _(
 
     if len(flood_clipped) > 0:
         flood_clipped.boundary.plot(ax=ax, color='red', linewidth=0.5, label='Flood Areas')
-    
+
         if buffer_distance > 0:
             gdf_flood_buffered.boundary.plot(ax=ax, color='orange', linewidth=0.5, linestyle='--', 
                                        label=f'Flood Buffer ({buffer_distance}m)')
@@ -242,6 +254,18 @@ def _(
     ax.legend()
     ax.set_axis_off()
     _fig
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(
+        r"""
+    ## Merge with the existing flood points parquet files to compare methods. 
+
+    Will fail if the cache is not on your local machine!
+    """
+    )
     return
 
 
@@ -255,7 +279,6 @@ def _(gpd, iso3_dropdown, target_crs):
 
     gdf_points = gpd.read_parquet(latest_cache_paths[iso3_dropdown.value])
     gdf_points = gdf_points.to_crs(target_crs)
-
     return (gdf_points,)
 
 
@@ -277,7 +300,19 @@ def _(adm_dropdown, gdf_points, gdf_result, gpd):
 
 @app.cell
 def _(adm_dropdown, gdf_result_summary):
-    gdf_result_summary[[f"adm{adm_dropdown.value}_name", f"adm{adm_dropdown.value}_id", "jrc_pop_exposed", "chd_gfm_pop_exposed"]].sort_values("chd_gfm_pop_exposed", ascending=False)
+    df_output = gdf_result_summary[[f"adm{adm_dropdown.value}_name", f"adm{adm_dropdown.value}_src", "jrc_pop_exposed", "chd_gfm_pop_exposed"]].sort_values("chd_gfm_pop_exposed", ascending=False)
+    return (df_output,)
+
+
+@app.cell
+def _(adm_dropdown, df_output, iso3_dropdown, stratus):
+    fname = f"{iso3_dropdown.value}_adm{adm_dropdown.value}_pop_exposure.csv"
+    stratus.upload_csv_to_blob(
+        df_output,
+        blob_name=f"ds-flood-gfm/processed/{fname}",
+        container_name="projects",
+        stage="dev"
+    )
     return
 
 
