@@ -194,7 +194,7 @@ def _(adm_dropdown, buffer_dropdown, gdf_result, np, px):
 
     # Update legend title and format number in title with comma
     fig.update_layout(
-        title=f"{total_exposed:,} people exposed to flooding: JRC Composite Layer ({buffer_dropdown.value}m buffer)",
+        title=f"{total_exposed:,} people exposed to flooding: GFM Layer ({buffer_dropdown.value}m buffer)",
         coloraxis_colorbar=dict(title="People Exposed")
     )
     return
