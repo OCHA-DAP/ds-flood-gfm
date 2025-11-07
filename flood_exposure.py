@@ -31,8 +31,12 @@ def _():
     import plotly.express as px
     import re
 
-    GHSL_RASTER_BLOB_PATH_3s = 'ghsl/pop/GHS_POP_E2025_GLOBE_R2023A_4326_3ss_V1_0.tif'
-    GHSL_RASTER_BLOB_PATH_30s = 'ghsl/pop/GHS_POP_E2025_GLOBE_R2023A_4326_30ss_V1_0.tif'
+    GHSL_RASTER_BLOB_PATH_3s = (
+        "ghsl/pop/GHS_POP_E2025_GLOBE_R2023A_4326_3ss_V1_0.tif"
+    )
+    GHSL_RASTER_BLOB_PATH_30s = (
+        "ghsl/pop/GHS_POP_E2025_GLOBE_R2023A_4326_30ss_V1_0.tif"
+    )
     # JRC_FLOOD_ZIP = "ds-flood-gfm/processed/polygon/CUB_20251102_20251103_20251104_20251105_nopop_cumulative.shp.zip"
     # JRC_FLOOD_SHP = "data/data.shp"
 
@@ -41,6 +45,7 @@ def _():
         GHSL_RASTER_BLOB_PATH_3s,
         exactextract,
         geometry_mask,
+        mcolors,
         np,
         plt,
         px,
@@ -57,8 +62,12 @@ def _(mo):
 
 @app.cell
 def _(mo):
-    iso3_dropdown = mo.ui.dropdown(label="Select a country", options=["CUB", "HTI", "JAM"], value="HTI")
-    adm_dropdown = mo.ui.dropdown(label="Select an admin level", options=[0, 1, 2, 3], value=3)
+    iso3_dropdown = mo.ui.dropdown(
+        label="Select a country", options=["CUB", "HTI", "JAM"], value="HTI"
+    )
+    adm_dropdown = mo.ui.dropdown(
+        label="Select an admin level", options=[0, 1, 2, 3], value=3
+    )
 
     mo.hstack([iso3_dropdown, adm_dropdown], justify="start")
     return adm_dropdown, iso3_dropdown
@@ -67,14 +76,18 @@ def _(mo):
 @app.cell
 def _(iso3_dropdown, stratus):
     cnt = stratus.get_container_client("projects")
-    blob_list = cnt.list_blobs(name_starts_with=f"ds-flood-gfm/processed/polygon/{iso3_dropdown.value}")
+    blob_list = cnt.list_blobs(
+        name_starts_with=f"ds-flood-gfm/processed/polygon/{iso3_dropdown.value}"
+    )
     blob_names = [blob.name for blob in blob_list]
     return (blob_names,)
 
 
 @app.cell
 def _(blob_names, mo):
-    shp_dropdown = mo.ui.dropdown(label="Select a shapefile", options=blob_names, value=blob_names[0])
+    shp_dropdown = mo.ui.dropdown(
+        label="Select a shapefile", options=blob_names, value=blob_names[0]
+    )
     shp_dropdown
     return (shp_dropdown,)
 
@@ -85,9 +98,13 @@ def _(mo, stratus):
     def get_adm(iso3, adm_level):
         return stratus.codab.load_codab_from_fieldmaps(iso3, adm_level)
 
+
     @mo.persistent_cache
     def get_pop(blob_path):
-        return stratus.open_blob_cog(blob_path, container_name="raster").squeeze(drop=True)
+        return stratus.open_blob_cog(blob_path, container_name="raster").squeeze(
+            drop=True
+        )
+
 
     @mo.persistent_cache
     def get_flood(flood_zip, flood_shp):
@@ -105,7 +122,7 @@ def _(
     iso3_dropdown,
     shp_dropdown,
 ):
-    target_crs = 'EPSG:32618'  # UTM Zone 17N
+    target_crs = "EPSG:32618"  # UTM Zone 17N
 
     # Get the data
     gdf_adm = get_adm(iso3_dropdown.value, adm_dropdown.value)
@@ -117,22 +134,31 @@ def _(
 @app.cell
 def _(da_pop, gdf_adm):
     minx, miny, maxx, maxy = gdf_adm.total_bounds
-    da_clip = da_pop.rio.clip_box(
-        minx=minx, miny=miny, maxx=maxx, maxy=maxy
-    )
+    da_clip = da_pop.rio.clip_box(minx=minx, miny=miny, maxx=maxx, maxy=maxy)
     return (da_clip,)
 
 
 @app.cell
 def _(mo):
-    buffer_dropdown = mo.ui.number(label="Select flood buffer distance (m)", start=0, stop=1000, value=100)
+    buffer_dropdown = mo.ui.number(
+        label="Select flood buffer distance (m)", start=0, stop=1000, value=100
+    )
     buffer_dropdown
     return (buffer_dropdown,)
 
 
 @app.cell
 def _(mo):
-    map_display = mo.ui.radio(label="Select data to display on map", options=["flood exposure", "flood polygons (original)", "flood polygons (buffered)"], value="flood exposure", inline=True)
+    map_display = mo.ui.radio(
+        label="Select data to display on map",
+        options=[
+            "flood exposure",
+            "flood polygons (original)",
+            "flood polygons (buffered)",
+        ],
+        value="flood exposure",
+        inline=True,
+    )
     map_display
     return (map_display,)
 
@@ -146,7 +172,7 @@ def _(buffer_dropdown, da_clip, gdf_adm, gdf_flood, target_crs):
 
     # Now clip and buffer the flood polygons
     bbox = gdf_adm_r.total_bounds  # [minx, miny, maxx, maxy]
-    gdf_flood_clipped = gdf_flood_r.cx[bbox[0]:bbox[2], bbox[1]:bbox[3]]
+    gdf_flood_clipped = gdf_flood_r.cx[bbox[0] : bbox[2], bbox[1] : bbox[3]]
     gdf_flood_buffered = gdf_flood_clipped.copy()
     gdf_flood_buffered.geometry = gdf_flood_buffered.buffer(buffer_dropdown.value)
     return da_clip_r, gdf_adm_r, gdf_flood_buffered, gdf_flood_clipped
@@ -160,7 +186,7 @@ def _(da_clip_r, gdf_flood_buffered, geometry_mask):
         gdf_flood_buffered.geometry,
         transform=da_clip_r.rio.transform(),
         invert=True,
-        out_shape=da_clip_r.shape
+        out_shape=da_clip_r.shape,
     )
 
     # Apply mask to population data - only keep population in flooded areas
@@ -174,24 +200,26 @@ def _(adm_dropdown, da_pop_flood, exactextract, gdf_adm_r, np):
     df_stats = exactextract.exact_extract(
         da_pop_flood,
         gdf_adm_r,
-        'sum',
+        "sum",
         include_cols=[f"adm{adm_dropdown.value}_id"],
-        output="pandas"
+        output="pandas",
     )
 
     gdf_result = gdf_adm_r.merge(df_stats)
     gdf_result["pop_exposed"] = np.ceil(gdf_result["sum"])
-    gdf_result[f"adm{adm_dropdown.value}_name"] = gdf_result[f"adm{adm_dropdown.value}_name"].fillna(gdf_result[f"adm{adm_dropdown.value}_id"])
+    gdf_result[f"adm{adm_dropdown.value}_name"] = gdf_result[
+        f"adm{adm_dropdown.value}_name"
+    ].fillna(gdf_result[f"adm{adm_dropdown.value}_id"])
     return (gdf_result,)
 
 
 @app.cell
 def _(re):
     def parse_flood_string(s):
-        dates = re.findall(r'(\d{4})(\d{2})(\d{2})', s)
+        dates = re.findall(r"(\d{4})(\d{2})(\d{2})", s)
         formatted_dates = [f"{year}-{month}-{day}" for year, month, day in dates]
         # Extract the descriptive word (assumes it's before .shp.zip)
-        match = re.search(r'_([a-zA-Z]+)\.shp\.zip$', s)
+        match = re.search(r"_([a-zA-Z]+)\.shp\.zip$", s)
         descriptor = match.group(1) if match else "flood"
         descriptor = descriptor.capitalize()
         return f"{descriptor} flooding: {', '.join(formatted_dates)}"
@@ -213,51 +241,69 @@ def _(
     total_exposed = int(gdf_result["pop_exposed"].sum())
 
     if map_display.value == "flood exposure":
-
         gdf_result.geometry = gdf_result.geometry.simplify(tolerance=50)
-        gdf_wgs84 = gdf_result.to_crs('EPSG:4326')
+        gdf_wgs84 = gdf_result.to_crs("EPSG:4326")
         bounds = gdf_wgs84.total_bounds
         # Calculate 90th percentile for color scale
         max_color_value = gdf_wgs84["pop_exposed"].quantile(0.99)
-    
+
         fig = px.choropleth_map(
             gdf_wgs84,
             geojson=gdf_wgs84.geometry,
             locations=gdf_wgs84.index,
-            color='pop_exposed',
-            color_continuous_scale=[(0, 'white'), (0.001, 'white'), (0.001, '#fee5d9'), (1, '#a50f15')],
+            color="pop_exposed",
+            color_continuous_scale=[
+                (0, "white"),
+                (0.001, "white"),
+                (0.001, "#fee5d9"),
+                (1, "#a50f15"),
+            ],
             range_color=[0, max_color_value],
             zoom=7,
-            center={'lat': (bounds[1] + bounds[3]) / 2, 'lon': (bounds[0] + bounds[2]) / 2},
+            center={
+                "lat": (bounds[1] + bounds[3]) / 2,
+                "lon": (bounds[0] + bounds[2]) / 2,
+            },
             hover_name=f"adm{adm_dropdown.value}_name",
-            hover_data={'pop_exposed': ':,.0f'},
-            height=600
+            hover_data={"pop_exposed": ":,.0f"},
+            height=600,
         )
-    
-        fig.update_traces(marker_line_color='lightgrey', marker_line_width=0.5)
-    
+
+        fig.update_traces(marker_line_color="lightgrey", marker_line_width=0.5)
+
         # Update legend title and format number in title with comma
         title = parse_flood_string(shp_dropdown.value)
-        title_suffix = f" - ({buffer_dropdown.value}m buffer) - {total_exposed} people"
-        fig.update_layout(
-            title = title + title_suffix
+        title_suffix = (
+            f" - ({buffer_dropdown.value}m buffer) - {total_exposed} people"
         )
+        fig.update_layout(title=title + title_suffix)
     else:
-        gdf_plot = gdf_flood_buffered if "buffered" in map_display.value else gdf_flood_clipped
+        gdf_plot = (
+            gdf_flood_buffered.copy()
+            if "buffered" in map_display.value
+            else gdf_flood_clipped.copy()
+        )
         gdf_plot.geometry = gdf_plot.geometry.simplify(tolerance=50)
-        gdf_wgs84 = gdf_plot.to_crs('EPSG:4326')
+        gdf_wgs84 = gdf_plot.to_crs("EPSG:4326")
         bounds = gdf_wgs84.total_bounds
-    
+
         fig = px.choropleth_map(
             gdf_wgs84,
             geojson=gdf_wgs84.geometry,
             locations=gdf_wgs84.index,
             zoom=7,
-            center={'lat': (bounds[1] + bounds[3]) / 2, 'lon': (bounds[0] + bounds[2]) / 2},
-            height=600
+            center={
+                "lat": (bounds[1] + bounds[3]) / 2,
+                "lon": (bounds[0] + bounds[2]) / 2,
+            },
+            height=600,
         )
         title = parse_flood_string(shp_dropdown.value)
-        title_suffix = f" - ({buffer_dropdown.value}m buffer)" if "buffered" in map_display.value else ""
+        title_suffix = (
+            f" - ({buffer_dropdown.value}m buffer)"
+            if "buffered" in map_display.value
+            else ""
+        )
         fig.update_layout(
             title=title + title_suffix,
         )
@@ -275,7 +321,12 @@ def _(mo):
 @app.cell
 def _(adm_dropdown, gdf_result, mo):
     adms = sorted(list(gdf_result[f"adm{adm_dropdown.value}_name"].unique()))
-    check_dropdown = mo.ui.dropdown(label="Select an admin to check", options=adms, value=adms[0], searchable=True)
+    check_dropdown = mo.ui.dropdown(
+        label="Select an admin to check",
+        options=adms,
+        value=adms[0],
+        searchable=True,
+    )
     check_dropdown
     return (check_dropdown,)
 
@@ -289,41 +340,63 @@ def _(
     gdf_flood_buffered,
     gdf_flood_clipped,
     gdf_result,
+    mcolors,
     mo,
+    np,
     plt,
 ):
-    # Create custom colormap with white for zero values
-    cmap = plt.cm.Blues.copy()
-    cmap.set_bad('white')  # Set NaN/masked values to white
-
     # Input parameters
     admin_name = check_dropdown.value
     buffer_distance = buffer_dropdown.value  # In meters, set to 0 for no buffer
 
     # Find and extract the admin region
-    admin_region = gdf_result[gdf_result[f"adm{adm_dropdown.value}_name"] == admin_name]
-
+    admin_region = gdf_result[
+        gdf_result[f"adm{adm_dropdown.value}_name"] == admin_name
+    ]
 
     # Clip to admin boundary
     pop_clipped = da_clip_r.rio.clip(admin_region.geometry, drop=True)
-    _bounds = admin_region.total_bounds
-    flood_clipped = gdf_flood_clipped.cx[_bounds[0]-1000:_bounds[2]+1000, _bounds[1]-1000:_bounds[3]+1000]
 
-    # Plot
+    _bounds = admin_region.total_bounds
+    flood_clipped = gdf_flood_clipped.cx[
+        _bounds[0] - 1000 : _bounds[2] + 1000,
+        _bounds[1] - 1000 : _bounds[3] + 1000,
+    ]
+
     _fig, ax = plt.subplots(figsize=(10, 8))
-    # Plot with custom vmin to make 0 appear white
-    pop_clipped.plot(ax=ax, cmap=cmap, alpha=0.7, add_colorbar=True, 
-                    vmin=0.1, vmax=500)  # vmin=0.1 makes 0 appear white
-    admin_region.boundary.plot(ax=ax, color='black', linewidth=2, label='Admin Boundary')
+
+    # Create custom colormap: white for zero, then Blues
+    colors = ['white'] + [plt.cm.Blues(i) for i in np.linspace(0.3, 1.0, 256)]
+    custom_cmap = mcolors.ListedColormap(colors)
+
+    pop_clipped_plot = pop_clipped.where(pop_clipped > 0)  # Mask zeros
+    pop_clipped_plot.plot(
+        ax=ax, 
+        cmap=custom_cmap, 
+        alpha=0.7, 
+        add_colorbar=True, 
+        norm=mcolors.LogNorm(vmin=0.1, vmax=pop_clipped.max())
+    )
+
+    admin_region.boundary.plot(
+        ax=ax, color="black", linewidth=2, label="Admin Boundary"
+    )
 
     if len(flood_clipped) > 0:
-        flood_clipped.boundary.plot(ax=ax, color='red', linewidth=0.5, label='Flood Areas')
+        flood_clipped.boundary.plot(
+            ax=ax, color="red", linewidth=0.5, label="Flood Areas"
+        )
 
         if buffer_distance > 0:
-            gdf_flood_buffered.boundary.plot(ax=ax, color='orange', linewidth=0.5, linestyle='--', 
-                                       label=f'Flood Buffer ({buffer_distance}m)')
+            gdf_flood_buffered.boundary.plot(
+                ax=ax,
+                color="orange",
+                linewidth=0.5,
+                linestyle="--",
+                label=f"Flood Buffer ({buffer_distance}m)",
+            )
 
-    ax.set_title(f'Flood Exposure Check: {admin_name}')
+    ax.set_title(f"Flood Exposure Check: {admin_name}")
     ax.legend()
     ax.set_axis_off()
 
@@ -346,7 +419,13 @@ def _(mo):
 
 @app.cell
 def _(adm_dropdown, gdf_result):
-    df_output = gdf_result[[f"adm{adm_dropdown.value}_name", f"adm{adm_dropdown.value}_src", "pop_exposed"]].sort_values("pop_exposed", ascending=False)
+    df_output = gdf_result[
+        [
+            f"adm{adm_dropdown.value}_name",
+            f"adm{adm_dropdown.value}_src",
+            "pop_exposed",
+        ]
+    ].sort_values("pop_exposed", ascending=False)
     return (df_output,)
 
 
@@ -360,14 +439,13 @@ def _(df_output):
 def _(buffer_dropdown, df_output, save_to_blob, shp_dropdown, stratus):
     if save_to_blob.value:
         # This is a bit ugly...
-        output_fname = f"{shp_dropdown.value.split("/")[-1].split(".")[0].replace('_nopop', '')}_b{buffer_dropdown.value}.csv"
+        output_fname = f"{shp_dropdown.value.split('/')[-1].split('.')[0].replace('_nopop', '')}_b{buffer_dropdown.value}.csv"
         stratus.upload_csv_to_blob(
             df_output,
             blob_name=f"ds-flood-gfm/processed/exposed_population/{output_fname}",
             container_name="projects",
-            stage="dev"
+            stage="dev",
         )
-    
     return
 
 
