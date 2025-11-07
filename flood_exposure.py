@@ -169,7 +169,7 @@ def _(da_clip_r, gdf_flood_buffered, geometry_mask):
 
 
 @app.cell
-def _(adm_dropdown, da_pop_flood, exactextract, gdf_adm_r):
+def _(adm_dropdown, da_pop_flood, exactextract, gdf_adm_r, np):
     # Use exactextract for zonal statistics
     df_stats = exactextract.exact_extract(
         da_pop_flood,
@@ -180,6 +180,8 @@ def _(adm_dropdown, da_pop_flood, exactextract, gdf_adm_r):
     )
 
     gdf_result = gdf_adm_r.merge(df_stats)
+    gdf_result["pop_exposed"] = np.ceil(gdf_result["sum"])
+    gdf_result[f"adm{adm_dropdown.value}_name"] = gdf_result[f"adm{adm_dropdown.value}_name"].fillna(gdf_result[f"adm{adm_dropdown.value}_id"])
     return (gdf_result,)
 
 
@@ -204,16 +206,11 @@ def _(
     gdf_flood_clipped,
     gdf_result,
     map_display,
-    np,
     parse_flood_string,
     px,
     shp_dropdown,
 ):
-    gdf_result["pop_exposed"] = np.ceil(gdf_result["sum"])
-    gdf_result[f"adm{adm_dropdown.value}_name"] = gdf_result[f"adm{adm_dropdown.value}_name"].fillna(gdf_result[f"adm{adm_dropdown.value}_id"])
-
     total_exposed = int(gdf_result["pop_exposed"].sum())
-
 
     if map_display.value == "flood exposure":
 
