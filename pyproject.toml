@@ -38,6 +38,7 @@ dependencies = [
     "scipy>=1.16.2",
     "rasterstats>=0.20.0",
     "adjusttext>=1.3.0",
+    "marimo>=0.17.7",
 ]
 
 [project.optional-dependencies]
