@@ -1,4 +1,6 @@
 import logging
+import os
+import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -6,9 +8,11 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 import pystac_client
+import rasterio
+from rasterio.transform import from_bounds
 import stackstac
 import xarray as xr
-import pandas as pd
+import exactextract
 from rasterio import features
 from shapely.geometry import shape
 import ocha_stratus as stratus
@@ -244,3 +248,93 @@ def create_provenance_raster(stack_flood_max: xr.DataArray, unique_dates: np.nda
     logger.info(f"  Date mapping: {date_mapping}")
 
     return provenance_idx, date_mapping
+
+
+def add_modal_provenance_to_admin(gdf_admin: gpd.GeoDataFrame,
+                                   provenance_idx: xr.DataArray,
+                                   date_mapping: dict,
+                                   admin_level: int = 3) -> gpd.GeoDataFrame:
+    """Add modal (most common) provenance date to admin boundaries.
+
+    Uses exactextract to efficiently calculate the most common provenance date
+    within each administrative boundary.
+
+    Parameters
+    ----------
+    gdf_admin : gpd.GeoDataFrame
+        Administrative boundaries.
+    provenance_idx : xr.DataArray
+        Provenance raster with integer indices (should be computed, not lazy).
+    date_mapping : dict
+        Mapping from integer indices to date strings.
+    admin_level : int, default 0
+        Administrative level (0, 1, 2, 3) for column naming.
+
+    Returns
+    -------
+    gpd.GeoDataFrame
+        Admin boundaries with 'prov_date' and 'prov_idx' columns added.
+    """
+    logger.info(f"Adding modal provenance to admin level {admin_level} boundaries...")
+
+    # Write provenance raster to temporary file for exactextract
+    with tempfile.NamedTemporaryFile(suffix=".tif", delete=False) as tmp:
+        tmp_raster_path = tmp.name
+
+    try:
+        # Get raster properties
+        height, width = provenance_idx.shape
+        x_min, x_max = float(provenance_idx.x.min()), float(provenance_idx.x.max())
+        y_min, y_max = float(provenance_idx.y.min()), float(provenance_idx.y.max())
+        transform = from_bounds(x_min, y_min, x_max, y_max, width, height)
+
+        # Write to temporary GeoTIFF
+        with rasterio.open(
+            tmp_raster_path,
+            "w",
+            driver="GTiff",
+            height=height,
+            width=width,
+            count=1,
+            dtype="int16",
+            crs="EPSG:4326",
+            transform=transform,
+        ) as dst:
+            dst.write(provenance_idx.values.astype(np.int16), 1)
+
+        # Use exactextract to get mode of provenance for each polygon
+        logger.info("  Running exactextract for modal provenance...")
+        modal_prov = exactextract.exact_extract(
+            tmp_raster_path,
+            gdf_admin,
+            ["mode", "count"],
+            include_cols=[f"adm{admin_level}_id"],
+            output="pandas",
+        )
+
+        # Merge back to admin
+        gdf_result = gdf_admin.merge(
+            modal_prov,
+            left_on=f"adm{admin_level}_id",
+            right_on=f"adm{admin_level}_id",
+            how="left"
+        )
+
+        # Map mode values to actual dates
+        gdf_result["prov_idx"] = gdf_result["mode"].fillna(-1).astype(int)
+        gdf_result["prov_date"] = gdf_result["prov_idx"].map(date_mapping)
+
+        logger.info(f"  ✅ Added provenance to {len(gdf_result)} admin units")
+
+        # Log summary
+        prov_summary = gdf_result["prov_date"].value_counts()
+        logger.info("  Provenance summary by admin unit:")
+        for date, count in prov_summary.items():
+            logger.info(f"    {date}: {count} admin units")
+
+        return gdf_result
+
+    finally:
+        # Clean up temp file
+        if os.path.exists(tmp_raster_path):
+            os.unlink(tmp_raster_path)
