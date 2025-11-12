@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.15.2"
+__generated_with = "0.17.5"
 app = marimo.App(width="medium")
 
 
@@ -56,7 +56,9 @@ def _():
 
 @app.cell
 def _(mo):
-    mo.md(r"""## 1. Select data to plot""")
+    mo.md(r"""
+    ## 1. Select data to plot
+    """)
     return
 
 
@@ -314,7 +316,9 @@ def _(
 
 @app.cell
 def _(mo):
-    mo.md(r"""## 2. Sanity check outputs""")
+    mo.md(r"""
+    ## 2. Sanity check outputs
+    """)
     return
 
 
@@ -406,7 +410,9 @@ def _(
 
 @app.cell
 def _(mo):
-    mo.md(r"""## 3. Output overall exposure""")
+    mo.md(r"""
+    ## 3. Output overall exposure
+    """)
     return
 
 
@@ -451,13 +457,11 @@ def _(buffer_dropdown, df_output, save_to_blob, shp_dropdown, stratus):
 
 @app.cell
 def _(mo):
-    mo.md(
-        r"""
-    <!-- ## Merge with the existing flood points parquet files to compare methods. 
+    mo.md(r"""
+    <!-- ## Merge with the existing flood points parquet files to compare methods.
 
     Will fail if the cache is not on your local machine! -->
-    """
-    )
+    """)
     return
 
 
