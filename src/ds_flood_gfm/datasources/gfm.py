@@ -57,22 +57,27 @@ def query_gfm_stac(bbox: list, end_date: str, n_search: int = 15) -> list:
     return items
 
 
-def create_flood_composite(items: list, bbox: list, n_latest: int, mode: str = "latest") -> tuple[xr.DataArray, list]:
+def create_flood_composite(items: list, bbox: list, n_latest: int, mode: str = "latest", return_stack: bool = False) -> tuple:
     """Create flood composite from STAC items.
-    
+
     Parameters
     ----------
     items : list
         STAC items.
     bbox : list
         Bounding box [west, south, east, north].
+    n_latest : int
+        Number of most recent dates to use.
     mode : str, default "latest"
         Compositing mode ('latest' or 'cumulative').
-        
+    return_stack : bool, default False
+        If True, also return stack_flood_max for provenance calculation.
+
     Returns
     -------
-    tuple[xr.DataArray, list]
-        Flood composite and unique dates.
+    tuple
+        If return_stack=False: (flood_composite, unique_dates)
+        If return_stack=True: (flood_composite, unique_dates, stack_flood_max)
     """
     logger.info(f"Creating {mode} flood composite with {n_latest} most recent dates...")
     
@@ -136,8 +141,11 @@ def create_flood_composite(items: list, bbox: list, n_latest: int, mode: str = "
     logger.info(f"  Created {mode} composite")
     flood_pixels = int((flood_composite == 1).sum())
     logger.info(f"  Flood pixels: {flood_pixels:,}")
-    
-    return flood_composite, dates
+
+    if return_stack:
+        return flood_composite, dates, stack_flood_max
+    else:
+        return flood_composite, dates
 
 
 def raster_to_polygons(flood_raster: xr.DataArray) -> gpd.GeoDataFrame:
@@ -182,9 +190,57 @@ def export_polygons(gdf: gpd.GeoDataFrame, output_path: Path, local=False, blob=
         output_path = Path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         file_path = output_path.with_suffix('.shp')
-        gdf.to_file(file_path, driver='ESRI Shapefile') 
+        gdf.to_file(file_path, driver='ESRI Shapefile')
         logger.info(f"Output shapefile locally: {file_path}")
     if blob:
         blob_name = f"ds-flood-gfm/processed/polygon/{output_path}.shp.zip"
         stratus.upload_shp_to_blob(gdf, blob_name)
         logger.info(f"Output shapefile to blob: {blob_name}")
+
+
+def create_provenance_raster(stack_flood_max: xr.DataArray, unique_dates: np.ndarray) -> tuple[xr.DataArray, dict]:
+    """Create provenance raster showing last observation date per pixel.
+
+    Parameters
+    ----------
+    stack_flood_max : xr.DataArray
+        3D array (time, y, x) of flood data.
+    unique_dates : np.ndarray
+        Array of datetime64 dates corresponding to time dimension.
+
+    Returns
+    -------
+    tuple[xr.DataArray, dict]
+        - provenance_idx: 2D lazy DataArray with integer indices (NOT computed)
+        - date_mapping: Dictionary mapping indices to date strings
+    """
+    logger.info("Creating provenance raster (lazy)...")
+
+    # Create mask of where we have valid observations (regardless of flood value)
+    has_data = ~stack_flood_max.isnull()
+
+    # Find the LAST time index where we had data for each pixel
+    # argmax finds first True, so we reverse the time dimension first
+    # This stays LAZY until .compute() is called
+    has_data_reversed = has_data.isel(time=slice(None, None, -1))
+    provenance_idx_reversed = has_data_reversed.argmax(dim='time', skipna=True)
+
+    # Convert back to original time indexing
+    n_times = len(unique_dates)
+    provenance_idx = n_times - 1 - provenance_idx_reversed
+
+    # Mask pixels that never had data
+    never_had_data = ~has_data.any(dim='time')
+    provenance_idx = provenance_idx.where(~never_had_data, -1)
+
+    # Create date mapping for lookup
+    date_mapping = {
+        int(i): str(pd.Timestamp(date))[:10]
+        for i, date in enumerate(unique_dates)
+    }
+    date_mapping[-1] = "No Data"
+
+    logger.info(f"  Provenance raster created (lazy, shape will be {provenance_idx.shape})")
+    logger.info(f"  Date mapping: {date_mapping}")
+
+    return provenance_idx, date_mapping

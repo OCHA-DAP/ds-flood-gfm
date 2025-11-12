@@ -25,6 +25,7 @@ def main():
     )
     parser.add_argument('--end-date', required=True, help='End date (YYYY-MM-DD)')
     parser.add_argument('--n-latest', type=int, default=4, help='Number of days to look back (default: 4)')
+    parser.add_argument('--n-search', type=int, default=15, help='Search window in days (default: 15)')
     parser.add_argument('--iso3', required=True, help='Country ISO3 code (JAM, HTI, CUB)')
     parser.add_argument('--flood-mode', choices=['latest', 'cumulative'], default='latest', help='Flood composite mode')
     parser.add_argument('--output-dir', type=Path, default=Path('outputs/polygons'), help='Output directory')
@@ -37,12 +38,13 @@ def main():
     logger.info(f"Country: {args.iso3}")
     logger.info(f"End date: {args.end_date}")
     logger.info(f"Days back: {args.n_latest}")
+    logger.info(f"Search window: {args.n_search}")
     logger.info(f"Mode: {args.flood_mode}")
     logger.info("=" * 60)
-    
+
     gdf_admin = stratus.codab.load_codab_from_fieldmaps(args.iso3, 0)
     bbox = gdf_admin.total_bounds
-    items = query_gfm_stac(bbox, args.end_date)
+    items = query_gfm_stac(bbox, args.end_date, args.n_search)
     
     if len(items) == 0:
         logger.error("No STAC items found for the specified criteria")
