@@ -12,6 +12,7 @@ from ds_flood_gfm.datasources.gfm import (
     create_flood_composite,
     create_provenance_raster,
     export_polygons,
+    process_country_tiled,
     query_gfm_stac,
     raster_to_polygons,
 )
@@ -53,8 +54,25 @@ def main():
         default=Path("outputs/polygons"),
         help="Output directory",
     )
+    parser.add_argument(
+        "--use-tiling",
+        action="store_true",
+        help="Use spatial tiling for large countries (automatic for PHL)",
+    )
+    parser.add_argument(
+        "--tile-size",
+        type=float,
+        default=2.0,
+        help="Tile size in degrees (default: 2.0)",
+    )
 
     args = parser.parse_args()
+
+    # Auto-enable tiling for known large countries
+    large_countries = ["PHL", "IDN", "BRA", "USA", "CAN", "RUS", "CHN", "AUS"]
+    if args.iso3 in large_countries and not args.use_tiling:
+        logger.info(f"⚠️  {args.iso3} is a large country - automatically enabling tiled processing")
+        args.use_tiling = True
 
     logger.info("=" * 60)
     logger.info("GFM FLOOD POLYGON GENERATOR")
@@ -68,24 +86,43 @@ def main():
 
     gdf_admin = stratus.codab.load_codab_from_fieldmaps(args.iso3, 0)
     bbox = gdf_admin.total_bounds
-    items = query_gfm_stac(bbox, args.end_date, args.n_search)
 
-    if len(items) == 0:
-        logger.error("No STAC items found for the specified criteria")
-        return
+    # Use tiled processing for large countries
+    if args.use_tiling:
+        logger.info(f"Using tiled processing with {args.tile_size}° tiles")
 
-    # Create flood composite with stack for provenance
-    flood_composite, unique_dates, stack_flood_max = create_flood_composite(
-        items, bbox, args.n_latest, mode=args.flood_mode, return_stack=True
-    )
+        # Note: Tiled processing doesn't support provenance yet
+        flood_polygons, unique_dates = process_country_tiled(
+            bbox=bbox,
+            end_date=args.end_date,
+            n_latest=args.n_latest,
+            n_search=args.n_search,
+            mode=args.flood_mode,
+            tile_size=args.tile_size,
+            return_stack=False
+        )
+        stack_flood_max = None  # Provenance not supported for tiled processing
 
-    logger.info("Converting flood raster to polygons...")
-    try:
-        flood_polygons = raster_to_polygons(flood_composite)
-        logger.info(f"✅ Polygon conversion complete")
-    except Exception as e:
-        logger.error(f"❌ Polygon conversion failed: {e}")
-        raise
+    else:
+        # Standard processing for small countries
+        items = query_gfm_stac(bbox, args.end_date, args.n_search)
+
+        if len(items) == 0:
+            logger.error("No STAC items found for the specified criteria")
+            return
+
+        # Create flood composite with stack for provenance
+        flood_composite, unique_dates, stack_flood_max = create_flood_composite(
+            items, bbox, args.n_latest, mode=args.flood_mode, return_stack=True
+        )
+
+        logger.info("Converting flood raster to polygons...")
+        try:
+            flood_polygons = raster_to_polygons(flood_composite)
+            logger.info(f"✅ Polygon conversion complete")
+        except Exception as e:
+            logger.error(f"❌ Polygon conversion failed: {e}")
+            raise
 
     if len(flood_polygons) == 0:
         logger.warning("No polygons created")
@@ -98,41 +135,48 @@ def main():
     output_path = generate_cache_key(args.iso3, unique_dates, None, args.flood_mode)
     export_polygons(flood_polygons, output_path, local=False, blob=True)
 
-    # Generate and upload provenance raster
-    logger.info("\n" + "=" * 60)
-    logger.info("GENERATING PROVENANCE RASTER")
-    logger.info("=" * 60)
+    # Generate and upload provenance raster (only for non-tiled processing)
+    if stack_flood_max is not None:
+        logger.info("\n" + "=" * 60)
+        logger.info("GENERATING PROVENANCE RASTER")
+        logger.info("=" * 60)
 
-    provenance_idx, date_mapping = create_provenance_raster(
-        stack_flood_max, unique_dates
-    )
+        provenance_idx, date_mapping = create_provenance_raster(
+            stack_flood_max, unique_dates
+        )
 
-    # Compute the provenance raster
-    logger.info("Computing provenance raster...")
-    prov_computed = provenance_idx.compute()
-    logger.info(f"✅ Provenance raster computed: {prov_computed.shape}")
+        # Compute the provenance raster
+        logger.info("Computing provenance raster...")
+        prov_computed = provenance_idx.compute()
+        logger.info(f"✅ Provenance raster computed: {prov_computed.shape}")
 
-    # Create filename based on cache key
-    prov_filename = f"{output_path}_provenance.tif"
-    blob_path = f"ds-flood-gfm/processed/provenance_raster/{prov_filename}"
+        # Create filename based on cache key
+        prov_filename = f"{output_path}_provenance.tif"
+        blob_path = f"ds-flood-gfm/processed/provenance_raster/{prov_filename}"
 
-    # Upload to blob as COG (stratus expects xarray DataArray)
-    logger.info(f"Uploading provenance raster to: {blob_path}")
-    stratus.upload_cog_to_blob(
-        prov_computed, blob_path, container_name="projects", stage="dev"
-    )
-    logger.info(f"✅ Provenance raster uploaded")
+        # Upload to blob as COG (stratus expects xarray DataArray)
+        logger.info(f"Uploading provenance raster to: {blob_path}")
+        stratus.upload_cog_to_blob(
+            prov_computed, blob_path, container_name="projects", stage="dev"
+        )
+        logger.info(f"✅ Provenance raster uploaded")
 
-    # Log date mapping for reference
-    logger.info("\nProvenance date mapping:")
-    for idx, date in date_mapping.items():
-        logger.info(f"  {idx}: {date}")
+        # Log date mapping for reference
+        logger.info("\nProvenance date mapping:")
+        for idx, date in date_mapping.items():
+            logger.info(f"  {idx}: {date}")
 
-    logger.info("\n" + "=" * 60)
-    logger.info("FLOOD POLYGON GENERATION COMPLETE")
-    logger.info("=" * 60)
-    logger.info(f"   Polygons created: {len(flood_polygons)}")
-    logger.info(f"   Provenance raster saved to blob: {blob_path}")
+        logger.info("\n" + "=" * 60)
+        logger.info("FLOOD POLYGON GENERATION COMPLETE")
+        logger.info("=" * 60)
+        logger.info(f"   Polygons created: {len(flood_polygons)}")
+        logger.info(f"   Provenance raster saved to blob: {blob_path}")
+    else:
+        logger.info("\n" + "=" * 60)
+        logger.info("FLOOD POLYGON GENERATION COMPLETE")
+        logger.info("=" * 60)
+        logger.info(f"   Polygons created: {len(flood_polygons)}")
+        logger.info("   ⚠️  Provenance raster skipped (tiled processing)")
 
 
 if __name__ == "__main__":

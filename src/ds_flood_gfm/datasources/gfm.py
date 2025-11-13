@@ -20,6 +20,42 @@ import ocha_stratus as stratus
 logger = logging.getLogger(__name__)
 
 
+def create_spatial_tiles(bbox: list, tile_size_degrees: float = 2.0) -> list[list]:
+    """Create spatial tiles from a bounding box.
+
+    Parameters
+    ----------
+    bbox : list
+        Bounding box [west, south, east, north].
+    tile_size_degrees : float, default 2.0
+        Size of each tile in degrees.
+
+    Returns
+    -------
+    list[list]
+        List of tile bboxes [[west, south, east, north], ...].
+    """
+    west, south, east, north = bbox
+
+    tiles = []
+    current_west = west
+    while current_west < east:
+        tile_east = min(current_west + tile_size_degrees, east)
+
+        current_south = south
+        while current_south < north:
+            tile_north = min(current_south + tile_size_degrees, north)
+
+            tiles.append([current_west, current_south, tile_east, tile_north])
+
+            current_south = tile_north
+
+        current_west = tile_east
+
+    logger.info(f"Created {len(tiles)} tiles of ~{tile_size_degrees}° each")
+    return tiles
+
+
 def query_gfm_stac(bbox: list, end_date: str, n_search: int = 15) -> list:
     """Query GFM STAC API for flood data.
     
@@ -107,10 +143,19 @@ def create_flood_composite(items: list, bbox: list, n_latest: int, mode: str = "
     # Convert to numpy datetime64 for cache key generation
     dates = np.array([np.datetime64(d) for d in dates_to_use])
     
-    # Build xarray stack
+    # Build xarray stack with optimized settings for sparse GFM data
+    # NOTE: stackstac validation requires float64 for nan fill_value
+    # Using float64 with larger chunks and rechunking strategy instead
     logger.info("  Building xarray stack...")
-    stack = stackstac.stack(items, epsg=4326)
+    stack = stackstac.stack(
+        items,
+        epsg=4326,
+        # dtype defaults to float64 - accepted as necessary for nan support
+        rescale=False,         # Don't rescale - values are already 0/1/255
+        chunksize=2048         # Larger chunks = fewer dask tasks (vs default 1024)
+    )
     logger.info(f"    Stack is lazy: {hasattr(stack.data, 'dask')}")
+    logger.info(f"    Optimized: dtype={stack.dtype}, chunksize=2048, rescale=False")
     stack_flood = stack.sel(band="ensemble_flood_extent")
     stack_flood_clipped = stack_flood.sel(
         x=slice(bbox[0], bbox[2]),
@@ -124,8 +169,18 @@ def create_flood_composite(items: list, bbox: list, n_latest: int, mode: str = "
     logger.info(f"    After groupby.max(), still lazy: {hasattr(stack_flood_max.data, 'dask')}")
     stack_flood_max = stack_flood_max.rename({"date": "time"})
     stack_flood_max["time"] = stack_flood_max.time.astype("datetime64[ns]")
-    
+
     stack_flood_max = stack_flood_max.sel(time=dates)
+
+    # RECHUNK: Consolidate time dimension and use larger spatial chunks
+    # This dramatically reduces task count for temporal operations
+    logger.info("  Rechunking for optimal temporal operations...")
+    stack_flood_max = stack_flood_max.chunk({
+        'time': -1,    # Single chunk for time (only 4 dates typically)
+        'y': 4096,     # Larger spatial chunks (4x reduction in tasks)
+        'x': 4096
+    })
+    logger.info(f"    Rechunked to time:-1, y:4096, x:4096")
     
     if mode == "latest":
         # Forward-fill with provenance tracking
@@ -140,7 +195,7 @@ def create_flood_composite(items: list, bbox: list, n_latest: int, mode: str = "
         
     elif mode == "cumulative":
         # Union of all flood observations
-        flood_composite = (stack_flood_max == 1).any(dim="time").astype(int)
+        flood_composite = (stack_flood_max == 1).any(dim="time").astype("uint8")
 
     else:
         raise ValueError(f"Unknown mode: {mode}. Use 'latest' or 'cumulative'")
@@ -197,6 +252,117 @@ def raster_to_polygons(flood_raster: xr.DataArray) -> gpd.GeoDataFrame:
     logger.info(f"  Created {len(geometries)} polygons")
 
     return gpd.GeoDataFrame({'geometry': geometries}, crs="EPSG:4326")
+
+
+def process_country_tiled(
+    bbox: list,
+    end_date: str,
+    n_latest: int = 4,
+    n_search: int = 15,
+    mode: str = "latest",
+    tile_size: float = 2.0,
+    return_stack: bool = False
+) -> tuple:
+    """Process large country in tiles to avoid memory issues.
+
+    Parameters
+    ----------
+    bbox : list
+        Full country bounding box [west, south, east, north].
+    end_date : str
+        End date (YYYY-MM-DD).
+    n_latest : int, default 4
+        Number of most recent dates to use.
+    n_search : int, default 15
+        Search window in days.
+    mode : str, default "latest"
+        Compositing mode ('latest' or 'cumulative').
+    tile_size : float, default 2.0
+        Size of each tile in degrees.
+    return_stack : bool, default False
+        If True, also return combined stack for provenance.
+
+    Returns
+    -------
+    tuple
+        If return_stack=False: (combined_polygons, unique_dates)
+        If return_stack=True: (combined_polygons, unique_dates, combined_stack)
+    """
+    logger.info("=" * 60)
+    logger.info("TILED PROCESSING FOR LARGE COUNTRY")
+    logger.info("=" * 60)
+
+    tiles = create_spatial_tiles(bbox, tile_size)
+    logger.info(f"Processing {len(tiles)} tiles...")
+
+    tile_polygons = []
+    tile_stacks = []
+    all_dates = None
+
+    for i, tile_bbox in enumerate(tiles, 1):
+        logger.info(f"\n{'='*60}")
+        logger.info(f"TILE {i}/{len(tiles)}")
+        logger.info(f"{'='*60}")
+        logger.info(f"Bbox: {tile_bbox}")
+
+        try:
+            # Query STAC for this tile
+            items = query_gfm_stac(tile_bbox, end_date, n_search)
+
+            if len(items) == 0:
+                logger.info(f"  No data for tile {i}, skipping...")
+                continue
+
+            # Create composite for this tile
+            if return_stack:
+                flood_composite, unique_dates, stack_flood_max = create_flood_composite(
+                    items, tile_bbox, n_latest, mode=mode, return_stack=True
+                )
+                tile_stacks.append(stack_flood_max)
+            else:
+                flood_composite, unique_dates = create_flood_composite(
+                    items, tile_bbox, n_latest, mode=mode, return_stack=False
+                )
+
+            # Store dates from first tile
+            if all_dates is None:
+                all_dates = unique_dates
+
+            # Convert to polygons
+            logger.info(f"Converting tile {i} to polygons...")
+            tile_polys = raster_to_polygons(flood_composite)
+
+            if len(tile_polys) > 0:
+                tile_polygons.append(tile_polys)
+                logger.info(f"  ✅ Tile {i} complete: {len(tile_polys)} polygons")
+            else:
+                logger.info(f"  ⚠️  Tile {i} had no flood polygons")
+
+        except Exception as e:
+            logger.error(f"  ❌ Tile {i} failed: {e}")
+            continue
+
+    # Combine all tile polygons
+    logger.info("\n" + "=" * 60)
+    logger.info("COMBINING TILES")
+    logger.info("=" * 60)
+
+    if len(tile_polygons) == 0:
+        logger.warning("No polygons from any tile!")
+        return gpd.GeoDataFrame(columns=['geometry'], crs="EPSG:4326"), all_dates
+
+    combined_polygons = gpd.GeoDataFrame(
+        pd.concat(tile_polygons, ignore_index=True),
+        crs="EPSG:4326"
+    )
+    logger.info(f"✅ Combined {len(combined_polygons)} total polygons from {len(tile_polygons)} tiles")
+
+    if return_stack:
+        # For provenance, we'd need to mosaic the tile stacks - not implemented yet
+        logger.warning("⚠️  Provenance raster not yet supported for tiled processing")
+        return combined_polygons, all_dates, None
+    else:
+        return combined_polygons, all_dates
 
 
 def export_polygons(gdf: gpd.GeoDataFrame, output_path: Path, local=False, blob=True) -> dict:
