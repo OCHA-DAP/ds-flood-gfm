@@ -110,15 +110,18 @@ def create_flood_composite(items: list, bbox: list, n_latest: int, mode: str = "
     # Build xarray stack
     logger.info("  Building xarray stack...")
     stack = stackstac.stack(items, epsg=4326)
+    logger.info(f"    Stack is lazy: {hasattr(stack.data, 'dask')}")
     stack_flood = stack.sel(band="ensemble_flood_extent")
     stack_flood_clipped = stack_flood.sel(
-        x=slice(bbox[0], bbox[2]), 
+        x=slice(bbox[0], bbox[2]),
         y=slice(bbox[3], bbox[1])
     )
-    
+    logger.info(f"    Clipped stack shape: {stack_flood_clipped.shape}, still lazy: {hasattr(stack_flood_clipped.data, 'dask')}")
+
     # Create daily composites
     logger.info("  Creating daily composites...")
     stack_flood_max = stack_flood_clipped.groupby("time.date").max()
+    logger.info(f"    After groupby.max(), still lazy: {hasattr(stack_flood_max.data, 'dask')}")
     stack_flood_max = stack_flood_max.rename({"date": "time"})
     stack_flood_max["time"] = stack_flood_max.time.astype("datetime64[ns]")
     
@@ -138,13 +141,13 @@ def create_flood_composite(items: list, bbox: list, n_latest: int, mode: str = "
     elif mode == "cumulative":
         # Union of all flood observations
         flood_composite = (stack_flood_max == 1).any(dim="time").astype(int)
-        
+
     else:
         raise ValueError(f"Unknown mode: {mode}. Use 'latest' or 'cumulative'")
-    
-    logger.info(f"  Created {mode} composite")
-    flood_pixels = int((flood_composite == 1).sum())
-    logger.info(f"  Flood pixels: {flood_pixels:,}")
+
+    logger.info(f"  Created {mode} composite (lazy)")
+    logger.info(f"    Composite shape: {flood_composite.shape}, still lazy: {hasattr(flood_composite.data, 'dask')}")
+    logger.info(f"  ⚠️  Composite will be computed when converting to polygons")
 
     if return_stack:
         return flood_composite, dates, stack_flood_max
@@ -154,12 +157,32 @@ def create_flood_composite(items: list, bbox: list, n_latest: int, mode: str = "
 
 def raster_to_polygons(flood_raster: xr.DataArray) -> gpd.GeoDataFrame:
     """Convert flood raster to vector polygons."""
-    # Get raster properties  
+    logger.info("  Getting raster properties...")
+    # Get raster properties
     transform = flood_raster.rio.transform()
-    
+
+    import time
+    # Check task graph size before computation
+    if hasattr(flood_raster.data, 'dask'):
+        n_tasks = len(flood_raster.data.__dask_graph__())
+        logger.info(f"  Dask computation graph has {n_tasks:,} tasks")
+        logger.info(f"  Estimated memory: {flood_raster.nbytes / 1e9:.2f} GB")
+        logger.info(f"  Chunks: {flood_raster.chunks}")
+        logger.info(f"  Shape: {flood_raster.shape}")
+    else:
+        logger.info(f"  Data is not lazy (already computed)")
+        logger.info(f"  Shape: {flood_raster.shape}")
+
+    logger.info("  Computing flood array (this may take a while for large areas)...")
+    start_time = time.time()
     # Convert to binary array
     flood_array = (flood_raster.values == 1).astype(np.uint8)
-    
+    elapsed = time.time() - start_time
+    actual_memory_gb = flood_array.nbytes / 1e9
+    logger.info(f"  ✅ Flood array computed in {elapsed:.1f}s - shape: {flood_array.shape}")
+    logger.info(f"  Actual memory used: {actual_memory_gb:.2f} GB")
+
+    logger.info("  Extracting polygon shapes from raster...")
     # Use rasterio.features.shapes (the standard GDAL-based method)
     shapes_gen = features.shapes(
         flood_array,
@@ -167,10 +190,12 @@ def raster_to_polygons(flood_raster: xr.DataArray) -> gpd.GeoDataFrame:
         transform=transform,
         connectivity=8
     )
-    
+
+    logger.info("  Converting shapes to geometries...")
     # Convert to geometries
     geometries = [shape(geom) for geom, value in shapes_gen if value == 1]
-    
+    logger.info(f"  Created {len(geometries)} polygons")
+
     return gpd.GeoDataFrame({'geometry': geometries}, crs="EPSG:4326")
 
 
