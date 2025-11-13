@@ -79,7 +79,13 @@ def main():
         items, bbox, args.n_latest, mode=args.flood_mode, return_stack=True
     )
 
-    flood_polygons = raster_to_polygons(flood_composite)
+    logger.info("Converting flood raster to polygons...")
+    try:
+        flood_polygons = raster_to_polygons(flood_composite)
+        logger.info(f"✅ Polygon conversion complete")
+    except Exception as e:
+        logger.error(f"❌ Polygon conversion failed: {e}")
+        raise
 
     if len(flood_polygons) == 0:
         logger.warning("No polygons created")
