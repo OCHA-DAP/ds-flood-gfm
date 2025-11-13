@@ -148,7 +148,11 @@ def main():
         # Compute the provenance raster
         logger.info("Computing provenance raster...")
         prov_computed = provenance_idx.compute()
-        logger.info(f"✅ Provenance raster computed: {prov_computed.shape}")
+
+        # IMPORTANT: Cast to int16 for proper GeoTIFF encoding
+        # provenance_idx values are integers (-1, 0, 1, 2, ...) but inherit float64 dtype
+        prov_computed = prov_computed.astype(np.int16)
+        logger.info(f"✅ Provenance raster computed: {prov_computed.shape}, dtype={prov_computed.dtype}")
 
         # Create filename based on cache key
         prov_filename = f"{output_path}_provenance.tif"
