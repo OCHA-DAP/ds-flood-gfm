@@ -30,7 +30,7 @@ dependencies = [
     "geemap>=0.36.4",
     "pyarrow>=21.0.0",
     "xee>=0.0.22",
-    "ocha-stratus>=0.1.5",
+    "ocha-stratus>=0.1.6",
     "bottleneck>=1.6.0",
     "python-dotenv>=1.1.1",
     "exactextract>=0.2.2",
@@ -58,4 +58,3 @@ target-version = ['py312']
 
 [tool.marimo.runtime]
 output_max_bytes = 15_000_000
-

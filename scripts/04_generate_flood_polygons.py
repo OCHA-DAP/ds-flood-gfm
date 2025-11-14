@@ -45,8 +45,16 @@ def main():
         default=-15,
         help="Search window in days. Positive = forward scan, Negative = backward scan (default: -15)"
     )
-    parser.add_argument(
-        "--iso3", required=True, help="Country ISO3 code (JAM, HTI, CUB)"
+
+    # Geometry source: either ISO3 or custom geoparquet file
+    geom_group = parser.add_mutually_exclusive_group(required=True)
+    geom_group.add_argument(
+        "--iso3",
+        help="Country ISO3 code (JAM, HTI, CUB)"
+    )
+    geom_group.add_argument(
+        "--aoi-geom-blob",
+        help="Blob path to geoparquet file (.parquet)"
     )
     parser.add_argument(
         "--flood-mode",
@@ -84,15 +92,27 @@ def main():
     logger.info("=" * 60)
     logger.info("GFM FLOOD POLYGON GENERATOR")
     logger.info("=" * 60)
-    logger.info(f"Country: {args.iso3}")
+
+    # Load geometry from ISO3 or custom geoparquet file
+    if args.iso3:
+        logger.info(f"Loading admin boundaries for {args.iso3} via CODAB...")
+        gdf_admin = stratus.codab.load_codab_from_fieldmaps(args.iso3, 0)
+        aoi_name = args.iso3
+    elif args.aoi_geom_blob:
+        logger.info(f"Loading custom geometry from blob: {args.aoi_geom_blob}")
+        gdf_admin = stratus.load_geoparquet_from_blob(args.aoi_geom_blob)
+        aoi_name = Path(args.aoi_geom_blob).stem
+        logger.info(f"  Loaded {len(gdf_admin)} features")
+
+    bbox = gdf_admin.total_bounds
+    logger.info(f"  Bounding box: {bbox}")
+
+    logger.info(f"AOI: {aoi_name}")
     logger.info(f"Target date: {args.target_date}")
     logger.info(f"Number of images: {args.n_images}")
     logger.info(f"Search window: {args.n_search} days ({scan_direction})")
     logger.info(f"Mode: {args.flood_mode}")
     logger.info("=" * 60)
-
-    gdf_admin = stratus.codab.load_codab_from_fieldmaps(args.iso3, 0)
-    bbox = gdf_admin.total_bounds
 
     # Use tiled processing for large countries
     if args.use_tiling:
@@ -157,7 +177,7 @@ def main():
         )
         logger.info(f"✅ Added provenance dates to flood polygons")
 
-    output_path = generate_cache_key(args.iso3, unique_dates, None, args.flood_mode)
+    output_path = generate_cache_key(aoi_name, unique_dates, None, args.flood_mode)
     export_polygons(flood_polygons, output_path, local=False, blob=True)
 
     # Upload provenance raster (already computed above)
