@@ -61,7 +61,9 @@ def _(mo):
 @app.cell
 def _(mo):
     iso3_dropdown = mo.ui.dropdown(
-        label="Select a country", options=["CUB", "HTI", "JAM", "PHL"], value="HTI"
+        label="Select a country",
+        options=["CUB", "HTI", "JAM", "PHL", "gaza_strip_adm1"],
+        value="HTI",
     )
     adm_dropdown = mo.ui.dropdown(
         label="Select an admin level", options=[0, 1, 2, 3], value=3
@@ -94,7 +96,12 @@ def _(blob_names, mo):
 def _(mo, stratus):
     @mo.persistent_cache
     def get_adm(iso3, adm_level):
-        return stratus.codab.load_codab_from_fieldmaps(iso3, adm_level)
+        if iso3.startswith("gaza_strip"):
+            # Load Gaza geometry from blob with dynamic admin level
+            blob_path = f"ds-flood-gfm/raw/geom/gaza_strip_adm{adm_level}.parquet"
+            return stratus.load_geoparquet_from_blob(blob_path)
+        else:
+            return stratus.codab.load_codab_from_fieldmaps(iso3, adm_level)
 
     @mo.persistent_cache
     def get_pop(blob_path):
