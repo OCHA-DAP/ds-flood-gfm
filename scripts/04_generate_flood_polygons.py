@@ -32,15 +32,18 @@ def main():
     parser = argparse.ArgumentParser(
         description="Generate flood polygons from GFM STAC data"
     )
-    parser.add_argument("--end-date", required=True, help="End date (YYYY-MM-DD)")
+    parser.add_argument("--target-date", required=True, help="Reference date (YYYY-MM-DD)")
     parser.add_argument(
-        "--n-latest",
+        "--n-images",
         type=int,
         default=4,
-        help="Number of days to look back (default: 4)",
+        help="Number of dates to use for composite (default: 4)",
     )
     parser.add_argument(
-        "--n-search", type=int, default=15, help="Search window in days (default: 15)"
+        "--n-search",
+        type=int,
+        default=-15,
+        help="Search window in days. Positive = forward scan, Negative = backward scan (default: -15)"
     )
     parser.add_argument(
         "--iso3", required=True, help="Country ISO3 code (JAM, HTI, CUB)"
@@ -77,13 +80,14 @@ def main():
         logger.info(f"⚠️  {args.iso3} is a large country - automatically enabling tiled processing")
         args.use_tiling = True
 
+    scan_direction = "forward" if args.n_search > 0 else "backward"
     logger.info("=" * 60)
     logger.info("GFM FLOOD POLYGON GENERATOR")
     logger.info("=" * 60)
     logger.info(f"Country: {args.iso3}")
-    logger.info(f"End date: {args.end_date}")
-    logger.info(f"Days back: {args.n_latest}")
-    logger.info(f"Search window: {args.n_search}")
+    logger.info(f"Target date: {args.target_date}")
+    logger.info(f"Number of images: {args.n_images}")
+    logger.info(f"Search window: {args.n_search} days ({scan_direction})")
     logger.info(f"Mode: {args.flood_mode}")
     logger.info("=" * 60)
 
@@ -97,8 +101,8 @@ def main():
         # Note: Tiled processing doesn't support provenance yet
         flood_polygons, unique_dates = process_country_tiled(
             bbox=bbox,
-            end_date=args.end_date,
-            n_latest=args.n_latest,
+            target_date=args.target_date,
+            n_images=args.n_images,
             n_search=args.n_search,
             mode=args.flood_mode,
             tile_size=args.tile_size,
@@ -108,7 +112,7 @@ def main():
 
     else:
         # Standard processing for small countries
-        items = query_gfm_stac(bbox, args.end_date, args.n_search)
+        items = query_gfm_stac(bbox, args.target_date, args.n_search)
 
         if len(items) == 0:
             logger.error("No STAC items found for the specified criteria")
@@ -116,7 +120,7 @@ def main():
 
         # Create flood composite with stack for provenance
         flood_composite, unique_dates, stack_flood_max = create_flood_composite(
-            items, bbox, args.n_latest, mode=args.flood_mode, return_stack=True
+            items, bbox, args.n_images, mode=args.flood_mode, n_search=args.n_search, return_stack=True
         )
 
         logger.info("Converting flood raster to polygons...")
@@ -152,10 +156,6 @@ def main():
             flood_polygons, prov_computed, date_mapping
         )
         logger.info(f"✅ Added provenance dates to flood polygons")
-
-    date_str = args.end_date.replace("-", "")
-    filename_base = f"{args.iso3.lower()}_flood_{args.flood_mode}_{date_str}"
-    output_path = args.output_dir / filename_base
 
     output_path = generate_cache_key(args.iso3, unique_dates, None, args.flood_mode)
     export_polygons(flood_polygons, output_path, local=False, blob=True)
