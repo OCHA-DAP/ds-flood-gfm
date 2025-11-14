@@ -82,11 +82,12 @@ def main():
 
     args = parser.parse_args()
 
-    # Auto-enable tiling for known large countries
-    large_countries = ["PHL", "IDN", "BRA", "USA", "CAN", "RUS", "CHN", "AUS"]
-    if args.iso3 in large_countries and not args.use_tiling:
-        logger.info(f"⚠️  {args.iso3} is a large country - automatically enabling tiled processing")
-        args.use_tiling = True
+    # Auto-enable tiling for known large countries (only for ISO3 mode)
+    if args.iso3:
+        large_countries = ["PHL", "IDN", "BRA", "USA", "CAN", "RUS", "CHN", "AUS", "URY"]
+        if args.iso3 in large_countries and not args.use_tiling:
+            logger.info(f"⚠️  {args.iso3} is a large country - automatically enabling tiled processing")
+            args.use_tiling = True
 
     scan_direction = "forward" if args.n_search > 0 else "backward"
     logger.info("=" * 60)
@@ -118,7 +119,7 @@ def main():
     if args.use_tiling:
         logger.info(f"Using tiled processing with {args.tile_size}° tiles")
 
-        # Note: Tiled processing doesn't support provenance yet
+        # Process polygons with tiling (memory-intensive operation)
         flood_polygons, unique_dates = process_country_tiled(
             bbox=bbox,
             target_date=args.target_date,
@@ -128,7 +129,34 @@ def main():
             tile_size=args.tile_size,
             return_stack=False
         )
-        stack_flood_max = None  # Provenance not supported for tiled processing
+
+        # Generate provenance raster for full country (doesn't need tiling)
+        # Why no tiling for provenance:
+        # 1. Provenance generation stays LAZY - doesn't compute the flood composite
+        # 2. Only computes a 2D raster (not 3D temporal stack) at the end
+        # 3. Memory usage similar to one tile (~0.1-0.2GB vs 5GB for full composite)
+        # 4. Rechunking strategy (time:-1, y:4096, x:4096) makes it efficient
+        logger.info("\n" + "=" * 60)
+        logger.info("GENERATING PROVENANCE RASTER (FULL COUNTRY)")
+        logger.info("=" * 60)
+        logger.info("Note: Provenance doesn't use tiling - it's a lightweight operation")
+        logger.info("      that stays lazy and only computes a 2D raster at the end.")
+
+        # Query STAC for full country
+        items = query_gfm_stac(bbox, args.target_date, args.n_search)
+
+        if len(items) == 0:
+            logger.warning("No STAC items found for provenance generation")
+            stack_flood_max = None
+        else:
+            # Create stack for provenance (stays lazy, flood_composite not used)
+            _, _, stack_flood_max = create_flood_composite(
+                items, bbox, args.n_images,
+                mode=args.flood_mode,
+                n_search=args.n_search,
+                return_stack=True
+            )
+            logger.info("✅ Stack created for provenance (still lazy)")
 
     else:
         # Standard processing for small countries
@@ -217,7 +245,7 @@ def main():
         logger.info("FLOOD POLYGON GENERATION COMPLETE")
         logger.info("=" * 60)
         logger.info(f"   Polygons created: {len(flood_polygons)}")
-        logger.info("   ⚠️  Provenance raster skipped (tiled processing)")
+        logger.info("   ⚠️  Provenance raster skipped (no STAC items found)")
 
 
 if __name__ == "__main__":
