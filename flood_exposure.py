@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.17.5"
+__generated_with = "0.17.7"
 app = marimo.App(width="medium")
 
 
@@ -31,12 +31,8 @@ def _():
     import plotly.express as px
     import re
 
-    GHSL_RASTER_BLOB_PATH_3s = (
-        "ghsl/pop/GHS_POP_E2025_GLOBE_R2023A_4326_3ss_V1_0.tif"
-    )
-    GHSL_RASTER_BLOB_PATH_30s = (
-        "ghsl/pop/GHS_POP_E2025_GLOBE_R2023A_4326_30ss_V1_0.tif"
-    )
+    GHSL_RASTER_BLOB_PATH_3s = "ghsl/pop/GHS_POP_E2025_GLOBE_R2023A_4326_3ss_V1_0.tif"
+    GHSL_RASTER_BLOB_PATH_30s = "ghsl/pop/GHS_POP_E2025_GLOBE_R2023A_4326_30ss_V1_0.tif"
     # JRC_FLOOD_ZIP = "ds-flood-gfm/processed/polygon/CUB_20251102_20251103_20251104_20251105_nopop_cumulative.shp.zip"
     # JRC_FLOOD_SHP = "data/data.shp"
 
@@ -65,7 +61,7 @@ def _(mo):
 @app.cell
 def _(mo):
     iso3_dropdown = mo.ui.dropdown(
-        label="Select a country", options=["CUB", "HTI", "JAM"], value="HTI"
+        label="Select a country", options=["CUB", "HTI", "JAM", "PHL"], value="HTI"
     )
     adm_dropdown = mo.ui.dropdown(
         label="Select an admin level", options=[0, 1, 2, 3], value=3
@@ -100,13 +96,11 @@ def _(mo, stratus):
     def get_adm(iso3, adm_level):
         return stratus.codab.load_codab_from_fieldmaps(iso3, adm_level)
 
-
     @mo.persistent_cache
     def get_pop(blob_path):
         return stratus.open_blob_cog(blob_path, container_name="raster").squeeze(
             drop=True
         )
-
 
     @mo.persistent_cache
     def get_flood(flood_zip, flood_shp):
@@ -275,9 +269,7 @@ def _(
 
         # Update legend title and format number in title with comma
         title = parse_flood_string(shp_dropdown.value)
-        title_suffix = (
-            f" - ({buffer_dropdown.value}m buffer) - {total_exposed} people"
-        )
+        title_suffix = f" - ({buffer_dropdown.value}m buffer) - {total_exposed} people"
         fig.update_layout(title=title + title_suffix)
     else:
         gdf_plot = (
@@ -354,9 +346,7 @@ def _(
     buffer_distance = buffer_dropdown.value  # In meters, set to 0 for no buffer
 
     # Find and extract the admin region
-    admin_region = gdf_result[
-        gdf_result[f"adm{adm_dropdown.value}_name"] == admin_name
-    ]
+    admin_region = gdf_result[gdf_result[f"adm{adm_dropdown.value}_name"] == admin_name]
 
     # Clip to admin boundary
     pop_clipped = da_clip_r.rio.clip(admin_region.geometry, drop=True)
@@ -370,16 +360,16 @@ def _(
     _fig, ax = plt.subplots(figsize=(10, 8))
 
     # Create custom colormap: white for zero, then Blues
-    colors = ['white'] + [plt.cm.Blues(i) for i in np.linspace(0.3, 1.0, 256)]
+    colors = ["white"] + [plt.cm.Blues(i) for i in np.linspace(0.3, 1.0, 256)]
     custom_cmap = mcolors.ListedColormap(colors)
 
     pop_clipped_plot = pop_clipped.where(pop_clipped > 0)  # Mask zeros
     pop_clipped_plot.plot(
-        ax=ax, 
-        cmap=custom_cmap, 
-        alpha=0.7, 
-        add_colorbar=True, 
-        norm=mcolors.LogNorm(vmin=0.1, vmax=pop_clipped.max())
+        ax=ax,
+        cmap=custom_cmap,
+        alpha=0.7,
+        add_colorbar=True,
+        norm=mcolors.LogNorm(vmin=0.1, vmax=pop_clipped.max()),
     )
 
     admin_region.boundary.plot(
