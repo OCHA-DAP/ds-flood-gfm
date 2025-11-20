@@ -309,14 +309,24 @@ def calculate_admin_population(flood_points_gdf, admin_gdf, adm_level):
     return result
 
 
-def generate_cache_key(iso3, dates_list, population_raster, flood_mode="latest"):
+def generate_cache_key(iso3, dates_list, population_raster, flood_mode="latest", max_dates=5):
     """Generate unique cache key from parameters.
 
     Returns a human-readable cache key like:
     JAM_20241020_20241022_20241025_ghsl_cumulative
+    Or for many dates: JAM_20241020_to_20241025_5dates_ghsl_cumulative
     """
-    # Create abbreviated date strings (YYYYMMDD format)
-    dates_str = "_".join([str(d)[:10].replace('-', '') for d in dates_list])
+    # Handle dates based on quantity
+    if len(dates_list) <= max_dates:
+    
+        # Show all dates if within limit
+        dates_str = "_".join([str(d)[:10].replace('-', '') for d in dates_list])
+    else:
+        # Use range format for many dates
+        sorted_dates = sorted(dates_list)
+        start_date = str(sorted_dates[0])[:10].replace('-', '')
+        end_date = str(sorted_dates[-1])[:10].replace('-', '')
+        dates_str = f"{start_date}_to_{end_date}_{len(dates_list)}dates"
 
     # Extract population raster identifier
     if population_raster:
