@@ -536,14 +536,16 @@ def map_date(da: xr.DataArray, filename: str = None) -> xr.DataArray:
             start_formatted = f"{start_date[:4]}-{start_date[4:6]}-{start_date[6:8]}"
             end_formatted = f"{end_date[:4]}-{end_date[4:6]}-{end_date[6:8]}"
 
-            # We can't reconstruct exact dates from range format
-            # Add a note about this limitation
-            date_mapping = {0: start_formatted, -1: "No Data"}
+            # For range format, we cannot reconstruct exact intermediate dates.
+            # We only know start/end dates, so map -1 to No Data and add a note.
+            # Users should use individual date format for full mapping capability.
+            date_mapping = {-1: "No Data"}
             da.attrs["date_mapping"] = date_mapping
             da.attrs["date_range"] = f"{start_formatted} to {end_formatted}"
             da.attrs["date_mapping_note"] = (
-                "Exact date mapping unavailable - only range preserved. "
-                "Use individual date format for full mapping."
+                "Exact date mapping unavailable for range format - only date range "
+                "preserved. Band values (0, 1, 2, ...) cannot be mapped to specific "
+                "dates. Use individual date format for full mapping capability."
             )
             logger.warning(
                 f"Provenance raster uses range format - exact date mapping unavailable. "
@@ -559,7 +561,7 @@ def map_date(da: xr.DataArray, filename: str = None) -> xr.DataArray:
     if not dates:
         raise ValueError(
             f"Could not parse dates from filename: {filename}. "
-            "Expected format: ISO3_YYYYMMDD_YYYYMMDD_..._pop_mode_provenance"
+            "Expected format: ISO3_YYYYMMDD_YYYYMMDD_..._pop_mode_provenance.tif"
         )
 
     # Convert to YYYY-MM-DD format and create mapping
