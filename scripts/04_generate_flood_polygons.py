@@ -71,7 +71,9 @@ def main():
     # Auto-enable tiling for known large countries
     large_countries = ["PHL", "IDN", "BRA", "USA", "CAN", "RUS", "CHN", "AUS"]
     if args.iso3 in large_countries and not args.use_tiling:
-        logger.info(f"⚠️  {args.iso3} is a large country - automatically enabling tiled processing")
+        logger.info(
+            f"⚠️  {args.iso3} is a large country - automatically enabling tiled processing"
+        )
         args.use_tiling = True
 
     logger.info("=" * 60)
@@ -99,7 +101,7 @@ def main():
             n_search=args.n_search,
             mode=args.flood_mode,
             tile_size=args.tile_size,
-            return_stack=False
+            return_stack=False,
         )
         stack_flood_max = None  # Provenance not supported for tiled processing
 
@@ -152,7 +154,9 @@ def main():
         # IMPORTANT: Cast to int16 for proper GeoTIFF encoding
         # provenance_idx values are integers (-1, 0, 1, 2, ...) but inherit float64 dtype
         prov_computed = prov_computed.astype(np.int16)
-        logger.info(f"✅ Provenance raster computed: {prov_computed.shape}, dtype={prov_computed.dtype}")
+        logger.info(
+            f"✅ Provenance raster computed: {prov_computed.shape}, dtype={prov_computed.dtype}"
+        )
 
         # Create filename based on cache key
         prov_filename = f"{output_path}_provenance.tif"
@@ -166,7 +170,11 @@ def main():
         logger.info(f"✅ Provenance raster uploaded")
 
         # Log date mapping for reference
-        logger.info("\nProvenance date mapping:")
+        # Note: Date mapping is encoded in filename and can be reconstructed using:
+        #   from ds_flood_gfm.datasources.gfm import map_date
+        #   da = xr.open_dataarray("provenance.tif")
+        #   da = map_date(da, "provenance_filename.tif")
+        logger.info("\nProvenance date mapping (reconstructable via map_date()):")
         for idx, date in date_mapping.items():
             logger.info(f"  {idx}: {date}")
 
