@@ -264,10 +264,16 @@ stack_flood_max = stack_flood_max.chunk({
 ```
 
 **3. Spatial tiling for large countries ([gfm.py:257-365](src/ds_flood_gfm/datasources/gfm.py#L257-L365)):**
-- Automatic detection of large countries
+- Automatic detection of large countries (PHL, IDN, BRA, USA, CAN, RUS, CHN, AUS)
 - 2.0° × 2.0° tiles (configurable)
 - Sequential tile processing with polygon merging
-- Note: Provenance raster not yet supported for tiled processing
+- Auto-enabled in [scripts/04_generate_flood_polygons.py:74-78](scripts/04_generate_flood_polygons.py#L74-L78)
+
+**4. Provenance raster integration ([gfm.py:406-440, scripts/04:133-153](src/ds_flood_gfm/datasources/gfm.py#L406-L440)):**
+- Tracks last observation date per flood pixel
+- Uses argmax over time dimension to find most recent flood date
+- Output: int16 raster with date indices + metadata mapping
+- Added to both COG files (as xarray attrs) and flood polygons (via exactextract)
 
 ### Usage
 
@@ -299,11 +305,77 @@ uv run python scripts/04_generate_flood_polygons.py \
     --flood-mode cumulative
 ```
 
+### Provenance Raster Performance
+
+**What it does:**
+- Tracks the last observation date for each flooded pixel
+- Creates an integer index raster mapping pixels to their observation dates
+- Stores date mapping as metadata in COG files (GeoTIFF tags via xarray attrs)
+- Adds provenance dates to flood polygons using exactextract modal statistics
+
+**Performance impact (Jamaica, 392 polygons, 7378×11639 raster):**
+- Provenance raster computation: ~11s (argmax over time dimension)
+- Add to flood polygons: ~0.3s (exactextract modal operation)
+- COG metadata storage: negligible (stored as xarray DataArray attributes)
+- **Total overhead: ~11.3s** (manageable for most workflows)
+
+**Memory characteristics:**
+- Provenance raster: int16 dtype (2 bytes per pixel)
+- Jamaica example: 7378 × 11639 × 2 bytes = ~0.17 GB
+- Lazy by default, computed once and reused for both COG and polygons
+- Cast to int16 to avoid GeoTIFF encoding issues ([commit b7ed963](https://github.com/OCHA-DAP/ds-flood-gfm/commit/b7ed963))
+
+**Integration points:**
+1. **COG files**: Metadata stored as xarray attrs → GeoTIFF tags
+   - `date_mapping`: JSON mapping of indices to ISO dates
+   - `created_date`: Timestamp of generation
+2. **Flood polygons**: Two new columns added via exactextract
+   - `prov_idx`: Integer index (0, 1, 2, ... for dates; -1 for no data)
+   - `prov_date`: ISO date string (YYYY-MM-DD)
+
+**Limitation**: Only works with non-tiled processing (see Known Limitations below)
+
+### Production Metrics
+
+**Jamaica (JAM) - Standard Processing with Provenance:**
+- End date: 2025-11-26, 3 dates (2025-11-20, 2025-11-22, 2025-11-23)
+- Mode: cumulative
+- Raster dimensions: 7378 × 11639
+- Output: 392 flood polygons
+
+**Timing breakdown:**
+- Flood composite computation: 13.0s
+- Polygon conversion: ~1s
+- Provenance raster computation: 11.0s
+- Add provenance to polygons: 0.3s
+- Upload to blob: ~2s
+- **Total runtime: ~37s**
+
+**Provenance distribution:**
+- 391 polygons (99.7%) from 2025-11-22 (most recent)
+- 1 polygon (0.3%) from 2025-11-20 (persistent flooding)
+
+**Philippines (PHL) - Tiled Processing (without provenance):**
+- 45 tiles at 2.0° × 2.0°
+- Per-tile metrics:
+  - Tasks: 50-70k (vs 8.8M for full country)
+  - Memory: 0.12 GB per tile (vs 5GB for full country)
+  - Computation: 10-25s per tile
+- **Successfully completes** where non-tiled approach OOM kills
+- Task reduction: **130x per tile**
+- Memory reduction: **40x per tile**
+
 ### Known Limitations
 
-1. **Provenance rasters**: Not yet supported for tiled processing (would require mosaicking tile stacks)
+1. **Provenance rasters**: Not yet supported for tiled processing
+   - Reason: Would require mosaicking tile stacks before argmax operation
+   - Workaround: Use non-tiled processing for countries requiring provenance
+   - Future: Could implement tile stack mosaicking for large countries
 2. **Tile boundaries**: Polygons may be split at tile boundaries (could implement buffering/merging)
 3. **Sequential processing**: Tiles processed one at a time (could parallelize for faster execution)
+4. **Phase 3 persist strategy**: Not currently used in production
+   - Spatial tiling achieves similar memory management more effectively
+   - Persist would add ~5GB memory requirement without clear benefit given tiling success
 
 ## References
 
