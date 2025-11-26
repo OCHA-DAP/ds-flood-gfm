@@ -441,32 +441,51 @@ def create_provenance_raster(stack_flood_max: xr.DataArray, unique_dates: np.nda
     return provenance_idx, date_mapping
 
 
-def add_modal_provenance_to_admin(gdf_admin: gpd.GeoDataFrame,
-                                   provenance_idx: xr.DataArray,
-                                   date_mapping: dict,
-                                   admin_level: int = 3) -> gpd.GeoDataFrame:
-    """Add modal (most common) provenance date to admin boundaries.
+def add_provenance_to_polygons(
+    gdf_polygons: gpd.GeoDataFrame,
+    provenance_idx: xr.DataArray,
+    date_mapping: dict,
+    id_col: str = None
+) -> gpd.GeoDataFrame:
+    """Add modal (most common) provenance date to polygons.
 
     Uses exactextract to efficiently calculate the most common provenance date
-    within each administrative boundary.
+    within each polygon. Works for both flood polygons and administrative boundaries.
 
     Parameters
     ----------
-    gdf_admin : gpd.GeoDataFrame
-        Administrative boundaries.
+    gdf_polygons : gpd.GeoDataFrame
+        Polygons (flood polygons, admin boundaries, etc.).
     provenance_idx : xr.DataArray
         Provenance raster with integer indices (should be computed, not lazy).
     date_mapping : dict
         Mapping from integer indices to date strings.
-    admin_level : int, default 0
-        Administrative level (0, 1, 2, 3) for column naming.
+    id_col : str, optional
+        Column name to use for merging results back. If None, uses row index.
 
     Returns
     -------
     gpd.GeoDataFrame
-        Admin boundaries with 'prov_date' and 'prov_idx' columns added.
+        Polygons with 'prov_date' and 'prov_idx' columns added.
+
+    Examples
+    --------
+    # For flood polygons
+    flood_with_prov = add_provenance_to_polygons(flood_polygons, prov_idx, date_mapping)
+
+    # For admin boundaries
+    admin_with_prov = add_provenance_to_polygons(gdf_admin, prov_idx, date_mapping, id_col='adm0_id')
     """
-    logger.info(f"Adding modal provenance to admin level {admin_level} boundaries...")
+    logger.info(f"Adding modal provenance to {len(gdf_polygons)} polygons...")
+
+    # Create temporary ID if none specified
+    if id_col is None:
+        gdf_polygons = gdf_polygons.copy()
+        gdf_polygons['_temp_id'] = range(len(gdf_polygons))
+        id_col = '_temp_id'
+        temp_id_created = True
+    else:
+        temp_id_created = False
 
     # Write provenance raster to temporary file for exactextract
     with tempfile.NamedTemporaryFile(suffix=".tif", delete=False) as tmp:
@@ -497,17 +516,17 @@ def add_modal_provenance_to_admin(gdf_admin: gpd.GeoDataFrame,
         logger.info("  Running exactextract for modal provenance...")
         modal_prov = exactextract.exact_extract(
             tmp_raster_path,
-            gdf_admin,
+            gdf_polygons,
             ["mode", "count"],
-            include_cols=[f"adm{admin_level}_id"],
+            include_cols=[id_col],
             output="pandas",
         )
 
-        # Merge back to admin
-        gdf_result = gdf_admin.merge(
+        # Merge back to polygons
+        gdf_result = gdf_polygons.merge(
             modal_prov,
-            left_on=f"adm{admin_level}_id",
-            right_on=f"adm{admin_level}_id",
+            left_on=id_col,
+            right_on=id_col,
             how="left"
         )
 
@@ -515,13 +534,17 @@ def add_modal_provenance_to_admin(gdf_admin: gpd.GeoDataFrame,
         gdf_result["prov_idx"] = gdf_result["mode"].fillna(-1).astype(int)
         gdf_result["prov_date"] = gdf_result["prov_idx"].map(date_mapping)
 
-        logger.info(f"  ✅ Added provenance to {len(gdf_result)} admin units")
+        # Remove temporary ID if we created one
+        if temp_id_created:
+            gdf_result = gdf_result.drop(columns=['_temp_id'])
+
+        logger.info(f"  ✅ Added provenance to {len(gdf_result)} polygons")
 
         # Log summary
         prov_summary = gdf_result["prov_date"].value_counts()
-        logger.info("  Provenance summary by admin unit:")
+        logger.info("  Provenance summary:")
         for date, count in prov_summary.items():
-            logger.info(f"    {date}: {count} admin units")
+            logger.info(f"    {date}: {count} polygons")
 
         return gdf_result
 

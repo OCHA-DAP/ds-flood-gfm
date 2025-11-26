@@ -11,6 +11,7 @@ import ocha_stratus as stratus
 from dotenv import load_dotenv
 
 from ds_flood_gfm.datasources.gfm import (
+    add_provenance_to_polygons,
     create_flood_composite,
     create_provenance_raster,
     export_polygons,
@@ -121,7 +122,7 @@ def main():
         logger.info("Converting flood raster to polygons...")
         try:
             flood_polygons = raster_to_polygons(flood_composite)
-            logger.info(f"✅ Polygon conversion complete")
+            logger.info(f"✅ Polygon conversion complete: {len(flood_polygons)} polygons")
         except Exception as e:
             logger.error(f"❌ Polygon conversion failed: {e}")
             raise
@@ -130,6 +131,28 @@ def main():
         logger.warning("No polygons created")
         return
 
+    # Add provenance to flood polygons (only for non-tiled processing)
+    if stack_flood_max is not None:
+        logger.info("\n" + "=" * 60)
+        logger.info("ADDING PROVENANCE TO FLOOD POLYGONS")
+        logger.info("=" * 60)
+
+        # Create provenance raster (lazy)
+        provenance_idx, date_mapping = create_provenance_raster(
+            stack_flood_max, unique_dates
+        )
+
+        # Compute provenance raster
+        logger.info("Computing provenance raster...")
+        prov_computed = provenance_idx.compute().astype(np.int16)
+        logger.info(f"✅ Provenance raster computed: {prov_computed.shape}")
+
+        # Add provenance dates to flood polygons
+        flood_polygons = add_provenance_to_polygons(
+            flood_polygons, prov_computed, date_mapping
+        )
+        logger.info(f"✅ Added provenance dates to flood polygons")
+
     date_str = args.end_date.replace("-", "")
     filename_base = f"{args.iso3.lower()}_flood_{args.flood_mode}_{date_str}"
     output_path = args.output_dir / filename_base
@@ -137,24 +160,11 @@ def main():
     output_path = generate_cache_key(args.iso3, unique_dates, None, args.flood_mode)
     export_polygons(flood_polygons, output_path, local=False, blob=True)
 
-    # Generate and upload provenance raster (only for non-tiled processing)
+    # Upload provenance raster (already computed above)
     if stack_flood_max is not None:
         logger.info("\n" + "=" * 60)
-        logger.info("GENERATING PROVENANCE RASTER")
+        logger.info("UPLOADING PROVENANCE RASTER")
         logger.info("=" * 60)
-
-        provenance_idx, date_mapping = create_provenance_raster(
-            stack_flood_max, unique_dates
-        )
-
-        # Compute the provenance raster
-        logger.info("Computing provenance raster...")
-        prov_computed = provenance_idx.compute()
-
-        # IMPORTANT: Cast to int16 for proper GeoTIFF encoding
-        # provenance_idx values are integers (-1, 0, 1, 2, ...) but inherit float64 dtype
-        prov_computed = prov_computed.astype(np.int16)
-        logger.info(f"✅ Provenance raster computed: {prov_computed.shape}, dtype={prov_computed.dtype}")
 
         # Add metadata as DataArray attributes (stored as GeoTIFF tags)
         prov_computed.attrs['date_mapping'] = json.dumps(date_mapping)

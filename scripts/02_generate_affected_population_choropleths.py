@@ -60,6 +60,7 @@ from ds_flood_gfm.country_config import (
     get_bbox,
     GHSL_RASTER_BLOB_PATH,
 )
+from ds_flood_gfm.datasources.gfm import add_provenance_to_polygons
 
 load_dotenv()
 
@@ -774,70 +775,40 @@ def create_map_from_cache(
             colors = generate_rdylgn_colors(len(unique_dates))
             date_to_color = {i: colors[i] for i in range(len(unique_dates))}
 
-            # Write provenance raster to temp file for exactextract
-            # exactextract needs a file path, not in-memory array
-            # Get provenance as numpy array (handle both xarray and numpy)
+            # Create date mapping for add_provenance_to_polygons function
+            date_mapping = {
+                i: str(pd.Timestamp(date))[:10]
+                for i, date in enumerate(unique_dates)
+            }
+            date_mapping[-1] = "No Data"
+
+            # Convert provenance to xarray if needed
             if isinstance(provenance_indexed, xr.DataArray):
-                prov_data = provenance_indexed.values.astype("int16")
-                x_min, x_max = float(provenance_indexed.x.min()), float(
-                    provenance_indexed.x.max()
-                )
-                y_min, y_max = float(provenance_indexed.y.min()), float(
-                    provenance_indexed.y.max()
-                )
+                prov_xr = provenance_indexed
             else:
-                # Already a numpy array (from cache)
-                prov_data = provenance_indexed.astype("int16")
-                # Get bounds from provenance_target
-                x_min, x_max = float(provenance_target.x.min()), float(
-                    provenance_target.x.max()
-                )
-                y_min, y_max = float(provenance_target.y.min()), float(
-                    provenance_target.y.max()
+                # Convert numpy array to xarray with coordinates from provenance_target
+                prov_xr = xr.DataArray(
+                    provenance_indexed,
+                    coords=provenance_target.coords,
+                    dims=provenance_target.dims
                 )
 
-            # Create affine transform from coordinates
-            height, width = prov_data.shape
-            transform = from_bounds(x_min, y_min, x_max, y_max, width, height)
-
-            # Write to temporary file
-            with tempfile.NamedTemporaryFile(suffix=".tif", delete=False) as tmp:
-                tmp_raster_path = tmp.name
-
-            with rasterio.open(
-                tmp_raster_path,
-                "w",
-                driver="GTiff",
-                height=height,
-                width=width,
-                count=1,
-                dtype="int16",
-                crs="EPSG:4326",
-                transform=transform,
-            ) as dst:
-                dst.write(prov_data, 1)
-
-            # Use exactextract to get mode of provenance_indexed for each polygon
-            # This is MUCH faster than rasterstats!
-            modal_prov = exactextract.exact_extract(
-                tmp_raster_path,
+            # Use refactored function to add provenance to admin boundaries
+            gdf_admin = add_provenance_to_polygons(
                 gdf_admin,
-                ["mode"],
-                include_cols=[f"adm{adm_level}_id"],
-                output="pandas",
+                prov_xr,
+                date_mapping,
+                id_col=f"adm{adm_level}_id"
             )
 
-            # Clean up temp file
-            os.unlink(tmp_raster_path)
-
-            # Map results to colors
+            # Map provenance indices to colors for visualization
             prov_colors = []
-            for _, row in modal_prov.iterrows():
-                mode_val = row["mode"]
-                if pd.isna(mode_val) or mode_val == -1:
+            for _, row in gdf_admin.iterrows():
+                prov_idx = row["prov_idx"]
+                if pd.isna(prov_idx) or prov_idx == -1:
                     prov_colors.append("lightgray")
                 else:
-                    prov_colors.append(date_to_color.get(int(mode_val), "lightgray"))
+                    prov_colors.append(date_to_color.get(int(prov_idx), "lightgray"))
 
             gdf_admin["prov_color"] = prov_colors
 
@@ -1622,70 +1593,40 @@ def create_map_from_stac(
             colors = generate_rdylgn_colors(len(unique_dates))
             date_to_color = {i: colors[i] for i in range(len(unique_dates))}
 
-            # Write provenance raster to temp file for exactextract
-            # exactextract needs a file path, not in-memory array
-            # Get provenance as numpy array (handle both xarray and numpy)
+            # Create date mapping for add_provenance_to_polygons function
+            date_mapping = {
+                i: str(pd.Timestamp(date))[:10]
+                for i, date in enumerate(unique_dates)
+            }
+            date_mapping[-1] = "No Data"
+
+            # Convert provenance to xarray if needed
             if isinstance(provenance_indexed, xr.DataArray):
-                prov_data = provenance_indexed.values.astype("int16")
-                x_min, x_max = float(provenance_indexed.x.min()), float(
-                    provenance_indexed.x.max()
-                )
-                y_min, y_max = float(provenance_indexed.y.min()), float(
-                    provenance_indexed.y.max()
-                )
+                prov_xr = provenance_indexed
             else:
-                # Already a numpy array (from cache)
-                prov_data = provenance_indexed.astype("int16")
-                # Get bounds from provenance_target
-                x_min, x_max = float(provenance_target.x.min()), float(
-                    provenance_target.x.max()
-                )
-                y_min, y_max = float(provenance_target.y.min()), float(
-                    provenance_target.y.max()
+                # Convert numpy array to xarray with coordinates from provenance_target
+                prov_xr = xr.DataArray(
+                    provenance_indexed,
+                    coords=provenance_target.coords,
+                    dims=provenance_target.dims
                 )
 
-            # Create affine transform from coordinates
-            height, width = prov_data.shape
-            transform = from_bounds(x_min, y_min, x_max, y_max, width, height)
-
-            # Write to temporary file
-            with tempfile.NamedTemporaryFile(suffix=".tif", delete=False) as tmp:
-                tmp_raster_path = tmp.name
-
-            with rasterio.open(
-                tmp_raster_path,
-                "w",
-                driver="GTiff",
-                height=height,
-                width=width,
-                count=1,
-                dtype="int16",
-                crs="EPSG:4326",
-                transform=transform,
-            ) as dst:
-                dst.write(prov_data, 1)
-
-            # Use exactextract to get mode of provenance_indexed for each polygon
-            # This is MUCH faster than rasterstats!
-            modal_prov = exactextract.exact_extract(
-                tmp_raster_path,
+            # Use refactored function to add provenance to admin boundaries
+            gdf_admin = add_provenance_to_polygons(
                 gdf_admin,
-                ["mode"],
-                include_cols=[f"adm{adm_level}_id"],
-                output="pandas",
+                prov_xr,
+                date_mapping,
+                id_col=f"adm{adm_level}_id"
             )
 
-            # Clean up temp file
-            os.unlink(tmp_raster_path)
-
-            # Map results to colors
+            # Map provenance indices to colors for visualization
             prov_colors = []
-            for _, row in modal_prov.iterrows():
-                mode_val = row["mode"]
-                if pd.isna(mode_val) or mode_val == -1:
+            for _, row in gdf_admin.iterrows():
+                prov_idx = row["prov_idx"]
+                if pd.isna(prov_idx) or prov_idx == -1:
                     prov_colors.append("lightgray")
                 else:
-                    prov_colors.append(date_to_color.get(int(mode_val), "lightgray"))
+                    prov_colors.append(date_to_color.get(int(prov_idx), "lightgray"))
 
             gdf_admin["prov_color"] = prov_colors
 
