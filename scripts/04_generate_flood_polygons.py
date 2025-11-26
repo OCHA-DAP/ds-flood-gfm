@@ -1,6 +1,8 @@
 import argparse
+import json
 import logging
 import tempfile
+from datetime import datetime
 from pathlib import Path
 import numpy as np
 import rasterio
@@ -154,6 +156,11 @@ def main():
         prov_computed = prov_computed.astype(np.int16)
         logger.info(f"✅ Provenance raster computed: {prov_computed.shape}, dtype={prov_computed.dtype}")
 
+        # Add metadata as DataArray attributes (stored as GeoTIFF tags)
+        prov_computed.attrs['date_mapping'] = json.dumps(date_mapping)
+        prov_computed.attrs['created_date'] = datetime.now().isoformat()
+        logger.info("✅ Added metadata to provenance raster")
+
         # Create filename based on cache key
         prov_filename = f"{output_path}_provenance.tif"
         blob_path = f"ds-flood-gfm/processed/provenance_raster/{prov_filename}"
@@ -163,7 +170,7 @@ def main():
         stratus.upload_cog_to_blob(
             prov_computed, blob_path, container_name="projects", stage="dev"
         )
-        logger.info(f"✅ Provenance raster uploaded")
+        logger.info(f"✅ Provenance raster uploaded with metadata")
 
         # Log date mapping for reference
         logger.info("\nProvenance date mapping:")
