@@ -18,6 +18,8 @@ def _(mo):
 
 @app.cell
 def _():
+    from io import BytesIO
+
     import pandas as pd
     import geopandas as gpd
     import ocha_stratus as stratus
@@ -38,9 +40,11 @@ def _():
 
     _ = load_dotenv(find_dotenv(usecwd=True))
     return (
+        BytesIO,
         GHSL_RASTER_BLOB_PATH_3s,
         exactextract,
         geometry_mask,
+        gpd,
         mcolors,
         np,
         plt,
@@ -61,14 +65,15 @@ def _(mo):
 @app.cell
 def _(mo):
     iso3_dropdown = mo.ui.dropdown(
-        label="Select a country", options=["CUB", "HTI", "JAM", "PHL"], value="HTI"
+        label="Select a country", options=["CUB", "HTI", "JAM", "PHL", "ner"], value="HTI"
     )
     adm_dropdown = mo.ui.dropdown(
         label="Select an admin level", options=[0, 1, 2, 3], value=3
     )
+    custom_adm_entry = mo.ui.text(label="Custom admin blob name", value="")
 
-    mo.hstack([iso3_dropdown, adm_dropdown], justify="start")
-    return adm_dropdown, iso3_dropdown
+    mo.hstack([iso3_dropdown, adm_dropdown, custom_adm_entry], justify="start")
+    return adm_dropdown, custom_adm_entry, iso3_dropdown
 
 
 @app.cell
@@ -88,6 +93,13 @@ def _(blob_names, mo):
     )
     shp_dropdown
     return (shp_dropdown,)
+
+
+@app.cell
+def _(BytesIO, gpd, stratus):
+    def load_geoparquet_from_blob(blob_name, stage="dev"):
+        return gpd.read_parquet(BytesIO(stratus.load_blob_data(blob_name)))
+    return (load_geoparquet_from_blob,)
 
 
 @app.cell
@@ -112,16 +124,21 @@ def _(mo, stratus):
 def _(
     GHSL_RASTER_BLOB_PATH_3s,
     adm_dropdown,
+    custom_adm_entry,
     get_adm,
     get_flood,
     get_pop,
     iso3_dropdown,
+    load_geoparquet_from_blob,
     shp_dropdown,
 ):
     target_crs = "EPSG:32618"  # UTM Zone 17N
 
     # Get the data
-    gdf_adm = get_adm(iso3_dropdown.value, adm_dropdown.value)
+    if custom_adm_entry.value:
+        gdf_adm = load_geoparquet_from_blob(custom_adm_entry.value)
+    else:
+        gdf_adm = get_adm(iso3_dropdown.value, adm_dropdown.value)
     da_pop = get_pop(GHSL_RASTER_BLOB_PATH_3s)
     gdf_flood = get_flood(shp_dropdown.value, "data/data.shp")
     return da_pop, gdf_adm, gdf_flood, target_crs
@@ -432,16 +449,21 @@ def _(df_output):
 
 
 @app.cell
-def _(buffer_dropdown, df_output, save_to_blob, shp_dropdown, stratus):
+def _(buffer_dropdown, df_output, mo, save_to_blob, shp_dropdown, stratus):
     if save_to_blob.value:
         # This is a bit ugly...
         output_fname = f"{shp_dropdown.value.split('/')[-1].split('.')[0].replace('_nopop', '')}_b{buffer_dropdown.value}.csv"
+        blob_name = f"ds-flood-gfm/processed/exposed_population/{output_fname}"
         stratus.upload_csv_to_blob(
             df_output,
             blob_name=f"ds-flood-gfm/processed/exposed_population/{output_fname}",
             container_name="projects",
             stage="dev",
         )
+        save_readout = mo.md(f"saved to `{blob_name}`")
+    else:
+        save_readout = mo.md("not saved")
+    save_readout
     return
 
 
