@@ -1,12 +1,12 @@
 [build-system]
-requires = ["setuptools>=45", "wheel"]
+requires = ["setuptools>=70", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "ds-flood-gfm"
 version = "0.1.0"
 description = "Global Flood Monitoring (GFM) data exploration"
-requires-python = ">=3.12"
+requires-python = ">=3.11,<3.13"
 license = {text = "MIT"}
 dependencies = [
     "pystac-client",
@@ -26,7 +26,7 @@ dependencies = [
     "duckdb",
     "fsspec",
     "aiohttp>=3.13.0",
-    "ee>=0.2",
+    "ee",
     "geemap>=0.36.4",
     "pyarrow>=21.0.0",
     "xee>=0.0.22",
