@@ -1,0 +1,261 @@
+# Population Exposure Analysis {#sec-population-exposure}
+
+---
+jupyter: ds-flood-gfm
+---
+
+Flood maps on their own don't answer the operational question: **how many people are affected?** This chapter walks through the methodology for overlaying GFM flood extent with population density data to produce per-admin-division impact estimates.
+
+```{python}
+import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap, BoundaryNorm
+import numpy as np
+import geopandas as gpd
+from fsspec.implementations.http import HTTPFileSystem
+import pandas as pd
+import ocha_stratus as stratus
+from ocha_stratus import list_container_blobs
+
+%matplotlib inline
+plt.rcParams['figure.dpi'] = 100
+```
+
+```{python}
+notebook_config = {
+    'iso3': 'JAM',
+    'start_date': '2025-10-20',
+    'end_date': '2025-10-29',
+}
+```
+
+
+## GHSL Population Grid
+
+We use the Global Human Settlement Layer (GHSL) population raster (GHS-POP R2023A, 2025 estimate) at ~100m resolution (3 arc-second). The raster is loaded from Azure Blob Storage and clipped to the AOI.
+
+```{python}
+#| eval: false
+
+blob_name = "ghsl/pop/GHS_POP_E2025_GLOBE_R2023A_4326_3ss_V1_0.tif"
+da_global = stratus.open_blob_cog(blob_name, container_name="raster").squeeze(drop=True)
+
+# Clip to AOI
+min_x, min_y, max_x, max_y = gdf_aoi.total_bounds
+da_clip_box = da_global.rio.clip_box(minx=min_x, miny=min_y, maxx=max_x, maxy=max_y)
+da_clip = da_clip_box.rio.clip(gdf_aoi.geometry)
+da_clip = da_clip.rio.write_crs("EPSG:4326")
+da_clip = da_clip.where(da_clip != da_clip.rio.nodata)
+```
+
+
+## Resolution Mismatch: 20m Floods vs 100m Population
+
+GFM flood extent is at 20m resolution. GHSL population is at ~100m. When we sample population at a 20m flood pixel location, we get the population count for an area 25x larger than the flood pixel.
+
+::: {.callout-important}
+## The 3-Tier Population Adjustment
+
+| Tier | Name | Formula | Example |
+|------|------|---------|---------|
+| 1 | `population_raw` | Raw GHSL value | 63.3 |
+| 2 | `population_adjusted_raw` | Raw / 25 | 2.53 |
+| 3 | `population_adjusted` | ceil(Raw / 25) | **3** |
+
+The pixel area ratio is (100/20)^2^ = 25. We divide by 25 to get the proportional population for a 20m pixel, then round up because a fraction of a person cannot be affected.
+
+The choropleths and CSVs use `population_adjusted` (tier 3) by default.
+:::
+
+
+## Overlay Methodology
+
+The overlay follows the GFM methodology as closely as possible:
+
+1. Resample population from 100m to 20m using nearest-neighbour (per GFM spec)
+2. Divide by 25 to adjust for the pixel area ratio
+3. Multiply flood mask x adjusted population to get affected population per pixel
+4. Run `exact_extract` to aggregate by administrative zone
+
+```{python}
+#| eval: false
+
+from exactextract import exact_extract
+
+def gfm_exact_workflow_zonal(flood_20m, population_100m, gdf_zones, zone_id_col=None):
+    """
+    Calculate affected population using GFM methodology with zonal statistics.
+    """
+
+    # Ensure CRS match
+    if gdf_zones.crs != flood_20m.rio.crs:
+        gdf_zones = gdf_zones.to_crs(flood_20m.rio.crs)
+
+    # Clear nodata metadata for exactextract compatibility
+    if population_100m.rio.nodata is not None:
+        population_100m = population_100m.rio.write_nodata(None)
+
+    # Resample population to 20m (nearest neighbor per GFM spec)
+    population_20m = population_100m.rio.reproject_match(
+        flood_20m, resampling=0
+    )
+
+    # Adjust for pixel area ratio: (100/20)^2 = 25
+    pixel_area_ratio = (100 / 20) ** 2
+    population_20m_adjusted = population_20m / pixel_area_ratio
+
+    # Affected population = flood mask * adjusted population
+    affected_pop_20m = flood_20m * population_20m_adjusted
+
+    # Zonal statistics
+    results = exact_extract(affected_pop_20m, gdf_zones, 'sum', output='pandas')
+    flood_results = exact_extract(flood_20m, gdf_zones, ['sum', 'count'], output='pandas')
+
+    # Prepare zone identifiers
+    if zone_id_col and zone_id_col in gdf_zones.columns:
+        zone_ids = gdf_zones[zone_id_col].tolist()
+    else:
+        zone_ids = gdf_zones.index.tolist()
+
+    results_df = pd.DataFrame({
+        'zone_id': zone_ids,
+        'affected_population': results['sum'].values,
+        'flooded_pixels': flood_results['sum'].values,
+        'total_pixels': flood_results['count'].values,
+    })
+
+    pixel_area_m2 = 20 * 20
+    results_df['flooded_area_km2'] = results_df['flooded_pixels'] * pixel_area_m2 / 1_000_000
+    results_df['affected_population'] = results_df['affected_population'].fillna(0).astype(int)
+
+    return results_df
+```
+
+
+## Exposed Population Results
+
+The production pipeline generates CSV exports of exposed population per admin division and uploads them to blob. Here we load pre-computed results and visualize them --- the same approach used in the interactive marimo dashboard (`flood_exposure.py`).
+
+```{python}
+import io
+import plotly.express as px
+
+FIELDMAPS_BASE = "https://data.fieldmaps.io/edge-matched/humanitarian/intl"
+filesystem = HTTPFileSystem()
+
+def load_exposure_csv(blob_path):
+    """Load an exposed population CSV from blob."""
+    data = stratus.load_blob_data(blob_path, container_name='projects', stage='dev')
+    return pd.read_csv(io.BytesIO(data))
+
+def load_admin_boundaries(iso3, adm_level):
+    """Load admin boundaries from FieldMaps.io."""
+    url = f"{FIELDMAPS_BASE}/adm{adm_level}_polygons.parquet"
+    return gpd.read_parquet(url, filesystem=filesystem,
+                            filters=[("iso_3", "=", iso3)])
+
+def exposure_choropleth(df_exposure, gdf_adm, adm_level, title, pop_col='pop_exposed'):
+    """
+    Create an interactive Plotly choropleth of flood exposure.
+    Borrows the color scale and style from the marimo dashboard.
+    """
+    name_col = f'adm{adm_level}_name'
+    src_col = f'adm{adm_level}_src'
+
+    # Merge on pcode (src) to avoid duplicate name issues
+    merge_col = src_col if src_col in df_exposure.columns and src_col in gdf_adm.columns else name_col
+    gdf_merged = gdf_adm.merge(df_exposure, on=merge_col, how='left')
+    # resolve duplicate name columns from merge
+    if f'{name_col}_x' in gdf_merged.columns:
+        gdf_merged[name_col] = gdf_merged[f'{name_col}_x']
+    gdf_merged[pop_col] = gdf_merged[pop_col].fillna(0)
+
+    # Simplify geometries for faster rendering
+    gdf_plot = gdf_merged.copy()
+    gdf_plot.geometry = gdf_plot.geometry.simplify(tolerance=0.001)
+    gdf_wgs84 = gdf_plot.to_crs("EPSG:4326") if gdf_plot.crs != "EPSG:4326" else gdf_plot
+
+    bounds = gdf_wgs84.total_bounds
+    max_color = gdf_wgs84[pop_col].quantile(0.99)
+
+    total = int(gdf_wgs84[pop_col].sum())
+    n_div = int((gdf_wgs84[pop_col] > 0).sum())
+
+    fig = px.choropleth_map(
+        gdf_wgs84,
+        geojson=gdf_wgs84.geometry,
+        locations=gdf_wgs84.index,
+        color=pop_col,
+        color_continuous_scale=[
+            (0, "white"), (0.001, "white"),
+            (0.001, "#fee5d9"), (1, "#a50f15"),
+        ],
+        range_color=[0, max(max_color, 1)],
+        zoom=6,
+        center={"lat": (bounds[1] + bounds[3]) / 2,
+                "lon": (bounds[0] + bounds[2]) / 2},
+        hover_name=name_col,
+        hover_data={pop_col: ":,.0f"},
+        height=500,
+    )
+    fig.update_traces(marker_line_color="lightgrey", marker_line_width=0.5)
+    fig.update_layout(title=f"{title}<br><sup>Total: {total:,} people in {n_div} divisions</sup>")
+    return fig
+```
+
+::: {.callout-note}
+## How this data was produced
+
+The flood polygons were generated with Script 04, then the marimo dashboard computed population exposure with a 50m buffer and exported the CSV to blob:
+
+```bash
+# 1. Generate cumulative flood polygons
+uv run python scripts/04_generate_flood_polygons.py \
+  --target-date 2025-11-03 \
+  --n-images 4 \
+  --iso3 JAM \
+  --flood-mode cumulative
+
+# 2. Launch the marimo dashboard to compute exposure and export CSV
+uv run marimo run flood_exposure.py
+```
+:::
+
+```{python}
+# Load Jamaica exposure data — using the run with the most observation dates
+# which captures the peak of Hurricane Melissa's impact
+df_jam = load_exposure_csv(
+    'ds-flood-gfm/processed/exposed_population/JAM_20251029_20251030_20251102_20251103_cumulative_b50.csv'
+)
+gdf_jam_adm3 = load_admin_boundaries('JAM', 3)
+
+print(f"Jamaica: {df_jam.pop_exposed.sum():.0f} people exposed across {(df_jam.pop_exposed > 0).sum()} divisions")
+df_jam.nlargest(10, 'pop_exposed')
+```
+
+
+## Interactive Choropleth
+
+This is the same style of interactive map produced by the marimo dashboard. The white-to-red color scale uses 99th percentile clamping to handle outliers, and you can hover over any division to see its name and population count.
+
+```{python}
+fig = exposure_choropleth(
+    df_jam, gdf_jam_adm3, adm_level=3,
+    title="Jamaica - Hurricane Melissa (Cumulative, 50m buffer)"
+)
+fig.show()
+```
+
+
+## From Notebook to Production
+
+The analysis above --- STAC query, composite, population overlay, choropleth --- is exactly what the production script `02_generate_affected_population_choropleths.py` automates. With a single CLI call:
+
+```bash
+uv run python scripts/02_generate_affected_population_choropleths.py \
+  --end-date 2025-10-29 \
+  --n-latest 4 \
+  --iso3 JAM \
+  --flood-mode latest
+```
+
+...the script runs the full workflow, adds provenance tracking, smart caching, and saves the output choropleth. See @sec-production-pipeline for the complete pipeline.

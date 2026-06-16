@@ -62,7 +62,7 @@ def _(mo):
 def _(mo):
     iso3_dropdown = mo.ui.dropdown(
         label="Select a country",
-        options=["CUB", "HTI", "JAM", "PHL", "gaza_strip_adm1"],
+        options=["CUB", "HTI", "JAM", "PHL", "gaza_strip_adm1", "ner_flooding_adm3s"],
         value="HTI",
     )
     adm_dropdown = mo.ui.dropdown(
@@ -99,6 +99,10 @@ def _(mo, stratus):
         if iso3.startswith("gaza_strip"):
             # Load Gaza geometry from blob with dynamic admin level
             blob_path = f"ds-flood-gfm/raw/geom/gaza_strip_adm{adm_level}.parquet"
+            return stratus.load_geoparquet_from_blob(blob_path)
+        elif iso3.startswith("ner_flooding"):
+            # Load Niger geometry from blob
+            blob_path = "pa-aa-ner-flooding/processed/ner_flooding_adm3s.parquet"
             return stratus.load_geoparquet_from_blob(blob_path)
         else:
             return stratus.codab.load_codab_from_fieldmaps(iso3, adm_level)

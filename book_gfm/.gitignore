@@ -1,1 +1,6 @@
 /.quarto/
+
+**/*.quarto_ipynb
+
+# Quarto per-document render artifacts (vendored libs, regenerated on build)
+**/*_files/

@@ -138,4 +138,8 @@ book_gfm/_book/*
 book_gfm/_freeze/*
 book_gfm/early_wips/*
 *.png
+!book_gfm/images/*.png
 *.htmlCLAUDE.md
+
+# Claude Code local (per-user) settings
+.claude/settings.local.json
