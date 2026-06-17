@@ -277,9 +277,9 @@ def raster_to_polygons(flood_raster: xr.DataArray) -> gpd.GeoDataFrame:
 
 def process_country_tiled(
     bbox: list,
-    end_date: str,
-    n_latest: int = 4,
-    n_search: int = 15,
+    target_date: str,
+    n_images: int = 4,
+    n_search: int = -15,
     mode: str = "latest",
     tile_size: float = 2.0,
     return_stack: bool = False
@@ -290,12 +290,13 @@ def process_country_tiled(
     ----------
     bbox : list
         Full country bounding box [west, south, east, north].
-    end_date : str
-        End date (YYYY-MM-DD).
-    n_latest : int, default 4
-        Number of most recent dates to use.
-    n_search : int, default 15
-        Search window in days.
+    target_date : str
+        Reference date (YYYY-MM-DD).
+    n_images : int, default 4
+        Number of dates to use for composite.
+    n_search : int, default -15
+        Search window in days. Positive = search forward from target_date,
+        Negative = search backward from target_date.
     mode : str, default "latest"
         Compositing mode ('latest' or 'cumulative').
     tile_size : float, default 2.0
@@ -328,7 +329,7 @@ def process_country_tiled(
 
         try:
             # Query STAC for this tile
-            items = query_gfm_stac(tile_bbox, end_date, n_search)
+            items = query_gfm_stac(tile_bbox, target_date, n_search)
 
             if len(items) == 0:
                 logger.info(f"  No data for tile {i}, skipping...")
@@ -337,12 +338,12 @@ def process_country_tiled(
             # Create composite for this tile
             if return_stack:
                 flood_composite, unique_dates, stack_flood_max = create_flood_composite(
-                    items, tile_bbox, n_latest, mode=mode, return_stack=True
+                    items, tile_bbox, n_images, mode=mode, n_search=n_search, return_stack=True
                 )
                 tile_stacks.append(stack_flood_max)
             else:
                 flood_composite, unique_dates = create_flood_composite(
-                    items, tile_bbox, n_latest, mode=mode, return_stack=False
+                    items, tile_bbox, n_images, mode=mode, n_search=n_search, return_stack=False
                 )
 
             # Store dates from first tile
