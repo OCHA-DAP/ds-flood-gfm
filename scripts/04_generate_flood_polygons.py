@@ -32,18 +32,29 @@ def main():
     parser = argparse.ArgumentParser(
         description="Generate flood polygons from GFM STAC data"
     )
-    parser.add_argument("--end-date", required=True, help="End date (YYYY-MM-DD)")
+    parser.add_argument("--target-date", required=True, help="Reference date (YYYY-MM-DD)")
     parser.add_argument(
-        "--n-latest",
+        "--n-images",
         type=int,
         default=4,
-        help="Number of days to look back (default: 4)",
+        help="Number of dates to use for composite (default: 4)",
     )
     parser.add_argument(
-        "--n-search", type=int, default=15, help="Search window in days (default: 15)"
+        "--n-search",
+        type=int,
+        default=-15,
+        help="Search window in days. Positive = forward scan, Negative = backward scan (default: -15)"
     )
-    parser.add_argument(
-        "--iso3", required=True, help="Country ISO3 code (JAM, HTI, CUB)"
+
+    # Geometry source: either ISO3 or custom geoparquet file
+    geom_group = parser.add_mutually_exclusive_group(required=True)
+    geom_group.add_argument(
+        "--iso3",
+        help="Country ISO3 code (JAM, HTI, CUB)"
+    )
+    geom_group.add_argument(
+        "--aoi-geom-blob",
+        help="Blob path to geoparquet file (.parquet)"
     )
     parser.add_argument(
         "--flood-mode",
@@ -71,44 +82,85 @@ def main():
 
     args = parser.parse_args()
 
-    # Auto-enable tiling for known large countries
-    large_countries = ["PHL", "IDN", "BRA", "USA", "CAN", "RUS", "CHN", "AUS"]
-    if args.iso3 in large_countries and not args.use_tiling:
-        logger.info(f"⚠️  {args.iso3} is a large country - automatically enabling tiled processing")
-        args.use_tiling = True
+    # Auto-enable tiling for known large countries (only for ISO3 mode)
+    if args.iso3:
+        large_countries = ["PHL", "IDN", "BRA", "USA", "CAN", "RUS", "CHN", "AUS", "URY"]
+        if args.iso3 in large_countries and not args.use_tiling:
+            logger.info(f"⚠️  {args.iso3} is a large country - automatically enabling tiled processing")
+            args.use_tiling = True
 
+    scan_direction = "forward" if args.n_search > 0 else "backward"
     logger.info("=" * 60)
     logger.info("GFM FLOOD POLYGON GENERATOR")
     logger.info("=" * 60)
-    logger.info(f"Country: {args.iso3}")
-    logger.info(f"End date: {args.end_date}")
-    logger.info(f"Days back: {args.n_latest}")
-    logger.info(f"Search window: {args.n_search}")
+
+    # Load geometry from ISO3 or custom geoparquet file
+    if args.iso3:
+        logger.info(f"Loading admin boundaries for {args.iso3} via CODAB...")
+        gdf_admin = stratus.codab.load_codab_from_fieldmaps(args.iso3, 0)
+        aoi_name = args.iso3
+    elif args.aoi_geom_blob:
+        logger.info(f"Loading custom geometry from blob: {args.aoi_geom_blob}")
+        gdf_admin = stratus.load_geoparquet_from_blob(args.aoi_geom_blob)
+        aoi_name = Path(args.aoi_geom_blob).stem
+        logger.info(f"  Loaded {len(gdf_admin)} features")
+
+    bbox = gdf_admin.total_bounds
+    logger.info(f"  Bounding box: {bbox}")
+
+    logger.info(f"AOI: {aoi_name}")
+    logger.info(f"Target date: {args.target_date}")
+    logger.info(f"Number of images: {args.n_images}")
+    logger.info(f"Search window: {args.n_search} days ({scan_direction})")
     logger.info(f"Mode: {args.flood_mode}")
     logger.info("=" * 60)
-
-    gdf_admin = stratus.codab.load_codab_from_fieldmaps(args.iso3, 0)
-    bbox = gdf_admin.total_bounds
 
     # Use tiled processing for large countries
     if args.use_tiling:
         logger.info(f"Using tiled processing with {args.tile_size}° tiles")
 
-        # Note: Tiled processing doesn't support provenance yet
+        # Process polygons with tiling (memory-intensive operation)
         flood_polygons, unique_dates = process_country_tiled(
             bbox=bbox,
-            end_date=args.end_date,
-            n_latest=args.n_latest,
+            target_date=args.target_date,
+            n_images=args.n_images,
             n_search=args.n_search,
             mode=args.flood_mode,
             tile_size=args.tile_size,
             return_stack=False
         )
-        stack_flood_max = None  # Provenance not supported for tiled processing
+
+        # Generate provenance raster for full country (doesn't need tiling)
+        # Why no tiling for provenance:
+        # 1. Provenance generation stays LAZY - doesn't compute the flood composite
+        # 2. Only computes a 2D raster (not 3D temporal stack) at the end
+        # 3. Memory usage similar to one tile (~0.1-0.2GB vs 5GB for full composite)
+        # 4. Rechunking strategy (time:-1, y:4096, x:4096) makes it efficient
+        logger.info("\n" + "=" * 60)
+        logger.info("GENERATING PROVENANCE RASTER (FULL COUNTRY)")
+        logger.info("=" * 60)
+        logger.info("Note: Provenance doesn't use tiling - it's a lightweight operation")
+        logger.info("      that stays lazy and only computes a 2D raster at the end.")
+
+        # Query STAC for full country
+        items = query_gfm_stac(bbox, args.target_date, args.n_search)
+
+        if len(items) == 0:
+            logger.warning("No STAC items found for provenance generation")
+            stack_flood_max = None
+        else:
+            # Create stack for provenance (stays lazy, flood_composite not used)
+            _, _, stack_flood_max = create_flood_composite(
+                items, bbox, args.n_images,
+                mode=args.flood_mode,
+                n_search=args.n_search,
+                return_stack=True
+            )
+            logger.info("✅ Stack created for provenance (still lazy)")
 
     else:
         # Standard processing for small countries
-        items = query_gfm_stac(bbox, args.end_date, args.n_search)
+        items = query_gfm_stac(bbox, args.target_date, args.n_search)
 
         if len(items) == 0:
             logger.error("No STAC items found for the specified criteria")
@@ -116,7 +168,7 @@ def main():
 
         # Create flood composite with stack for provenance
         flood_composite, unique_dates, stack_flood_max = create_flood_composite(
-            items, bbox, args.n_latest, mode=args.flood_mode, return_stack=True
+            items, bbox, args.n_images, mode=args.flood_mode, n_search=args.n_search, return_stack=True
         )
 
         logger.info("Converting flood raster to polygons...")
@@ -153,11 +205,7 @@ def main():
         )
         logger.info(f"✅ Added provenance dates to flood polygons")
 
-    date_str = args.end_date.replace("-", "")
-    filename_base = f"{args.iso3.lower()}_flood_{args.flood_mode}_{date_str}"
-    output_path = args.output_dir / filename_base
-
-    output_path = generate_cache_key(args.iso3, unique_dates, None, args.flood_mode)
+    output_path = generate_cache_key(aoi_name, unique_dates, None, args.flood_mode)
     export_polygons(flood_polygons, output_path, local=False, blob=True)
 
     # Upload provenance raster (already computed above)
@@ -197,7 +245,7 @@ def main():
         logger.info("FLOOD POLYGON GENERATION COMPLETE")
         logger.info("=" * 60)
         logger.info(f"   Polygons created: {len(flood_polygons)}")
-        logger.info("   ⚠️  Provenance raster skipped (tiled processing)")
+        logger.info("   ⚠️  Provenance raster skipped (no STAC items found)")
 
 
 if __name__ == "__main__":

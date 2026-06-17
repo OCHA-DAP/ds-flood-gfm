@@ -4,10 +4,11 @@ Test script demonstrating the spatial filter to remove STAC false positives.
 This shows how to use the stac_spatial_filter module to automatically
 detect and remove tiles that don't actually intersect with your AOI.
 
-Run: uv run python reprex/test_spatial_filter.py
+Run: uv run python source_legacy/gfm/test_spatial_filter.py
 """
 import pystac_client
-from ds_flood_gfm.stac_spatial_filter import filter_stac_results, get_dates_with_actual_coverage
+# NOTE: moved from reprex/ to source_legacy/gfm/ — import the co-located legacy module
+from stac_spatial_filter import filter_stac_results, get_dates_with_actual_coverage
 
 # Haiti bounding box
 HAITI_BBOX = [-74.5, 18.0, -71.6, 20.1]

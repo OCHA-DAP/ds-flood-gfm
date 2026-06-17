@@ -1,0 +1,63 @@
+# Why Build a Custom Pipeline? {.unnumbered}
+
+The GFM system already provides flood extent data and an affected population product layer. So why build our own pipeline? This appendix documents the limitations we encountered and the design decisions that followed.
+
+## The GFM Product: Per-Tile, Per-Observation
+
+The GFM system produces flood extent and affected population estimates **per individual Sentinel-1 tile, per observation**. Each tile covers roughly a 100km swath. For a small country like Jamaica, a single Sentinel-1 pass typically covers only about half the country. For larger countries (Haiti, Cuba, Philippines), coverage per pass is even more fragmented.
+
+The GFM REST API ([api.gfm.eodc.eu/v2](https://api.gfm.eodc.eu/v2)) lets you register Areas of Interest and receive per-tile results. The affected population product uses GHS-POP population data and calculates exposure per tile. See the [GFM Product User Manual](https://extwiki.eodc.eu/gfm_assets/gfm_pum_v20231005_compressed.pdf) and the [affected population layer documentation](https://global-flood.emergency.copernicus.eu/news/134-release-of-the-updated-potentially-affected-population-layer-in-gfm/).
+
+## The Coverage Gap Problem
+
+During early development, we investigated what happens when you look at individual GFM observations for a country-level AOI. The findings (documented in `FINDINGS_SUMMARY.md`):
+
+**Jamaica, 2025-10-24:**
+
+- STAC returns 2 tiles, but only the eastern tile contains actual data
+- Western Jamaica (~50%) has no flood information for this date
+
+**Jamaica, 2025-10-27:**
+
+- STAC returns 2 tiles, but only the western tile contains data
+- Eastern Jamaica (~40%) has no flood information for this date
+
+This is not a bug — it reflects the Sentinel-1 orbit geometry. Different parts of the same country are observed on different days. The GFM product accurately reports what each individual tile shows, but if you want a country-level picture, you're looking at incomplete snapshots.
+
+Additionally, STAC metadata sometimes claims tiles exist when the COG files contain only nodata values — the metadata footprint is a buffered bounding box, not the actual data extent. This is what the `stac_spatial_filter` module was built to handle.
+
+## What Compositing Solves
+
+By combining observations across multiple days (temporal compositing), we fill the coverage gaps:
+
+- **Day 1**: Eastern Jamaica observed → flood extent for east
+- **Day 2**: Western Jamaica observed → flood extent for west
+- **Composite**: Complete country-level flood picture
+
+The GFM product does not do this. It provides per-tile snapshots. Our pipeline composites them and tracks **provenance** — which observation date each pixel came from — so that the composite is transparent about data freshness rather than hiding the gaps.
+
+## Additional Reasons for the Custom Pipeline
+
+Beyond the coverage gap problem, several other factors motivated building our own pipeline:
+
+1. **Humanitarian admin boundaries**: The GFM product uses its own boundaries. We use OCHA COD-AB (Common Operational Datasets - Administrative Boundaries) from FieldMaps.io, which are the standard for humanitarian response.
+
+2. **Population data control**: We choose the GHSL vintage (2025 estimate from GHS-POP R2023A) and control the resolution adjustment methodology (the 3-tier system documented in @sec-population-exposure). The GFM product uses GHS-POP 2020.
+
+3. **No authentication required**: The STAC API is open. The GFM REST API requires account registration, AOI creation, and token-based authentication.
+
+4. **Programmatic and reproducible**: The STAC approach integrates with our caching system, blob storage, and CLI scripts. Results are reproducible with a single command.
+
+5. **Bidirectional temporal scanning**: We can look forward or backward from a target date (`--n-search`), which the GFM product doesn't support.
+
+6. **Latest vs cumulative modes**: We can produce both "current state" (latest) and "total footprint" (cumulative) composites from the same data. The GFM product only shows individual observations.
+
+## The Evolution in Code
+
+The git history tells the story:
+
+- **Commit `622872e`**: Initial approach using the GFM REST API and per-tile downloads. Immediately encountered the coverage gap issue.
+- **Commit `8185567`**: "pure STAC approach #1" — pivoted to querying STAC directly and building xarray stacks with `stackstac` for cloud-native processing.
+- **Commit `4831a7c`**: "simple approach works best" — the `stackstac` + `ffill` pattern proved to be the most effective and became the foundation for the production pipeline.
+
+From there, the pipeline grew to include provenance tracking, population overlay, smart caching, spatial tiling for large countries, and the CLI scripts documented in @sec-production-pipeline.

@@ -1,5 +1,27 @@
 # Preface {.unnumbered}
 
-This is a Quarto book.
+This book documents the development of a near-real-time flood monitoring pipeline built on the [Copernicus Global Flood Monitoring (GFM)](https://global-flood.emergency.copernicus.eu/) system. The work is led by the OCHA Centre for Humanitarian Data with the goal of providing timely, actionable flood extent and population exposure information for humanitarian response.
 
-To learn more about Quarto books visit <https://quarto.org/docs/books>.
+## What is GFM?
+
+The Global Flood Monitoring system produces 20-metre resolution flood extent maps derived from Sentinel-1 SAR (Synthetic Aperture Radar) imagery. Three independent algorithms (TU Wien, DLR, LIST) each classify pixels as flooded or not, and an ensemble consensus (2-of-3 agreement) produces the final binary flood extent. Because SAR penetrates cloud cover, GFM can observe flooding even during active storm events --- a critical advantage over optical sensors.
+
+GFM data is distributed through a STAC (SpatioTemporal Asset Catalog) API hosted by EODC, making it accessible for cloud-native geospatial workflows.
+
+## What we built
+
+The `ds_flood_gfm` Python library and its accompanying CLI scripts form a pipeline that:
+
+1. **Queries** GFM satellite observations for any area of interest via the STAC API
+2. **Composites** multiple observations over time into gap-free flood extent maps, tracking which satellite pass each pixel came from (provenance)
+3. **Overlays** flood extent with GHSL population density to estimate affected population by administrative division
+4. **Exports** Cloud-Optimized GeoTIFFs, flood polygons with provenance metadata, choropleths, and CSV summaries to Azure Blob Storage
+
+The production pipeline is driven by four CLI scripts that can be run for any configured country with a single command.
+
+## What this book covers
+
+- @sec-querying-gfm introduces the GFM data source and demonstrates how to query and retrieve flood tiles from the STAC API
+- @sec-temporal-compositing explains how multiple satellite observations are combined into composite flood maps, and how the provenance tracking system works
+- @sec-population-exposure walks through the population overlay methodology that turns flood maps into humanitarian impact estimates
+- @sec-production-pipeline showcases the complete CLI pipeline with real command examples and the maps they produce

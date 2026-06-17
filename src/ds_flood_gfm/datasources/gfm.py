@@ -56,48 +56,57 @@ def create_spatial_tiles(bbox: list, tile_size_degrees: float = 2.0) -> list[lis
     return tiles
 
 
-def query_gfm_stac(bbox: list, end_date: str, n_search: int = 15) -> list:
+def query_gfm_stac(bbox: list, target_date: str, n_search: int = -15) -> list:
     """Query GFM STAC API for flood data.
-    
+
     Parameters
     ----------
     bbox : list
         Bounding box [west, south, east, north].
-    start_date : str
-        Start date (YYYY-MM-DD).
-    end_date : str
-        End date (YYYY-MM-DD).
-        
+    target_date : str
+        Reference date (YYYY-MM-DD).
+    n_search : int, default -15
+        Search window in days. Positive = search forward from target_date,
+        Negative = search backward from target_date.
+
     Returns
     -------
     list
         STAC items.
     """
     logger.info("Querying GFM STAC API...")
-    logger.info(f"  Looking {n_search} days back from {end_date}")
     logger.info(f"  Bbox: {bbox}")
-    
+
     stac_api = "https://stac.eodc.eu/api/v1"
     client = pystac_client.Client.open(stac_api)
 
-    # Parse dates - look back 15 days to find available data
-    _end_date = datetime.strptime(end_date, "%Y-%m-%d")
-    search_start_date = _end_date - timedelta(days=n_search)
-    start_date = search_start_date.strftime("%Y-%m-%d")
-    
+    # Parse target date and determine search direction
+    _target_date = datetime.strptime(target_date, "%Y-%m-%d")
+
+    if n_search > 0:
+        # Forward scan: target_date to (target_date + n_search days)
+        start_date = target_date
+        end_date = (_target_date + timedelta(days=n_search)).strftime("%Y-%m-%d")
+        logger.info(f"  Scanning {n_search} days forward from {target_date} to {end_date}")
+    else:
+        # Backward scan: (target_date + n_search days) to target_date
+        start_date = (_target_date + timedelta(days=n_search)).strftime("%Y-%m-%d")
+        end_date = target_date
+        logger.info(f"  Scanning {abs(n_search)} days backward from {target_date} to {start_date}")
+
     search = client.search(
         collections=["GFM"],
         bbox=bbox,
         datetime=f"{start_date}/{end_date}"
     )
-    
+
     items = search.item_collection()
     logger.info(f"  Found {len(items)} STAC items")
-    
+
     return items
 
 
-def create_flood_composite(items: list, bbox: list, n_latest: int, mode: str = "latest", return_stack: bool = False) -> tuple:
+def create_flood_composite(items: list, bbox: list, n_images: int, mode: str = "latest", n_search: int = -15, return_stack: bool = False) -> tuple:
     """Create flood composite from STAC items.
 
     Parameters
@@ -106,10 +115,13 @@ def create_flood_composite(items: list, bbox: list, n_latest: int, mode: str = "
         STAC items.
     bbox : list
         Bounding box [west, south, east, north].
-    n_latest : int
-        Number of most recent dates to use.
+    n_images : int
+        Number of dates to use for composite.
     mode : str, default "latest"
         Compositing mode ('latest' or 'cumulative').
+    n_search : int, default -15
+        Search direction indicator. Positive = forward scan (use first N dates),
+        Negative = backward scan (use last N dates).
     return_stack : bool, default False
         If True, also return stack_flood_max for provenance calculation.
 
@@ -119,8 +131,9 @@ def create_flood_composite(items: list, bbox: list, n_latest: int, mode: str = "
         If return_stack=False: (flood_composite, unique_dates)
         If return_stack=True: (flood_composite, unique_dates, stack_flood_max)
     """
-    logger.info(f"Creating {mode} flood composite with {n_latest} most recent dates...")
-    
+    scan_direction = "forward" if n_search > 0 else "backward"
+    logger.info(f"Creating {mode} flood composite with {n_images} dates ({scan_direction} scan)...")
+
     # Extract unique dates from STAC items (fast - no raster loading!)
     all_dates_set = set()
     for item in items:
@@ -134,11 +147,19 @@ def create_flood_composite(items: list, bbox: list, n_latest: int, mode: str = "
         logger.info("ERROR: No valid dates in STAC items!")
         return
 
-    # Select only the N most recent dates
-    dates_to_use = all_dates[-n_latest:] if len(all_dates) >= n_latest else all_dates
-    logger.info(
-        f"Using {len(dates_to_use)} most recent dates: {[str(d) for d in dates_to_use]}"
-    )
+    # Select N dates based on scan direction
+    if n_search > 0:
+        # Forward scan: use first N dates
+        dates_to_use = all_dates[:n_images] if len(all_dates) >= n_images else all_dates
+        logger.info(
+            f"Using {len(dates_to_use)} earliest dates: {[str(d) for d in dates_to_use]}"
+        )
+    else:
+        # Backward scan: use last N dates
+        dates_to_use = all_dates[-n_images:] if len(all_dates) >= n_images else all_dates
+        logger.info(
+            f"Using {len(dates_to_use)} most recent dates: {[str(d) for d in dates_to_use]}"
+        )
 
     # Convert to numpy datetime64 for cache key generation
     dates = np.array([np.datetime64(d) for d in dates_to_use])
@@ -256,9 +277,9 @@ def raster_to_polygons(flood_raster: xr.DataArray) -> gpd.GeoDataFrame:
 
 def process_country_tiled(
     bbox: list,
-    end_date: str,
-    n_latest: int = 4,
-    n_search: int = 15,
+    target_date: str,
+    n_images: int = 4,
+    n_search: int = -15,
     mode: str = "latest",
     tile_size: float = 2.0,
     return_stack: bool = False
@@ -269,12 +290,13 @@ def process_country_tiled(
     ----------
     bbox : list
         Full country bounding box [west, south, east, north].
-    end_date : str
-        End date (YYYY-MM-DD).
-    n_latest : int, default 4
-        Number of most recent dates to use.
-    n_search : int, default 15
-        Search window in days.
+    target_date : str
+        Reference date (YYYY-MM-DD).
+    n_images : int, default 4
+        Number of dates to use for composite.
+    n_search : int, default -15
+        Search window in days. Positive = search forward from target_date,
+        Negative = search backward from target_date.
     mode : str, default "latest"
         Compositing mode ('latest' or 'cumulative').
     tile_size : float, default 2.0
@@ -307,7 +329,7 @@ def process_country_tiled(
 
         try:
             # Query STAC for this tile
-            items = query_gfm_stac(tile_bbox, end_date, n_search)
+            items = query_gfm_stac(tile_bbox, target_date, n_search)
 
             if len(items) == 0:
                 logger.info(f"  No data for tile {i}, skipping...")
@@ -316,12 +338,12 @@ def process_country_tiled(
             # Create composite for this tile
             if return_stack:
                 flood_composite, unique_dates, stack_flood_max = create_flood_composite(
-                    items, tile_bbox, n_latest, mode=mode, return_stack=True
+                    items, tile_bbox, n_images, mode=mode, n_search=n_search, return_stack=True
                 )
                 tile_stacks.append(stack_flood_max)
             else:
                 flood_composite, unique_dates = create_flood_composite(
-                    items, tile_bbox, n_latest, mode=mode, return_stack=False
+                    items, tile_bbox, n_images, mode=mode, n_search=n_search, return_stack=False
                 )
 
             # Store dates from first tile
