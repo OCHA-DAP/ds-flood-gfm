@@ -94,60 +94,59 @@ exposed population per admin unit
 
 ---
 
-## 4. Provenance raster as the substrate
+## 4. Flood windows and the provenance raster
 
-Per-pixel **date rasters** are the core retained artifacts, because end-anchored rolling
-windows are just thresholds on them. We keep **two** (both single-band, sparse):
+### The core operation: rolling max over the chosen window
 
-| raster | per pixel | thresholding `≥ d − N` gives |
-|---|---|---|
-| `last_flooded_date` | most-recent date the pixel was observed **flooded** | flood union over window N → **exposure** |
-| `last_observed_date` | most-recent date the pixel was **observed** at all | observed extent over window N → **coverage** |
+A window's cumulative flood extent is just a **rolling max over the stacked daily flood
+rasters** — `(stack == 1).any()` over the dates in `[d−N, d]`. The window union is
+*determined by which dates you include*, so each rolling window (1/3/5/10/15/30 d) is
+computed directly during a run from the 30-day stack. **No special flood-date artifact is
+needed to produce the windows** — and **no increment decomposition** (each window's union
+handles overlap internally, so we store the cumulative value per window).
+
+### What we keep: `last_observed_date` (the current provenance raster)
+
+The *current* `create_provenance_raster` computes **`last_observed_date`** — most-recent
+date a pixel had a valid observation, `has_data = ~stack_flood_max.isnull()` ("regardless
+of flood value"). (Confirmed by code: `create_flood_composite` tests `stack_flood_max == 1`
+for flood, which is only meaningful because dry `0` is a real value. A live pixel read was
+attempted but GFM STAC timed out — itself a data point for the §8 bulk-access risk.)
+
+This is exactly the **coverage substrate**, and we keep it. Thresholding it gives the
+observed extent per window:
 
 ```
-pixel flooded  in [d−N, d]   ⟺   last_flooded_date  ≥ d − N
 pixel observed in [d−N, d]   ⟺   last_observed_date ≥ d − N
 ```
 
-Compact rasters → **all** rolling windows by thresholding. No per-date stack needed, and
-**no increment decomposition** (fixed windows compute each union directly; the union
-handles overlap/double-counting internally, so we store the cumulative value per window).
+→ drives `pct_unit_covered` / `pct_unit_pop_covered` (§5) — what makes the exposure number
+honest about gaps. **Three states, not two:** "not observed" ≠ "not flooded" (SAR swaths
+are oblique, non-rectangular, with interior nodata — permanent water, layover/shadow,
+vegetation, urban, sensitivity masks). The observed extent comes from **real valid pixels,
+never tile footprints/bboxes** (which overstate — the historical `stac_spatial_filter`
+bug); it falls out of `last_observed_date`'s nodata mask for free.
 
-> **Finding (traced 2026-06).** The *current* `create_provenance_raster` computes
-> `last_observed_date` (`has_data = ~stack_flood_max.isnull()`, "regardless of flood
-> value") — **not** flood date. Confirmed by code: `create_flood_composite` tests
-> `stack_flood_max == 1` for flood, which is only meaningful because dry `0` is a real,
-> present value. (A live pixel-value read was attempted but the GFM STAC connection timed
-> out — itself a data point for the §8 bulk-access risk.) **Consequence:** today's
-> flood-polygon date attribution is subtly wrong — a pixel flooded day 1 but imaged dry
-> day 5 is tagged day 5. **P0 fix:** add the `last_flooded_date` sibling (`argmax` over
-> `stack == 1`) for the exposure windows; keep the existing raster as `last_observed_date`
-> for coverage. Lands with the P0 methodology change, not as a quiet pre-fix.
+### Future experiment (not a priority): a `last_flooded_date` raster
 
-### Three states, not two (the swath/footprint issue)
+Storing a per-pixel `last_flooded_date` (`argmax` over `stack == 1`) would let us threshold
+out all windows from one raster (`flooded in [d−N,d] ⟺ last_flooded_date ≥ d−N`, equivalent
+to the rolling max). It is **not needed to compute the product** — its only value is as a
+*cache*:
 
-"Not observed" ≠ "not flooded." SAR swaths are oblique, non-rectangular, with interior
-nodata (permanent water, layover/shadow, dense vegetation, urban, sensitivity masks).
-The two date-rasters together distinguish all three states per pixel:
+1. **Local pop-backfill** — re-overlay a new population master without re-fetching/
+   re-compositing from the (slow) GFM STAC.
+2. **Correct per-pixel flood date in cumulative mode** — today's flood-polygon date
+   attribution uses `last_observed_date`, so a pixel flooded day 1 but imaged dry day 5 is
+   tagged day 5. (This mismatch is **cumulative-mode only**; in *latest* mode the last
+   observation *is* the flood, so the dates coincide.)
 
-```
-last_flooded_date present   → observed & flooded
-last_observed present, no flood date → observed, dry
-last_observed absent (nodata)        → never observed (coverage gap)
-```
+Both are optimizations worth a future experiment, **not a P0 priority**. For now: compute
+windows via rolling max, keep `last_observed_date` for coverage, and re-derive from STAC if
+a backfill is needed.
 
-The observed extent is therefore **derived from real valid pixels, never from tile
-footprints/bboxes** (which overstate — the historical `stac_spatial_filter` bug). A
-polygon-with-holes *could* represent the extent exactly; whether raster or polygon is
-more compact is empirical (nodata fragmentation) and **moot** — we keep `last_observed_date`
-regardless, so the extent comes free in its nodata mask.
-
-- **Coverage at any window is first-class** (not optional): thresholding `last_observed_date`
-  gives the observed extent per window → drives `pct_unit_covered` / `pct_unit_pop_covered`
-  (§5). This is what makes the exposure number honest about gaps.
-- **Event-anchored windows** (arbitrary start, e.g. "since landfall") → not derivable
-  from one run's date-rasters; keep per-date detail only for **active-event AOIs** as an
-  escape hatch.
+- **Event-anchored windows** (arbitrary start, e.g. "since landfall") → not derivable from
+  one run's rasters; keep per-date detail only for **active-event AOIs** as an escape hatch.
 
 ---
 
@@ -257,12 +256,12 @@ cadence (~30×) are the levers; even the worst case is lunch money.
 ## 7. Roadmap
 
 - **P0 — value chain, reproducible.** Decide the method (§6.1–2), implement the single
-  raster-weight exposure function (§3), add the `last_flooded_date` provenance sibling and
-  fix the flood-polygon date mismatch (§4), wire it as a pipeline stage, emit the coverage
-  columns (§5), define the run manifest + the **final-shape** rolling-window table (§5).
+  raster-weight exposure function (§3), compute windows via rolling max over the stack
+  (§4), emit the coverage columns from `last_observed_date` (§5), wire it as a pipeline
+  stage, define the run manifest + the **final-shape** rolling-window table (§5).
   *Schema must be monitoring-shaped now even though scheduling is P2, or P0 is throwaway.*
   Retire impl B; reconcile/retire C. After this, "give me HTI exposure for date X" runs
-  headless.
+  headless. (A stored `last_flooded_date` raster is a **future experiment**, not P0 — §4.)
 - **P1 — storage/contract hardening.** AOI registry, run index, per-AOI/tile cubes,
   stable paths; idempotent **overwrite-by-partition** (not naive append — reruns/late
   data would duplicate); backfill existing ad-hoc blobs.
