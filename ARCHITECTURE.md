@@ -96,46 +96,58 @@ exposed population per admin unit
 
 ## 4. Provenance raster as the substrate
 
-The provenance raster (per pixel, **most-recent flood date**) is not a visualization —
-it is **the core retained artifact**, because end-anchored rolling windows are just
-thresholds on it:
+Per-pixel **date rasters** are the core retained artifacts, because end-anchored rolling
+windows are just thresholds on them. We keep **two** (both single-band, sparse):
+
+| raster | per pixel | thresholding `≥ d − N` gives |
+|---|---|---|
+| `last_flooded_date` | most-recent date the pixel was observed **flooded** | flood union over window N → **exposure** |
+| `last_observed_date` | most-recent date the pixel was **observed** at all | observed extent over window N → **coverage** |
 
 ```
-pixel flooded in [d−N, d]   ⟺   provenance_date(pixel) ≥ d − N
+pixel flooded  in [d−N, d]   ⟺   last_flooded_date  ≥ d − N
+pixel observed in [d−N, d]   ⟺   last_observed_date ≥ d − N
 ```
 
-One compact raster → **all** rolling windows by thresholding. No per-date stack needed,
-and **no increment decomposition** (fixed windows compute each union directly; the union
+Compact rasters → **all** rolling windows by thresholding. No per-date stack needed, and
+**no increment decomposition** (fixed windows compute each union directly; the union
 handles overlap/double-counting internally, so we store the cumulative value per window).
 
-### Three-state encoding (handles the swath/footprint issue)
+> **Finding (traced 2026-06).** The *current* `create_provenance_raster` computes
+> `last_observed_date` (`has_data = ~stack_flood_max.isnull()`, "regardless of flood
+> value") — **not** flood date. Confirmed by code: `create_flood_composite` tests
+> `stack_flood_max == 1` for flood, which is only meaningful because dry `0` is a real,
+> present value. (A live pixel-value read was attempted but the GFM STAC connection timed
+> out — itself a data point for the §8 bulk-access risk.) **Consequence:** today's
+> flood-polygon date attribution is subtly wrong — a pixel flooded day 1 but imaged dry
+> day 5 is tagged day 5. **P0 fix:** add the `last_flooded_date` sibling (`argmax` over
+> `stack == 1`) for the exposure windows; keep the existing raster as `last_observed_date`
+> for coverage. Lands with the P0 methodology change, not as a quiet pre-fix.
 
-A flood pixel is in one of **three** states, not two — and "not observed" ≠ "not
-flooded." SAR swaths are oblique, non-rectangular, with interior nodata (permanent
-water, layover/shadow, dense vegetation, urban, sensitivity masks). Encode all three in
-the **same** raster:
+### Three states, not two (the swath/footprint issue)
+
+"Not observed" ≠ "not flooded." SAR swaths are oblique, non-rectangular, with interior
+nodata (permanent water, layover/shadow, dense vegetation, urban, sensitivity masks).
+The two date-rasters together distinguish all three states per pixel:
 
 ```
-value ≥ 0   → most-recent flood date-index   (observed & flooded)
-sentinel    → observed, never flooded         (dry)
-nodata      → never observed                  (coverage gap)
+last_flooded_date present   → observed & flooded
+last_observed present, no flood date → observed, dry
+last_observed absent (nodata)        → never observed (coverage gap)
 ```
 
 The observed extent is therefore **derived from real valid pixels, never from tile
 footprints/bboxes** (which overstate — the historical `stac_spatial_filter` bug). A
 polygon-with-holes *could* represent the extent exactly; whether raster or polygon is
-more compact is empirical (depends on nodata fragmentation) and **moot** — we keep the
-provenance raster regardless, so the extent comes free in its nodata mask.
+more compact is empirical (nodata fragmentation) and **moot** — we keep `last_observed_date`
+regardless, so the extent comes free in its nodata mask.
 
-- **Run-level coverage** ("observed at all this run") → free from the 3-state raster.
-- **Sub-window coverage** ("% observed in last N days") → needs a `last_observed_date`
-  value too; **optional / deferrable** confidence layer. [OPEN]
+- **Coverage at any window is first-class** (not optional): thresholding `last_observed_date`
+  gives the observed extent per window → drives `pct_unit_covered` / `pct_unit_pop_covered`
+  (§5). This is what makes the exposure number honest about gaps.
 - **Event-anchored windows** (arbitrary start, e.g. "since landfall") → not derivable
-  from one run's provenance; keep per-date detail only for **active-event AOIs** as an
+  from one run's date-rasters; keep per-date detail only for **active-event AOIs** as an
   escape hatch.
-
-> TODO: verify what `create_provenance_raster` *currently* encodes (most-recent
-> *observed* vs *flooded* date) before finalizing the 3-state encoding.
 
 ---
 
@@ -156,11 +168,19 @@ observation date cover most use cases:
 
 ```
 key:   aoi, adm_level, adm_id, obs_date, window, pop_source
-value: pop_exposed   (+ optional observed_frac for coverage)
+value: pop_exposed
+       pct_unit_pop_covered   (pop in observed pixels / total pop — primary confidence metric)
+       pct_unit_covered       (observed area / total area — secondary)
 meta:  run_id, run_date, mode, pop_version, admin_version
 windows: 1, 3, 5, 10, 15, 30 days
 ```
 
+- **Coverage columns make the number honest.** `pct_unit_pop_covered` turns "12,400
+  exposed" into "12,400 exposed, 85% of the unit's population observed this window" — the
+  difference between a real figure and "we mostly didn't look." Both come for free by
+  thresholding `last_observed_date` (§4): area-coverage via `exact_extract` mean of the
+  observed mask; pop-coverage via `weighted_sum(pop, weight=observed) / sum(pop)`. Pop-
+  coverage is pop-dependent → a step-(b) output, recomputed cheaply on a pop-master swap.
 - **Windows are nested → monotone** (`1d ≤ 3d ≤ … ≤ 30d`): a free QA check.
 - **`pop_source` is a KEY dimension**, not metadata — multiple population masters coexist
   per row, and backfilling a new master writes new rows without touching old ones.
@@ -225,8 +245,10 @@ cadence (~30×) are the levers; even the worst case is lunch money.
 4. **Product scope.** v1 = **adm0/adm1 only** (clean, global, edge-matched)? (Leaning yes.)
 5. **Fetch depth.** Rolling windows up to 30 d require each run to fetch **all obs in
    [d−30, d]** (no `n_images` cap) and build provenance over them.
-6. **Coverage layer scope.** Run-level (free) vs sub-window (`last_observed_date`,
-   optional) vs global (@90 m ~$39/yr).
+6. **Coverage layer scope.** Per-window coverage is now first-class (`pct_unit_pop_covered`
+   / `pct_unit_covered`, §5) via `last_observed_date`. Remaining choice: store the
+   observation raster at 20 m (exact) or 90 m (~$39/yr global) — and whether to compute
+   global coverage at all or only for monitored/event AOIs.
 7. **Trigger model (global).** **Event-driven** (react to GFM flood flags — makes
    provenance sparse, tames compute) vs scheduled-blanket. Lean **event-driven**.
 
@@ -235,10 +257,12 @@ cadence (~30×) are the levers; even the worst case is lunch money.
 ## 7. Roadmap
 
 - **P0 — value chain, reproducible.** Decide the method (§6.1–2), implement the single
-  raster-weight exposure function (§3), wire it as a pipeline stage, define the run
-  manifest + the **final-shape** rolling-window table (§5). *Schema must be
-  monitoring-shaped now even though scheduling is P2, or P0 is throwaway.* Retire impl B;
-  reconcile/retire C. After this, "give me HTI exposure for date X" runs headless.
+  raster-weight exposure function (§3), add the `last_flooded_date` provenance sibling and
+  fix the flood-polygon date mismatch (§4), wire it as a pipeline stage, emit the coverage
+  columns (§5), define the run manifest + the **final-shape** rolling-window table (§5).
+  *Schema must be monitoring-shaped now even though scheduling is P2, or P0 is throwaway.*
+  Retire impl B; reconcile/retire C. After this, "give me HTI exposure for date X" runs
+  headless.
 - **P1 — storage/contract hardening.** AOI registry, run index, per-AOI/tile cubes,
   stable paths; idempotent **overwrite-by-partition** (not naive append — reruns/late
   data would duplicate); backfill existing ad-hoc blobs.
