@@ -81,28 +81,65 @@ family: same ~10 km scale, but it delivers a *statistical anomaly* rather than
 a calibrated *fractional flooded area*, with no documented recalibration since
 2015 and visible baseline noise.
 
+## Archive completeness (verified 2026-08-17)
+
+Spot checks across the full record confirm the archive is genuinely complete,
+not nominal:
+
+- `signal_*_ALL.tif` and `mag_signal_*_ALL.tif` respond for 1998, 2003, 2010,
+  2015, 2020, 2024, and today
+- A sampled month (2010-08) has all 31 daily files with no gaps
+- Era caveat: 1997–2002 files are ~10 MB vs ~25 MB later — the TRMM-only era
+  covers only 40°N–40°S; global coverage starts with AMSR-E (June 2002)
+- `DATA/ALL/AveragesAndSd/` exposes the baseline avg/sd rasters themselves
+  (files dated 2009–2014 — i.e., the operational baseline really is that old)
+- Volume estimate for ingestion: ~10,400 days × ~20 MB ≈ **~210 GB per
+  variable** (signal or magnitude, daily); 4-day `Avg*` variants double that
+
 ## Verdict
 
-**Not promising as a flood-extent or exposure source** — 10 km pixels cannot
-support admin-level population exposure, which is this repo's purpose. GFM
-stays.
+**Not usable as a flood-extent or exposure source** — 10 km anomaly pixels
+cannot support admin-level population exposure, which is this repo's purpose.
+GFM stays.
 
-**Marginally promising in exactly one role: a free, observation-based,
-3-hour-latency global trigger.** The virtual-gauge API is lightweight
-(semicolon-delimited text, no auth) and could flag *where* to prioritize
-running the heavier GFM/Sentinel-1 pipeline, or corroborate FloodScan
-anomalies with an independent observation. Even there, honest caveats:
+**Promising as a free FloodScan analogue for anomaly monitoring — provided we
+compute our own climatology.** The team's FloodScan use (floodexposure
+monitoring, return-period baselines) is anomaly-shaped, and GFDS is the
+closest free, open, observation-based equivalent: same passive-microwave
+family, daily, 3 h latency, and a complete 1998→present archive on plain
+predictable HTTP URLs. The key design decision:
 
-1. GDACS itself already publishes curated flood *events* (which `ocha-lens`
-   wraps) — for most triggering purposes that's the better-vetted entry point
-   than raw GFDS sites.
-2. The team already pays for FloodScan, which covers the same physical signal
-   with better calibration. GFDS's edge is only cost (free), latency (3 h),
-   and archive homogeneity for anomaly baselines.
-3. Maintenance risk: docs frozen in 2015, `about.aspx` dead, several API
-   fields marked deprecated, and the live feed depends on a single aging
-   sensor pair (AMSR2 launched 2012; GPM 2014).
+- **Do not consume JRC's magnitude product** — its 2002–2008 baseline is
+  visibly broken (2 % of land >4σ on a normal day, half of it snow/ice
+  artifacts).
+- **Ingest the raw `signal` rasters and derive our own per-pixel, day-of-year
+  climatology/quantiles** from the 28-year archive — the same pattern as the
+  FloodScan SFED baselines. Signal is monotonic in pixel water fraction
+  (eq. 4 of the tech note), so per-pixel quantiles and return periods are
+  meaningful even though the absolute value isn't a flooded fraction.
 
-**Recommendation:** do not build on GFDS rasters. If an NRT trigger signal is
-wanted for this pipeline, prototype against the virtual-gauge API (or GDACS
-flood events via `ocha-lens`) before considering any raster ingestion.
+Honest caveats that survive this framing:
+
+1. **Sensor inhomogeneity across eras** (TRMM-only → AMSR-E → TRMM-only gap
+   2011–2013 → AMSR2+GPM) will put discontinuities in any long climatology;
+   baselines should probably be computed on the 2015+ AMSR2+GPM mix, or per
+   sensor via the `SINGLE` product.
+2. Signal ≠ flooded fraction: cross-pixel comparison of magnitudes is fine,
+   cross-pixel comparison of *area* is not. FloodScan SFED remains the better
+   product where a calibrated flooded fraction is needed.
+3. Arid/snow masking is mandatory; high latitudes and deserts dominate raw
+   exceedances.
+4. Maintenance risk: docs frozen in 2015, `about.aspx` dead, deprecated API
+   fields, and the live feed rides on one aging sensor pair (AMSR2 2012,
+   GPM 2014). Worth a lightweight liveness check in any ingest pipeline.
+5. Licensing: standard EC/JRC reuse policy (expected CC BY 4.0 with
+   attribution) — verify before redistributing derived products.
+
+**Recommendation:** worth a prototype. Natural shape: a `gfds-ingest` pipeline
+mirroring `floodscan-ingest` (daily signal GeoTIFF → COG → blob), plus a
+one-time archive backfill (~210 GB) and a climatology job producing per-pixel
+day-of-year quantiles. Compare the resulting anomalies against FloodScan SFED
+over known events (e.g. Pakistan 2022, Nigeria 2022/2024) before committing —
+if agreement is good, this is a credible free fallback/replacement for the
+FloodScan subscription. The virtual-gauge API and GDACS flood events
+(`ocha-lens`) remain the quicker entry points for pure triggering.
