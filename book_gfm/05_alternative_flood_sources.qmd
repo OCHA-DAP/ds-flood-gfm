@@ -4,54 +4,54 @@
 jupyter: ds-flood-gfm
 ---
 
-The rest of this book is about GFM — 20 m Sentinel-1 flood extent, the right tool
-for *mapping* a flood and estimating exposure. But GFM has structural gaps: 1–3
-day revisit holes, an archive that only starts in 2015, and a per-scene cost that
-makes continuous global monitoring expensive. This chapter explores a
-complementary source: the **Global Flood Detection System (GFDS)** behind the
-[GDACS flood detection pages](https://www.gdacs.org/flooddetection/download.aspx)
-— a JRC / Dartmouth Flood Observatory system running since 2006, free, global,
-daily, with an archive back to 1997.
+The rest of this book is about GFM: 20 m Sentinel-1 flood extent, the right tool
+for mapping a flood and estimating exposure. But GFM has structural gaps. Its
+revisit pattern leaves 1 to 3 day holes, its archive only starts in 2015, and
+continuous global monitoring gets expensive scene by scene. This chapter explores
+a complementary source: the Global Flood Detection System (GFDS) behind the
+[GDACS flood detection pages](https://www.gdacs.org/flooddetection/download.aspx),
+a JRC / Dartmouth Flood Observatory system running since 2006. It is free,
+global, daily, and its archive goes back to 1997.
 
-The trade: GFDS is **not** flood extent. It senses passive-microwave brightness
-temperature at 36.5 GHz (~10 km pixels) and infers *surface-water anomalies* —
+The trade: GFDS is *not* flood extent. It senses passive-microwave brightness
+temperature at 36.5 GHz (~10 km pixels) and infers surface-water anomalies,
 closer in spirit to FloodScan (which the team licenses) than to GFM. That framing
-is exactly why it's interesting: **can GFDS serve as a free FloodScan analogue for
-admin-level flood monitoring?** We test it here against FloodScan SFED over the
-Nigeria 2022 floods. Full source evaluation:
+is exactly why it's interesting: can GFDS serve as a free FloodScan analogue for
+admin-level flood monitoring? We test it here against FloodScan SFED over the
+Nigeria 2022 floods. The full source evaluation lives in
 [`docs/gdacs-gfds-assessment.md`](https://github.com/OCHA-DAP/ds-flood-gfm/blob/main/docs/gdacs-gfds-assessment.md).
 
 ## How GFDS works, in one section
 
 Water emits far less microwave radiation than dry land, so a flooding pixel looks
 "colder" at 36.5 GHz. Raw brightness temperature also wobbles with weather, so
-GFDS always *ratios* a river measurement pixel **M** against a nearby dry
+GFDS always ratios a river measurement pixel **M** against a nearby dry
 calibration pixel **C** experiencing the same atmosphere:
 
 $$s = T_M / T_C$$
 
-Lower signal ⇒ more water. The server exposes several layers; after taking them
-apart, only one matters for ingestion:
+Lower signal means more water. The server exposes several layers; after taking
+them apart, only one matters for ingestion:
 
 | Layer | What it is | Verdict |
 |---|---|---|
-| `SignalTiffs/signal_*` | daily $s$ (×10⁶, int32) | **the product** |
-| `MagTiffs/mag_signal_*` | $s$ scored in σ against JRC's baseline | derivable (and their baseline is frozen in 2009 — see below) |
+| `SignalTiffs/signal_*` | daily $s$ (×10⁶, int32) | the one to ingest |
+| `MagTiffs/mag_signal_*` | $s$ scored in σ against JRC's baseline | derivable (their baseline is frozen in 2009; see below) |
 | `Avg*` folders | 4-day trailing means | one line of xarray |
-| `AveragesAndSd/bt_signal_{avg,sd}` | per-pixel long-term mean/sd of $s$ | fetch **once** (static since July 2009) |
+| `AveragesAndSd/bt_signal_{avg,sd}` | per-pixel long-term mean/sd of $s$ | fetch once (static since July 2009) |
 | `dn_*`, `deltaT_*` | legacy formulations | ignore |
 
-Two data-hygiene facts you must know: rasters carry **two** nodata sentinels
-(`-32000` declared, int32-min undeclared), and every layer is int32 with a scale
-factor (signal ×1,000,000; magnitude ×1,000).
+Two data-hygiene facts you need before touching any of it: rasters carry two
+nodata sentinels (`-32000` declared, int32-min undeclared), and every layer is
+int32 with a scale factor (signal ×1,000,000; magnitude ×1,000).
 
 ## Data access: long fetches live in scripts
 
-Downloading a season is slow and flaky — during this work the GDACS server swung
+Downloading a season is slow and flaky. During this work the GDACS server swung
 from ~2 s to ~140 s per file within a single day. So the fetch steps live in
 standalone, resumable scripts (throttled, per-day `.npy` cache, a 404 recorded as
 a `.missing` marker, any other error raising loudly). The chapter then runs
-reproducibly off the local cache. The scripts are shown here but **not executed**
+reproducibly off the local cache. The scripts are shown here but not executed
 at render time:
 
 ```{python}
@@ -66,12 +66,12 @@ at render time:
 {{< include ../experiments/gfds_nga2022/fetch_sfed_nga.py >}}
 ```
 
-## The test case: Nigeria, June–December 2022
+## The test case: Nigeria, June to December 2022
 
 A near-ideal reference event: [Lagdo Dam releases from 13 September
 2022](https://reliefweb.int/report/nigeria/acaps-briefing-note-nigeria-country-wide-flooding-21-october-2022),
-the Niger–Benue confluence (Lokoja) peaking early–mid October, Bayelsa flooding
-downstream into November. We know *where* and *when* — so we can score GFDS
+the Niger-Benue confluence (Lokoja) peaking early to mid October, Bayelsa
+flooding downstream into November. We know where and when, so we can score GFDS
 against FloodScan at the places that mattered.
 
 ```{python}
@@ -145,7 +145,7 @@ print(f"signal: {signal.sizes['time']} days | mag: {mag.sizes['time']} days "
 
 ### A do-it-yourself anomaly
 
-Floods *lower* the signal, so we score it flood-positive against the static
+Floods lower the signal, so we score it flood-positive against the static
 baseline. We also keep a 4-day trailing mean: GFDS is swath-based, so single days
 are noisy.
 
@@ -160,7 +160,7 @@ sfed_g = sfed.interp(x=signal.x, y=signal.y, method="linear")  # onto GFDS grid
 ### Sanity check: the Lokoja pixel
 
 ```{python}
-#| fig-cap: "GFDS anomaly vs FloodScan SFED at the Niger–Benue confluence. Dashed lines: Lagdo Dam release (13 Sep) and the documented Kogi peak week."
+#| fig-cap: "GFDS anomaly vs FloodScan SFED at the Niger-Benue confluence. Dashed lines: Lagdo Dam release (13 Sep) and the documented Kogi peak week."
 fig, ax = plt.subplots(figsize=(10, 4))
 pt = dict(x=6.74, y=7.80, method="nearest")
 anom4.sel(**pt).plot(ax=ax, color="tab:red", label="GFDS anomaly, 4-day mean (σ)")
@@ -178,13 +178,21 @@ plt.show()
 ```
 
 The anomaly climbs from mid-August, surges after the dam release, and peaks in
-the documented peak week — from a 10 km radiometer ratio scored against a
+the documented peak week. Not bad for a 10 km radiometer ratio scored against a
 17-year-old baseline. Encouraging enough to score it properly.
 
 ### Where does GFDS agree with FloodScan?
 
+A note on method before the maps: the correlation below is a plain Pearson r
+on the continuous daily values. Per pixel, we correlate the 4-day-mean GFDS
+anomaly (σ) against SFED (fraction) over the days where both are finite,
+requiring at least 60 shared days. Nothing is classified or thresholded before
+correlating; thresholds appear only afterwards, to stratify the results by
+how much flooding a pixel actually saw.
+
 ```{python}
-#| fig-cap: "Left: per-pixel correlation between the GFDS anomaly and SFED. Right: SFED seasonal max. The river network reappears in the correlation map."
+#| fig-cap: "Top: GFDS anomaly seasonal max. Middle: FloodScan SFED seasonal max. Bottom: per-pixel Pearson correlation of the daily series. GFDS lights up far more area than SFED; the correlation map shows where that extra signal tracks real flooding (river corridors) and where it does not."
+#| fig-height: 14
 def pixel_corr(a_stack, b_stack, min_days=60):
     a2, b2 = xr.align(a_stack, b_stack)
     A = a2.values.reshape(a2.sizes["time"], -1)
@@ -200,23 +208,75 @@ def pixel_corr(a_stack, b_stack, min_days=60):
 
 
 corr, anom_i, sfed_i = pixel_corr(anom4, sfed_g)
-fig, axes = plt.subplots(1, 2, figsize=(13, 5))
-corr.plot(ax=axes[0], vmin=-1, vmax=1, cmap="RdBu_r")
-axes[0].set_title("corr(GFDS anomaly, SFED)")
-sfed_i.max("time").plot(ax=axes[1], vmin=0, vmax=1, cmap="Blues")
-axes[1].set_title("SFED season max")
+gfds_max, sfed_max = anom_i.max("time"), sfed_i.max("time")
+
+fig, axes = plt.subplots(3, 1, figsize=(8, 14))
+gfds_max.plot(ax=axes[0], vmin=0, vmax=8, cmap="Reds")
+axes[0].set_title("GFDS anomaly season max (σ)")
+sfed_max.plot(ax=axes[1], vmin=0, vmax=1, cmap="Blues")
+axes[1].set_title("SFED season max (fraction)")
+corr.plot(ax=axes[2], vmin=-1, vmax=1, cmap="RdBu_r")
+axes[2].set_title("per-pixel Pearson r, daily values")
 plt.tight_layout()
 plt.show()
 
-flooded = (sfed_i.max("time") > 0.2).values.ravel()
+flooded = (sfed_max > 0.2).values.ravel()
 cv = corr.values.ravel()
 print(f"median r, all pixels: {np.nanmedian(cv):.2f} | "
       f"flooded pixels (SFED max>0.2): {np.nanmedian(cv[flooded]):.2f}")
 ```
 
-The Niger and Benue corridors trace out at r ≈ 0.75–0.9 — spatial agreement with
-FloodScan is feature-for-feature where flooding was substantial. The modest
-all-pixel median is expected: where nothing flooded, both products are just noise.
+Reading the three panels together, not just the corridors:
+
+- GFDS is a sensitive but unspecific wet-season detector. The top panel
+  shows the Niger-Benue system clearly, but also broad signal above 3σ across
+  much of the country, strongest in the northern band where seasonal wetlands
+  (e.g. the Hadejia-Yobe system) saturate every rainy season. SFED (middle)
+  is far more surgical: river corridors and little else. GFDS's 36.5 GHz
+  ratio responds to any increase in surface water or saturation, not just
+  inundation of the kind FloodScan is calibrated for.
+- The correlation map is what separates the two kinds of GFDS signal.
+  Along the major corridors it is dark red (r ≈ 0.9); across the northern
+  wetland band it is moderate (0.4 to 0.7, both products breathing with the
+  season); and in the interfluve south-centre it fades to noise.
+- The pale stripe hugging the coastline in the top panel is the ocean
+  contamination effect: sea water in the 10 km footprint wrecks the wet/dry
+  calibration contrast. This is Ekeremor's failure (next section) visible as
+  geography.
+
+The disagreements are worth quantifying, because they define what GFDS must
+not be used for:
+
+```{python}
+#| code-summary: "cross-tab: where each product flags high"
+gf_hi = (gfds_max > 3).values.ravel()
+sf_hi = flooded
+ok = np.isfinite(gfds_max.values.ravel()) & np.isfinite(sfed_max.values.ravel())
+tab = pd.DataFrame(
+    [[int((gf_hi & sf_hi & ok).sum()), int((gf_hi & ~sf_hi & ok).sum())],
+     [int((~gf_hi & sf_hi & ok).sum()), int((~gf_hi & ~sf_hi & ok).sum())]],
+    index=["GFDS > 3σ", "GFDS ≤ 3σ"],
+    columns=["SFED > 0.2", "SFED ≤ 0.2"],
+)
+print(tab)
+print(f"\nmedian r — both high: {np.nanmedian(cv[gf_hi & sf_hi & ok]):.2f} | "
+      f"GFDS-only: {np.nanmedian(cv[gf_hi & ~sf_hi & ok]):.2f} | "
+      f"SFED-only: {np.nanmedian(cv[~gf_hi & sf_hi & ok]):.2f}")
+```
+
+Two asymmetric failure modes:
+
+- GFDS-only pixels outnumber joint detections about 3.5 to 1, and within them
+  the daily correlation with SFED collapses to roughly 0.2. A naive "alert
+  where anomaly exceeds 3σ" rule would therefore over-flag dramatically. This
+  is the pixel-level version of the noisy global RED-alert behaviour
+  documented in the assessment. The anomaly is meaningful as a time series in
+  known riverine areas, not as a standalone exceedance map.
+- The SFED-only pixels cluster in the far north (median ~12°N): the
+  narrow Sokoto-Rima and Hadejia channels, where a flooding river is simply
+  sub-pixel for a 10 km microwave footprint. GFDS cannot see small rivers.
+  FloodScan at ~8 km partially can, because it is calibrated to fractional
+  area rather than a wet/dry ratio.
 
 ### The test that matters: admin level
 
@@ -285,9 +345,9 @@ summary = pd.DataFrame([
 summary
 ```
 
-Correlation rises monotonically with flood severity while timing error collapses
-— the signature of a real shared signal rather than a lucky fit. And in the LGAs
-we *know* flooded:
+Correlation rises monotonically with flood severity while timing error
+collapses. That is the signature of a real shared signal rather than a lucky
+fit. And in the LGAs we know flooded:
 
 ```{python}
 REF = ["Lokoja", "Ajaokuta", "Ibaji", "Bassa", "Kogi",
@@ -315,15 +375,16 @@ plt.tight_layout()
 plt.show()
 ```
 
-The confluence LGAs track FloodScan curve-for-curve (r = 0.89–0.97, peaks within
-±2 days). The instructive failure is **Ekeremor**: a coastal delta LGA where the
-10 km microwave footprint mixes with ocean and estuary — GFDS physics needs a dry
-land calibration contrast, so coastal admin units are outside its trust region.
+The confluence LGAs track FloodScan curve for curve (r = 0.89 to 0.97, peaks
+within about 2 days of each other). The instructive failure is Ekeremor: a
+coastal delta LGA where the 10 km microwave footprint mixes with ocean and
+estuary, so GFDS never gets the dry land calibration contrast its physics
+requires. Coastal admin units sit outside its trust region.
 
 ### Do we need JRC's magnitude layer at all?
 
 JRC publishes its own σ-scored product (`mag_signal`), computed against a
-baseline frozen in **July 2009** — built from a sensor (AMSR-E) that died in
+baseline frozen in July 2009 and built from a sensor (AMSR-E) that died in
 2011. If our DIY anomaly matches it, ingestion only needs the raw signal.
 
 ```{python}
@@ -334,29 +395,30 @@ print(f"median r vs SFED over flooded pixels — "
       f"JRC magnitude: {np.nanmedian(cm[flooded]):.2f}")
 ```
 
-The DIY anomaly doesn't just match JRC's magnitude — it clearly beats it on
-this event, consistent with the cost of scoring modern AMSR2/GPM data against
-an AMSR-E-era baseline (the same staleness behind GFDS's noisy global alerting,
-documented in the assessment). **Ingest raw signal only** and score it
-ourselves.
+On this event the DIY anomaly clearly beats JRC's own magnitude, which is what
+you'd expect when modern AMSR2/GPM measurements are scored against an
+AMSR-E-era baseline. The staleness that makes GFDS's global alerting noisy
+(documented in the assessment) costs it here too. Ingest the raw signal only
+and score it ourselves.
 
 ## What this settles
 
-1. **One layer to ingest:** daily `signal` (~13 MB/day re-encoded as uint16
-   COG), plus the two static baseline files fetched once. Magnitude, 4-day
-   averages, and legacy layers are all derivable or ignorable.
-2. **Common-data-model fit is direct:** daily zonal mean of the 4-day-smoothed
-   anomaly per admin unit — the same `(pcode, date, value)` shape as the
-   team's `floodscan_exposure` table.
-3. **Trust region, measured:** substantial riverine flooding (LGA SFED-max
-   > 0.10 → 58% of LGAs at r ≥ 0.6; > 0.20 → median r 0.75). Not coastal
-   units, not marginal flooding, not single-day values.
-4. **Upgrade path:** the static 2009 baseline suffices for within-season
-   tracking; cross-season return periods want a day-of-year climatology
-   computed from the 2015+ AMSR2/GPM archive (complete and verified — see the
-   assessment doc).
+1. Ingest one layer: daily `signal`, roughly 13 MB/day re-encoded as a uint16
+   COG, plus the two static baseline files fetched once. Magnitude, the 4-day
+   averages, and the legacy layers are all derivable or ignorable.
+2. The common data model fits directly. A daily zonal mean of the 4-day
+   smoothed anomaly per admin unit has the same `(pcode, date, value)` shape
+   as the team's `floodscan_exposure` table.
+3. The trust region is measured, not guessed: substantial riverine flooding.
+   Among LGAs whose SFED max passed 0.10, 58% correlate at r ≥ 0.6; past
+   0.20 the median r is 0.75. Coastal units, marginal flooding, and
+   single-day values sit outside it.
+4. The static 2009 baseline is enough for within-season tracking. Cross-season
+   return periods want a day-of-year climatology computed from the 2015+
+   AMSR2/GPM archive, which the assessment verified is complete.
 
-Bottom line: GFDS raw signal, scored and aggregated ourselves, is a credible
-**free FloodScan analogue for admin-level riverine flood monitoring** — with a
-1997→present archive, ~3 h latency, and one honest operational caveat: the
-2009-era GDACS server demands resumable, patient ingestion.
+Bottom line: raw GFDS signal, scored and aggregated ourselves, is a credible
+free FloodScan analogue for admin-level riverine flood monitoring, with an
+archive from 1997 to present at roughly 3 hour latency. The one operational
+caveat is the 2009-era GDACS server, which demands resumable, patient
+ingestion.
