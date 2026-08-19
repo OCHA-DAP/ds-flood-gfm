@@ -22,6 +22,7 @@ book:
     - 02_temporal_compositing.qmd
     - 03_population_exposure.qmd
     - 04_production_pipeline.qmd
+    - 05_alternative_flood_sources.qmd
 
   appendices:
     - part: "Design Decisions"
