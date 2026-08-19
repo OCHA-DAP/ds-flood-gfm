@@ -45,6 +45,19 @@ Two data-hygiene facts you need before touching any of it: rasters carry two
 nodata sentinels (`-32000` declared, int32-min undeclared), and every layer is
 int32 with a scale factor (signal ×1,000,000; magnitude ×1,000).
 
+JRC's own documentation is two reports: the
+[2015 data-product specification](https://www.gdacs.org/flooddetection/Download/Technical_Note_GFDS_Data_Products_v1.pdf)
+(De Groeve, Brakenridge, Paris) and the 2007 system description with
+validation ([Kugler & De Groeve, EUR 23303](https://www.unisdr.org/files/9622_LBNA23303ENC002.pdf)).
+The 2007 validation against 58 major flood events is sobering and useful:
+35 to 42% of monitored sites gave a clean, reliable signal, roughly another
+third detected the flood through heavy noise, 14 to 16% missed it, and Sahel
+irrigation was already flagged as a false-alarm source. The 4 to 6σ
+"extreme flood" thresholds were set empirically and marked as needing
+confirmation. The operational GFDS mitigates all this with manually curated
+sites; the gridded rasters we use below share the same physics but none of
+that site-level curation, which is why we validate before trusting them.
+
 ## Data access: long fetches live in scripts
 
 Downloading a season is slow and flaky. During this work the GDACS server swung
@@ -269,21 +282,36 @@ Two asymmetric failure modes:
 - GFDS-only pixels outnumber joint detections about 3.5 to 1, and within them
   the daily correlation with SFED collapses to roughly 0.2. A naive "alert
   where anomaly exceeds 3σ" rule would therefore over-flag dramatically. This
-  is the pixel-level version of the noisy global RED-alert behaviour
-  documented in the assessment. The anomaly is meaningful as a time series in
+  matches what we measured globally on the live product (on an ordinary day,
+  ~2% of valid land pixels exceed the 4σ "RED" level, over half of them
+  high-latitude snow and ice; see the assessment doc), and it matches JRC's
+  own 2007 validation, where the 4 to 6σ extreme-flood thresholds were set
+  empirically and flagged for confirmation, with Sahel irrigation noted as a
+  known false-alarm source. The anomaly is meaningful as a time series in
   known riverine areas, not as a standalone exceedance map.
 - The SFED-only pixels cluster in the far north (median ~12°N): the
   narrow Sokoto-Rima and Hadejia channels, where a flooding river is simply
-  sub-pixel for a 10 km microwave footprint. GFDS cannot see small rivers.
-  FloodScan at ~8 km partially can, because it is calibrated to fractional
-  area rather than a wet/dry ratio.
+  sub-pixel for a 10 km microwave footprint. GFDS reports the coarse ratio
+  as-is, with no spatial prior to recover small features. FloodScan does:
+  its published product is downscaled to 90 m using a database built from
+  topography, hydrology, and Global Surface Water occurrence
+  ([Galantowicz 2018](https://ui.adsabs.harvard.edu/abs/2018AGUFM.H51B..03G/abstract)),
+  then aggregated to the 300-arcsecond grid we use, so narrow channels
+  survive in SFED.
 
 ### The test that matters: admin level
 
 The team's operational pattern (e.g. `floodscan_exposure`) is a daily zonal
 statistic per admin unit. We aggregate both products to Nigeria's 774 LGAs over
-the complete event window and score each LGA on correlation and flood-peak
-timing.
+the complete event window and score each LGA on correlation and timing.
+
+Timing needs care. The obvious metric, day of GFDS maximum minus day of SFED
+maximum, turned out to be fragile: a single noisy spike moves the argmax, and
+the 4-day trailing mean shifts GFDS peaks late by construction. For the same
+LGA it flipped by up to 16 days depending only on the smoothing choice. We
+use the lag that maximises the cross-correlation between the two daily series
+(bounded at ±15 days) instead, which was stable across smoothing choices in
+our checks. Positive lag means GFDS moves later than SFED.
 
 ```{python}
 #| code-summary: "daily zonal means per LGA (few minutes; frozen after first render)"
@@ -318,17 +346,27 @@ lga_daily = pd.DataFrame(rows)
 ```
 
 ```{python}
-#| code-summary: "score each LGA: correlation + peak-timing lag"
+#| code-summary: "score each LGA: correlation + cross-correlation lag"
+def best_lag(a, b, max_lag=15):
+    """Lag (days) maximising corr(a shifted by L, b). Positive = a later."""
+    best, best_r = np.nan, -np.inf
+    for L in range(-max_lag, max_lag + 1):
+        r = a.shift(L).corr(b)
+        if pd.notna(r) and r > best_r:
+            best_r, best = r, L
+    return best
+
+
 per = []
 for (pc, lga, st), sub in lga_daily.groupby(["pcode", "lga", "state"]):
-    sub = sub.dropna(subset=["gfds", "sfed"])
+    sub = sub.dropna(subset=["gfds", "sfed"]).sort_values("date")
     if len(sub) < 60:
         continue
     per.append({
         "lga": lga, "state": st,
         "r": sub["gfds"].corr(sub["sfed"]),
-        "peak_lag_days": (sub.loc[sub["gfds"].idxmax(), "date"]
-                          - sub.loc[sub["sfed"].idxmax(), "date"]).days,
+        "xcorr_lag_days": best_lag(sub["gfds"].reset_index(drop=True),
+                                   sub["sfed"].reset_index(drop=True)),
         "sfed_max": sub["sfed"].max(),
     })
 scores = pd.DataFrame(per)
@@ -337,7 +375,7 @@ bands = [(0.02, 0.05), (0.05, 0.10), (0.10, 0.20), (0.20, 1.0)]
 summary = pd.DataFrame([
     {"SFED max band": f"{lo:.2f}–{hi:.2f}",
      "median r": round(b.r.median(), 2),
-     "median |peak lag| (d)": int(b.peak_lag_days.abs().median()),
+     "median |xcorr lag| (d)": b.xcorr_lag_days.abs().median(),
      "n LGAs": len(b)}
     for lo, hi in bands
     if len(b := scores[(scores.sfed_max > lo) & (scores.sfed_max <= hi)])
@@ -345,9 +383,14 @@ summary = pd.DataFrame([
 summary
 ```
 
-Correlation rises monotonically with flood severity while timing error
-collapses. That is the signature of a real shared signal rather than a lucky
-fit. And in the LGAs we know flooded:
+Correlation rises monotonically with flood severity, and the timing alignment
+tightens with it. That is the signature of a real shared signal rather than a
+lucky fit. One honest framing caveat: 2022 in this basin is essentially a
+single flood wave, so these correlations measure agreement on one event's
+rise, peak, and recession, computed over the full daily series, not skill
+across many independent events. (The season-max maps above are used only for
+display and stratification.) A multi-year replication is the obvious next
+step. And in the LGAs we know flooded:
 
 ```{python}
 REF = ["Lokoja", "Ajaokuta", "Ibaji", "Bassa", "Kogi",
@@ -375,8 +418,8 @@ plt.tight_layout()
 plt.show()
 ```
 
-The confluence LGAs track FloodScan curve for curve (r = 0.89 to 0.97, peaks
-within about 2 days of each other). The instructive failure is Ekeremor: a
+The confluence LGAs track FloodScan curve for curve (r = 0.89 to 0.97, with
+cross-correlation lags within 3 days). The instructive failure is Ekeremor: a
 coastal delta LGA where the 10 km microwave footprint mixes with ocean and
 estuary, so GFDS never gets the dry land calibration contrast its physics
 requires. Coastal admin units sit outside its trust region.

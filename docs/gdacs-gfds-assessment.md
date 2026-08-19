@@ -14,8 +14,14 @@ brightness temperature is ratioed against a nearby dry "calibration" pixel
 (the *M/C* ratio, or *signal* `s`); flood **magnitude** `m` is the number of
 standard deviations of `s` above that pixel's long-term mean.
 
-- Reference: [Technical Note — GFDS Data Product Specifications, v2015](https://www.gdacs.org/flooddetection/Download/Technical_Note_GFDS_Data_Products_v1.pdf)
-  (De Groeve, Brakenridge, Paris; JRC97421)
+- References: [Technical Note — GFDS Data Product Specifications, v2015](https://www.gdacs.org/flooddetection/Download/Technical_Note_GFDS_Data_Products_v1.pdf)
+  (De Groeve, Brakenridge, Paris; JRC97421) and the fuller 2007 system
+  report with validation, [Kugler & De Groeve, EUR 23303](https://www.unisdr.org/files/9622_LBNA23303ENC002.pdf):
+  against 58 major 2002–2007 flood events, 35–42% of monitored sites gave a
+  clean reliable signal, ~a third detected through noise, 14–16% missed;
+  the 4–6σ extreme-flood thresholds were set empirically ("needs to be
+  confirmed with further research"); Sahel irrigation is a documented
+  false-alarm source.
 - Sensors: AMSR-E (2002–2011, dead), TRMM-TMI (1997–2015, dead),
   **AMSR2 (2013–ongoing)**, **GPM-GMI (2015–ongoing)**
 - Latency: ~3 h (AMSR2) to ~24 h (GPM); site updates every 3 hours

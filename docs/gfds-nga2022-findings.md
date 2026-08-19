@@ -32,6 +32,15 @@ feature-for-feature (see `nga_pixel_corr_map.png`).
 
 ### LGA level (the common-data-model test; 774 LGAs, mean per LGA per day)
 
+> **Note (2026-08-19):** the book chapter (`book_gfm/05_alternative_flood_sources.qmd`)
+> is the canonical, reproducible version of this comparison. It scores on the
+> complete Aug 15–Nov 30 window and replaced the fragile argmax peak-lag with a
+> cross-correlation best-lag (argmax lag flipped by up to 16 days under
+> different smoothing choices for the same LGA). On that basis the top severity
+> bands score higher than the table below (r = 0.88 for SFED max 0.10–0.20 and
+> 0.92 for >0.20, median |lag| 2–3 days). The table below is the original
+> exploratory run (Jun–Dec series, argmax lag), kept for provenance.
+
 Dose-response by flood severity (SFED LGA-mean seasonal max):
 
 | SFED max band | median r | median \|peak lag\| | n LGAs |
