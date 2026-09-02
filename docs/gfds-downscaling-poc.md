@@ -87,6 +87,28 @@ this is one event in one basin.
    our own scoring can stand in for FloodScan in admin-level riverine
    monitoring got stronger.
 
+## Addendum (2026-09-02): FloodScan-free calibration shoot-out
+
+Three routes from GFDS signal to flooded fraction with zero FloodScan input,
+scored against SFED as a fair external benchmark
+(`06_independent_fractions.py`, confluence AOI):
+
+| route | r vs SFED (wet cells) | area ratio at SFED peak |
+|---|---|---|
+| R1 physics (literature emissivity contrast K=0.35) | **0.84** | **0.99** |
+| R1 + MDFF-style threshold (0.10) | 0.83 | 0.86 (June floor drops 658→118 km², SFED ~100) |
+| R2 optical anchor (GSW history) | 0.42 | 0.19 |
+| R3 radar anchor (GFM peak window) | 0.74 | 0.24 |
+| R0 SFED-trained lookup (ceiling, not independent) | 0.94 | 0.83 |
+
+Verdict: the simple mixing-equation inversion wins decisively. Anchor routes
+fail structurally: 2022 exceeded anything in their anchors' record, so their
+amplitudes cap out low. The physics route's dry-season floor reproduces the
+exact problem AER's Users Guide documents solving with its MDFF threshold
+(v05R01 §1.2); applying the same idea fixes it here too. This makes an
+independent open-source product plausible, with a to-do list: per-pixel K,
+seasonal dry reference, threshold tuning, multi-year training.
+
 ## Before anything large-scale
 
 - Replicate calibration + scale ladder on a second event/basin (Pakistan 2022

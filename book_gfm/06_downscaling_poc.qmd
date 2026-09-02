@@ -327,6 +327,80 @@ Now the picture is clean. At 83 m all three maps agree with the radar equally
 out. And at every level, free GFDS sits within a hair of licensed
 FloodScan.
 
+## Cutting the cord: three FloodScan-free calibrations
+
+Everything above still calibrates against FloodScan, which makes the free
+product a reproduction rather than an independent one. AER did not have that
+luxury when they built FloodScan, so how did they get flooded fraction from
+brightness temperature alone? Physics: a partly flooded pixel's signal is a
+mix of a wet and a dry component, and the mixing equation can be inverted.
+We tested three ways to do the inversion without touching FloodScan, scoring
+each against SFED, which is now a fair external benchmark because none of
+the routes sees it during calibration:
+
+- **R1, physics**: invert the mixing equation directly, using a literature
+  value for the wet/dry emissivity contrast at 36 GHz (K ≈ 0.35) and each
+  pixel's own dry-season signal level.
+- **R2, optical anchor**: pin each pixel's signal range to the driest and
+  wettest fractions Landsat ever observed there (Global Surface Water).
+- **R3, radar anchor**: like R2, but the wet anchor comes from Sentinel-1
+  extent aggregated to the pixel for the October peak window.
+
+```{python}
+#| fig-cap: "Flooded area over the confluence AOI: the three FloodScan-free routes, the SFED-trained ceiling, and FloodScan itself. The physics route (green) reproduces the flood wave and its peak with no FloodScan input; both anchor routes flatline because their anchors never saw a 2022-sized flood."
+z2 = np.load(POC / "independent_fractions.npz")
+R1, R2, R3, R0, W = (z2[k] for k in ("R1", "R2", "R3", "R0", "W"))
+tt = pd.to_datetime(z2["time"])
+pxa = (0.09 * 111.32) ** 2
+ok = np.isfinite(W)
+fig, ax = plt.subplots(figsize=(11, 4.5))
+for P, lab, col in [(R1, "R1 physics", "tab:green"),
+                    (R2, "R2 optical anchor", "tab:red"),
+                    (R3, "R3 radar anchor", "tab:orange"),
+                    (R0, "R0 SFED-trained (ceiling)", "tab:grey")]:
+    okp = np.isfinite(P) & ok
+    ax.plot(tt, np.nansum(np.where(okp, P, 0), axis=1) * pxa, label=lab,
+            color=col, lw=1.2)
+ax.plot(tt, np.nansum(np.where(ok, W, 0), axis=1) * pxa,
+        label="FloodScan SFED (benchmark)", color="tab:blue", lw=2)
+ax.set_ylabel("flooded area (km²)")
+ax.legend(fontsize=8)
+plt.show()
+
+wet_cells = z2["wet_cells"]
+def rscore(P):
+    m = np.isfinite(P) & np.isfinite(W) & wet_cells[None, :]
+    a_p = np.nansum(np.where(np.isfinite(P) & ok, P, 0), axis=1)
+    a_w = np.nansum(np.where(ok, W, 0), axis=1)
+    pk = int(np.nanargmax(a_w))
+    return {"r vs SFED (wet cells)": round(float(np.corrcoef(P[m], W[m])[0, 1]), 2),
+            "area ratio at peak": round(float(a_p[pk] / a_w[pk]), 2)}
+r1m = np.where(R1 >= 0.10, R1, 0.0)
+pd.DataFrame({"R1 physics": rscore(R1),
+              "R1 physics + minimum-detectable threshold": rscore(r1m),
+              "R2 optical anchor": rscore(R2),
+              "R3 radar anchor": rscore(R3),
+              "R0 SFED-trained (ceiling)": rscore(R0)}).T
+```
+
+The physics route wins, and not narrowly: r = 0.84 against SFED and 99% of
+its peak area, from a literature constant and the pixel's own history. The
+anchor routes fail for a structural reason worth remembering: 2022 flooded
+beyond anything in their anchors' experience, so amplitudes calibrated to
+Landsat history or three radar snapshots cap out far too low. You cannot
+anchor an extreme to a record that never contained one.
+
+The physics route's one visible flaw is a dry-season floor: a few hundred
+km² of low-level "flood" in June-August where SFED reports almost none,
+from soil moisture and seasonal wetness leaking into the signal. FloodScan's
+Users Guide documents the identical problem and its fix, a "minimum
+detectable flooded fraction (MDFF) threshold" applied to filter "low level
+flooded fraction noise" (v05R01, §1.2). Applying the same idea (zero out
+fractions below 0.10) cuts our June floor to SFED's level while keeping
+r = 0.83 and 86% of peak area. Independently rediscovering the need for
+their threshold is about as strong a confirmation of the shared physics as
+one event can give.
+
 ## What this settles
 
 1. **The useful product is Step 1, not Step 2.** A calibrated "share of this
@@ -344,11 +418,13 @@ FloodScan.
    admin-level findings of @sec-alternative-sources, the case keeps firming
    up.
 
-One honesty clause on the "open-source" label: the current conversion is
-calibrated *against* FloodScan, so today it is an open reproduction, not yet
-an independent product. Making it stand alone needs a calibration target
-from outside the license: aggregated radar extent, gauges, or a physical
-retrieval. That, plus a second basin, multi-year training, and adding
-terrain to the historical map (many floodable cells have no Landsat water
-history) is the path from "free copy" to "maybe better": finer microwave
-input (~10 km vs ~22 km), a 28-year free archive, and our own baselines.
+The FloodScan-free calibration section moves the "open-source" label from
+aspiration to plausible: the physics route needs no licensed data at all and
+already reaches r = 0.84 / 99% of peak area against the licensed product on
+this event. The path from "free copy" to "maybe better" now has concrete
+work items: refine the physics route (per-pixel emissivity contrast, a
+seasonal dry reference instead of one quantile, a tuned minimum-detectable
+threshold), train on the 28-year free archive rather than one season, add
+terrain to the historical map, and replicate on a second basin. The free
+input's finer working resolution (~10 km vs ~22 km) is the standing
+structural advantage.
