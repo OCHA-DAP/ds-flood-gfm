@@ -4,38 +4,43 @@
 jupyter: ds-flood-gfm
 ---
 
-@sec-alternative-sources ended with FloodScan's structural advantage: its
-published product looks fine-grained because a 90 m hydrological database
-decides where the coarse microwave water goes. This chapter asks whether we
-can do the same to GFDS for free, and, more importantly, whether it is worth
-doing. The answer needs two steps, because GFDS's σ-anomaly is not an area
-and cannot be "redistributed" as-is:
+FloodScan's maps look sharp because of a trick: a fine-grained database of
+where water tends to go decides where the coarse satellite signal gets drawn.
+@sec-alternative-sources ended by asking whether we could do the same trick
+to GFDS, for free. This chapter builds it and, more importantly, measures
+whether it is worth having.
 
-1. **Calibrate**: turn the anomaly into a physical flooded fraction at 10 km,
-   per pixel.
-2. **Disaggregate**: spread that fraction across the ~83 m cells inside
-   each pixel, wetting the most flood-prone cells first. This is exactly the
-   FloodScan trick.
+Two steps are needed, because GFDS does not measure an amount of water. It
+measures how *unusual* a pixel looks compared to its own history, and you
+cannot draw "unusual" on a map at 90 m. So:
 
-A word on the term this chapter leans on: a **prior** is knowledge you hold
-*before* looking at today's observation. Ours is a static map of how often
-each ~30 m cell has held water in the past (details in Step 2): river
-channels score near 100%, floodplains somewhere in the tens, dry upland zero.
-Downscaling is paint-by-numbers with it. Today's GFDS tells us *how much* of
-a 10 km pixel is wet; the prior decides *which* fine cells get painted first.
-Nothing about today's flood affects the placement, only the amount.
+1. **Turn "how unusual" into "how much"**: convert the GFDS reading into an
+   estimated share of each 10 km pixel that is under water.
+2. **Paint the detail**: spread that share across the small (~83 m) cells
+   inside the pixel, wetting the historically flood-prone cells first.
 
-The premise to keep in mind throughout, therefore: downscaling adds no new
-information. The experiment below is designed to measure exactly how much of
-the resulting map is observation and how much is paint. Full write-up:
+Step 2 runs on what statisticians call a **prior**: knowledge you already had
+before today's satellite reading. Ours is an old water map, built from every
+Landsat image since 1984, saying how often each ~30 m cell has been wet.
+River channels score near 100%, floodplains somewhere in the tens, dry land
+zero. Painting works like paint-by-numbers: today's GFDS decides *how much*
+of the pixel gets painted, the old map decides *which cells* get the paint.
+Today's flood has no say in the placement, only in the amount.
+
+That means downscaling adds no new observation. It is educated guessing about
+placement, and the experiment below is built to measure how much of the final
+map is satellite and how much is guesswork. Full technical write-up:
 [`docs/gfds-downscaling-poc.md`](https://github.com/OCHA-DAP/ds-flood-gfm/blob/main/docs/gfds-downscaling-poc.md);
 code in `experiments/gfds_downscaling_poc/`.
 
-## Step 1: anomaly to fraction
+## Step 1: from "how unusual" to "how much"
 
-A per-pixel monotone quantile mapping from the 4-day GFDS anomaly to
-FloodScan SFED, fit on alternating days and scored on the held-out days
-(every skill number is out-of-sample). The script:
+The conversion is a per-pixel lookup table. For each 10 km pixel we line up
+its history of GFDS readings against its history of FloodScan readings: a
+middling GFDS day maps to that pixel's typical FloodScan value, an extreme
+day to an extreme value. To keep ourselves honest, the table is built from
+half the days (alternating) and every score below comes from the other half,
+days the table never saw.
 
 ```{python}
 #| eval: false
@@ -44,7 +49,7 @@ FloodScan SFED, fit on alternating days and scored on the held-out days
 ```
 
 ```{python}
-#| code-summary: "load POC artifacts (fails loudly if the scripts haven't been run)"
+#| code-summary: "load POC results (fails loudly if the scripts haven't been run)"
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -65,19 +70,21 @@ sfed = xr.open_dataarray(POC / "sfed_on_gfds.nc")
 skill_cal
 ```
 
-The out-of-sample scores: RMSE 0.040 against 0.048 for the strong baseline of
-predicting each pixel's training-mean SFED, with negligible bias. The more
-tangible check is what the calibration does to *total flooded area*, which a
-σ-anomaly cannot express at all:
+On the unseen days, the lookup table predicts FloodScan's value with a
+typical error of 0.040 (in flooded-share units, over pixels that actually
+flooded), versus 0.048 for the lazy strategy of always guessing each pixel's
+average. A modest margin, honestly earned. The more tangible payoff is that
+GFDS can now express something it never could before: how many square
+kilometres are under water.
 
 ```{python}
-#| fig-cap: "Total flooded area over the Nigeria window, daily: GFDS calibrated fraction vs FloodScan SFED. The GFDS-derived curve is built purely from the free signal plus the static baselines; at the SFED peak it reaches 84% of the licensed product's area."
+#| fig-cap: "How much of Nigeria is under water each day, according to the free GFDS estimate (red) and the licensed FloodScan product (blue). At FloodScan's peak, the free estimate reaches 84% of its area."
 px_km2 = (0.09 * 111.32) ** 2
 both = np.isfinite(frac.values) & np.isfinite(sfed.values)
 a_gfds = np.where(both, frac.values, 0).sum(axis=(1, 2)) * px_km2
 a_sfed = np.where(both, sfed.values, 0).sum(axis=(1, 2)) * px_km2
 fig, ax = plt.subplots(figsize=(10, 4))
-ax.plot(frac.time, a_gfds, color="tab:red", label="GFDS calibrated (free)")
+ax.plot(frac.time, a_gfds, color="tab:red", label="GFDS estimate (free)")
 ax.plot(sfed.time, a_sfed, color="tab:blue", label="FloodScan SFED (licensed)")
 ax.set_ylabel("flooded area (km²)")
 ax.legend()
@@ -85,12 +92,13 @@ ax.set_title("Nigeria, Jun–Nov 2022")
 plt.show()
 ```
 
-## Step 2: flood-fill onto a water-history prior
+## Step 2: painting the detail
 
-The prior is JRC Global Surface Water occurrence (~28 m, aggregated to 83 m,
-fetched by HTTP range reads). Inside each 0.09° cell, cells are ranked by
-occurrence, ties broken by distance to historical water, permanent water
-(occurrence > 80%) excluded, and the calibrated fraction filled top-down:
+The old water map comes from the JRC Global Surface Water dataset (free,
+~30 m, fetched here by reading just the needed window over HTTP). Inside each
+10 km pixel we sort the small cells from most to least water-prone, skip
+cells that are water all the time anyway (lakes, the river channel itself),
+and paint the estimated share from the top of the list down. The scripts:
 
 ```{python}
 #| eval: false
@@ -104,41 +112,58 @@ occurrence, ties broken by distance to historical water, permanent water
 {{< include ../experiments/gfds_downscaling_poc/04_downscale_validate.py >}}
 ```
 
-## The maps, and the control that keeps us honest
+## Did the painting help? A radar reality check
 
-Validation target: GFM Sentinel-1 cumulative extent (a different sensor
-family from both microwave products) for the October 2022 peak over the
-Niger-Benue confluence. Alongside the downscaled GFDS we score two
-comparators: the same flood-fill fed with licensed SFED (upper bound), and a
-**prior-only control** carrying the same total flooded area but allocated by
-the prior alone, ignoring where GFDS put the water at 10 km. If downscaled
-GFDS cannot beat that control, the fine-scale map is pure cartography.
+To judge the painted maps we need a referee that is not a cousin of the
+microwave products. We use this project's own GFM data: Sentinel-1 radar
+flood extent, a completely different kind of measurement, for the October
+2022 peak at the Niger-Benue confluence.
+
+Three maps get scored against the radar. The painted GFDS map. The same
+painting fed with licensed FloodScan instead, to see what the free input
+costs. And the one that keeps us honest: a **fake map that uses no 2022
+satellite information at all**. It takes the same total flooded area and
+paints it purely by the old water map's ranking. If painted GFDS cannot beat
+a map drawn without ever looking at the flood, the painting, not the
+satellite, was doing the work.
 
 ```{python}
-#| fig-cap: "Niger-Benue confluence, 6-13 Oct 2022, ~83 m. Top left: GFM Sentinel-1 max extent (reference). Top right: downscaled GFDS. Bottom left: downscaled SFED. Bottom right: the prior-only control. Grey outside the scoring domain."
-#| fig-height: 12
+#| fig-cap: "Niger-Benue confluence, 6-13 Oct 2022, ~83 m. Each panel compares a painted map against the radar: blue = both agree it flooded, orange = radar saw water the map missed, red = the map painted water the radar never saw. Left: painted GFDS. Right: the fake map drawn only from the old water map. GFDS turns orange into blue across the wide flooding south of the confluence, but pays with red over-spread in rectangular patches at pixel edges."
+#| fig-height: 7
+from matplotlib.colors import ListedColormap
+from matplotlib.patches import Patch
+
 z = np.load(POC / "downscale_maps.npz")
 gfm_wet, ds_gfds, ds_sfed, ctrl, dom = (z[k] for k in
                                         ("gfm_wet", "ds_gfds", "ds_sfed", "ctrl", "dom"))
 ext = [z["x"].min(), z["x"].max(), z["y"].min(), z["y"].max()]
-fig, axes = plt.subplots(2, 2, figsize=(13, 12), sharex=True, sharey=True)
-panels = [
-    (axes[0, 0], gfm_wet, "GFM Sentinel-1 max extent (reference)", "Blues"),
-    (axes[0, 1], ds_gfds, "downscaled GFDS (free, this POC)", "Reds"),
-    (axes[1, 0], ds_sfed, "downscaled SFED (licensed input)", "Purples"),
-    (axes[1, 1], ctrl, "prior-only control (no 10 km information)", "Greys"),
-]
-for ax, m, title, cmap in panels:
-    ax.imshow(np.where(dom, m.astype(float), np.nan), extent=ext, cmap=cmap,
-              vmin=0, vmax=1, interpolation="none")
+
+def agreement(pred):
+    cat = np.zeros(pred.shape, dtype=float)          # 0: dry in both
+    cat[gfm_wet & pred] = 1                           # both wet
+    cat[gfm_wet & ~pred] = 2                          # radar only
+    cat[~gfm_wet & pred] = 3                          # map only
+    return np.where(dom, cat, np.nan)
+
+cmap = ListedColormap(["#f7f7f7", "#2c7fb8", "#fdae61", "#d7191c"])
+fig, axes = plt.subplots(1, 2, figsize=(13, 7), sharex=True, sharey=True)
+for ax, pred, title in [(axes[0], ds_gfds, "painted GFDS vs radar"),
+                        (axes[1], ctrl, "old-water-map-only vs radar")]:
+    ax.imshow(agreement(pred), extent=ext, cmap=cmap, vmin=-0.5, vmax=3.5,
+              interpolation="none")
     ax.set_title(title, fontsize=11)
     ax.set_aspect("equal")
+axes[0].legend(handles=[
+    Patch(color="#2c7fb8", label="agree: flooded"),
+    Patch(color="#fdae61", label="radar only (map missed it)"),
+    Patch(color="#d7191c", label="map only (radar saw nothing)")],
+    loc="lower left", fontsize=8, framealpha=0.9)
 plt.tight_layout()
 plt.show()
 ```
 
 ```{python}
-#| code-summary: "hit/miss scores at 83 m"
+#| code-summary: "scores at 83 m"
 def score(pred):
     h = int((pred & gfm_wet & dom).sum())
     f = int((pred & ~gfm_wet & dom).sum())
@@ -146,29 +171,32 @@ def score(pred):
     return {"POD": round(h / (h + m), 3), "FAR": round(f / (h + f), 3),
             "CSI": round(h / (h + m + f), 3)}
 
-pd.DataFrame({"downscaled GFDS": score(ds_gfds),
-              "downscaled SFED": score(ds_sfed),
-              "prior-only control": score(ctrl)}).T
+pd.DataFrame({"painted GFDS": score(ds_gfds),
+              "painted SFED (licensed)": score(ds_sfed),
+              "old water map only": score(ctrl)}).T
 ```
 
-Reading the maps against the table: the GFDS and SFED maps visibly capture
-the broad inundation south of the confluence that the prior-only control
-misses (it paints thin channels and scattered ponds). Yet at 83 m the control
-ties both on CSI. The trade is symmetric: what the microwave maps gain on the
-flooded plains they give back in blocky over-spread at coarse-cell edges. Two
-further honest notes: free GFDS costs almost nothing against licensed SFED
-through the identical pipeline, and the high FAR everywhere partly reflects
-the reference itself, since SAR under-detects in vegetation and we compare
-three Sentinel-1 dates against continuous microwave coverage.
+Reading guide for the scores: POD is the share of radar-flooded cells the map
+caught, FAR is the share of the map's painted cells the radar contradicts,
+and CSI folds both into one overlap number.
 
-## Where the 10 km signal starts to matter
+The verdict at full 83 m detail is uncomfortable and worth stating plainly:
+**the fake map ties the real ones**. Your eye sees the difference in the
+figure, yet cell by cell the gains on the floodplain are cancelled by the
+blocky over-painting. Also notable: the free GFDS input scores within a
+whisker of the licensed FloodScan input. One fairness note about the referee:
+radar under-detects water beneath vegetation, and we compare three radar
+snapshots against continuous microwave coverage, so part of every map's "red"
+is the referee's blind spots rather than the map's mistakes.
 
-If the fine detail is prior-driven, the observation must earn its keep at
-coarser scales. Aggregating all four maps to a ladder of evaluation scales
-and correlating wet fractions:
+## Zooming out: where the satellite earns its keep
+
+If the fine detail is mostly the old map, the satellite has to prove itself
+at coarser zoom. We blur all the maps to a series of coarser grids and check
+how well each tracks the radar:
 
 ```{python}
-#| code-summary: "scale ladder: correlation of wet fraction vs GFM"
+#| code-summary: "agreement with radar (correlation) at increasing blur"
 def block_reduce(a, k, m):
     ny, nx = a.shape
     ny2, nx2 = ny // k * k, nx // k * k
@@ -182,7 +210,8 @@ for k, label in [(1, "83 m"), (6, "0.5 km"), (12, "1 km"), (36, "3 km"), (72, "6
     vs = block_reduce(dom.astype(float), k, np.ones_like(dom, bool))
     mm = np.isfinite(g) & (vs > 0.5)
     row = {"scale": label}
-    for name, pred in [("GFDS", ds_gfds), ("SFED", ds_sfed), ("prior-only", ctrl)]:
+    for name, pred in [("GFDS", ds_gfds), ("SFED", ds_sfed),
+                       ("old water map only", ctrl)]:
         p = block_reduce(pred.astype(float), k, dom)
         ok = mm & np.isfinite(p)
         row[name] = round(float(np.corrcoef(p[ok], g[ok])[0, 1]), 3)
@@ -190,24 +219,29 @@ for k, label in [(1, "83 m"), (6, "0.5 km"), (12, "1 km"), (36, "3 km"), (72, "6
 pd.DataFrame(rows).set_index("scale")
 ```
 
-The pattern is clean. At 83 m the three maps are indistinguishable: the prior
-does the work. The microwave signal's added value over the prior grows with
-scale, reaching +0.05 to +0.07 correlation by 3 to 6 km, and GFDS tracks SFED
-within 0.01 to 0.02 at every rung.
+Now the picture is clean. At 83 m all three maps agree with the radar equally
+(and equally poorly). As the zoom coarsens, the maps that actually looked at
+the 2022 flood pull ahead of the one that did not, by a clear margin from
+3 km out. And at every zoom level, free GFDS sits within a hair of licensed
+FloodScan.
 
 ## What this settles
 
-1. **The valuable product is the calibrated 10 km fraction.** It converts a
-   free anomaly into FloodScan-comparable physical units, and it is what
-   admin-level monitoring and exposure aggregation actually consume.
-2. **The 90 m map is presentation, not measurement.** Defensible for
-   dasymetric population overlay, where sub-pixel water placement changes who
-   gets counted and the prior is a reasonable allocator. It should never be
-   read as observed extent; for that, GFM is the tool.
-3. **Free vs licensed input barely matters through this pipeline** for this
-   event, which strengthens the admin-level case from @sec-alternative-sources.
+1. **The useful product is Step 1, not Step 2.** A calibrated "share of this
+   10 km pixel is flooded" layer gives GFDS physical units, comparable across
+   pixels and summable into areas and exposure estimates. That is what
+   admin-level monitoring consumes, and it costs nothing.
+2. **The 90 m painting is presentation.** It is a reasonable way to decide
+   which communities inside a pixel to count when overlaying population, but
+   it must never be read as observed flood extent. When someone needs to know
+   where the water actually is, GFM radar is the tool.
+3. **Free input, licensed input: near-identical results** through this
+   pipeline. Together with the admin-level findings of
+   @sec-alternative-sources, the case for GFDS as a free FloodScan stand-in
+   for riverine monitoring keeps firming up.
 
-Single-event, single-basin caveats apply throughout; the named next steps are
-a second basin, calibration against GFM instead of SFED to break the
-shared-radiometer circularity, and a HAND-augmented prior to raise the bar
-the control sets.
+All of this is one event in one basin. The named next steps: repeat on a
+second basin, calibrate against the radar instead of FloodScan so the free
+product stops inheriting FloodScan's habits, and give the old water map a
+terrain supplement (many floodable cells have no Landsat water history, which
+caps how well any painted map can do).
