@@ -13,13 +13,21 @@ and cannot be "redistributed" as-is:
 
 1. **Calibrate**: turn the anomaly into a physical flooded fraction at 10 km,
    per pixel.
-2. **Disaggregate**: flood-fill that fraction onto ~83 m cells ranked by a
-   water-history prior, exactly the FloodScan trick.
+2. **Disaggregate**: spread that fraction across the ~83 m cells inside
+   each pixel, wetting the most flood-prone cells first. This is exactly the
+   FloodScan trick.
 
-The premise to keep in mind throughout: downscaling adds no information. It
-is prior knowledge about where water goes, painted at finer resolution. The
-experiment below is designed to measure exactly how much is observation and
-how much is paint. Full write-up:
+A word on the term this chapter leans on: a **prior** is knowledge you hold
+*before* looking at today's observation. Ours is a static map of how often
+each ~30 m cell has held water in the past (details in Step 2): river
+channels score near 100%, floodplains somewhere in the tens, dry upland zero.
+Downscaling is paint-by-numbers with it. Today's GFDS tells us *how much* of
+a 10 km pixel is wet; the prior decides *which* fine cells get painted first.
+Nothing about today's flood affects the placement, only the amount.
+
+The premise to keep in mind throughout, therefore: downscaling adds no new
+information. The experiment below is designed to measure exactly how much of
+the resulting map is observation and how much is paint. Full write-up:
 [`docs/gfds-downscaling-poc.md`](https://github.com/OCHA-DAP/ds-flood-gfm/blob/main/docs/gfds-downscaling-poc.md);
 code in `experiments/gfds_downscaling_poc/`.
 
