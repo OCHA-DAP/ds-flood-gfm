@@ -167,9 +167,9 @@ for ax, pred, title in [(axes[0], ds_gfds, "downscaled GFDS vs radar"),
     ax.set_title(title, fontsize=11)
     ax.set_aspect("equal")
 axes[0].legend(handles=[
-    Patch(color="#2c7fb8", label="agree: flooded"),
-    Patch(color="#fdae61", label="radar only (map missed it)"),
-    Patch(color="#d7191c", label="map only (radar saw nothing)")],
+    Patch(color="#2c7fb8", label="both flooded (hit)"),
+    Patch(color="#fdae61", label="radar flooded, this map dry (miss)"),
+    Patch(color="#d7191c", label="this map flooded, radar dry (false alarm)")],
     loc="lower left", fontsize=8, framealpha=0.9)
 plt.tight_layout()
 plt.show()
