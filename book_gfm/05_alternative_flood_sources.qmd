@@ -1,4 +1,4 @@
-# Alternative Flood Sources: GDACS GFDS {#sec-alternative-sources}
+# GFDS vs FloodScan {#sec-alternative-sources}
 
 ---
 jupyter: ds-flood-gfm
@@ -30,16 +30,16 @@ calibration pixel **C** experiencing the same atmosphere:
 
 $$s = T_M / T_C$$
 
-Lower signal means more water. The server exposes several layers; after taking
-them apart, only one matters for ingestion:
+Lower signal means more water. The server exposes half a dozen layers; after
+taking them apart, only one needs continuous ingestion, plus two static files:
 
-| Layer | What it is | Verdict |
+| Layer | What it is | Used in this chapter? |
 |---|---|---|
-| `SignalTiffs/signal_*` | daily $s$ (×10⁶, int32) | the one to ingest |
-| `MagTiffs/mag_signal_*` | $s$ scored in σ against JRC's baseline | derivable (their baseline is frozen in 2009; see below) |
-| `Avg*` folders | 4-day trailing means | one line of xarray |
-| `AveragesAndSd/bt_signal_{avg,sd}` | per-pixel long-term mean/sd of $s$ | fetch once (static since July 2009) |
-| `dn_*`, `deltaT_*` | legacy formulations | ignore |
+| `SignalTiffs/signal_*` | daily $s$ (×10⁶, int32) | **Yes**: the input to every analysis and plot below |
+| `AveragesAndSd/bt_signal_{avg,sd}` | per-pixel long-term mean/sd of $s$, static since July 2009 | **Yes**: fetched once, used to score the signal into an anomaly |
+| `MagTiffs/mag_signal_*` | $s$ scored in σ against JRC's baseline | Only in the final head-to-head section, as the thing we test against |
+| `Avg*` folders | 4-day trailing means of the above | Never downloaded; we compute our own 4-day mean in one line of xarray |
+| `dn_*`, `deltaT_*` | legacy formulations | No |
 
 Two data-hygiene facts you need before touching any of it: rasters carry two
 nodata sentinels (`-32000` declared, int32-min undeclared), and every layer is
@@ -57,6 +57,56 @@ irrigation was already flagged as a false-alarm source. The 4 to 6σ
 confirmation. The operational GFDS mitigates all this with manually curated
 sites; the gridded rasters we use below share the same physics but none of
 that site-level curation, which is why we validate before trusting them.
+
+## Sensors and methods, side by side
+
+Before comparing outputs, it is worth being precise about what each system
+actually measures and how. The two are cousins, not strangers: they observe
+the same physical signal from largely the same instruments, then diverge
+completely in what they do with it.
+
+| | **GFDS** (JRC / DFO) | **FloodScan** (AER) |
+|---|---|---|
+| Sensors today | AMSR2 (GCOM-W), GMI (GPM) | AMSR2 (GCOM-W), GMI (GPM) |
+| Historical sensors | AMSR-E (2002 to 2011), TRMM TMI (1997 to 2015) | AMSR-E era products |
+| Observable | 36.5 GHz H-pol brightness temperature, per swath | Passive microwave brightness temperature, ~22 km footprints |
+| Core retrieval | Change detection: wet pixel ÷ nearby dry calibration pixel (M/C ratio), a unitless relative signal | Unmixing: wet/dry emissivity end-members convert Tb into a physical *fraction of pixel flooded* |
+| Reference for "dry" | One calibration pixel, chosen as the 95th percentile of a 9×9 neighborhood, same swath | Dry-land end-member predicted per location from local time-series analysis |
+| Long-term baseline | Static per-pixel mean/sd, frozen July 2009 (AMSR-E era) | Maintained dynamically as part of the retrieval |
+| Spatial treatment | Swath values projected to the grid as-is; no downscaling | Physical downscaling to 90 m via a topography / hydrology / Global Surface Water database, then aggregation |
+| Grid we use | 0.09° (~10 km), 4000×2000 global | 300 arcsec (~0.083°, ~9 km); 90 m product also exists |
+| Noise handling | 4-day trailing average (chosen over spatial averaging in the 2007 report) | Temporal-spatial false-positive filtering plus 3-day averaging |
+| Coverage | Global (40°N to 40°S in the TRMM-only era, 1997 to 2002) | Africa and the Americas in NRT, not global |
+| Cadence / latency | Daily grids, updated every 3 h; ~3 h (AMSR2) to ~24 h (GPM) behind acquisition | Daily |
+| Archive | December 1997 to present | 1998 to present (team holdings) |
+| Output variable | σ-anomaly of a wetness ratio; no physical units | Flooded fraction, 0 to 1 (SFED; MFED for maximum) |
+| Alert layer | ~10k manually curated virtual-gauge sites; 4 to 6σ thresholds set empirically | Products consumed directly; the team computes its own baselines and return periods |
+| Access | Free, no auth, plain HTTP | Commercial license (AER) |
+
+Three things follow from this table.
+
+First, the r ≈ 0.9 agreements we find below are impressive but not fully
+independent evidence: both systems see the world through the same
+radiometers. Shared blind spots (coasts, snow, heavy vegetation, swath gaps)
+will not show up as disagreement between them. FloodScan is our
+operational benchmark here, not ground truth; truly independent validation
+would come from SAR extent (GFM) or gauges.
+
+Second, the methodological gulf explains the asymmetries we measure. A ratio
+anomaly is only meaningful relative to a pixel's own history, so GFDS values
+cannot be compared across pixels as amounts of water, and anything that
+shifts local emissivity (irrigation, seasonal wetlands, coastlines) moves the
+signal. A flooded *fraction* is a physical quantity: comparable across
+pixels, aggregatable into areas and exposure, and, thanks to the 90 m
+hydrological downscaling, able to keep narrow river corridors that are
+sub-pixel at the radiometer's native footprint.
+
+Third, GFM belongs to a different family altogether: an active C-band SAR
+(Sentinel-1) classifying 20 m flood extent per scene, with revisit gaps and a
+2015-start archive. That is why this chapter compares GFDS against FloodScan
+rather than GFM; the systems in this table answer "how unusual is the water
+signal today, everywhere, daily", while GFM answers "exactly where is the
+water right now".
 
 ## Data access: long fetches live in scripts
 
@@ -158,9 +208,15 @@ print(f"signal: {signal.sizes['time']} days | mag: {mag.sizes['time']} days "
 
 ### A do-it-yourself anomaly
 
-Floods lower the signal, so we score it flood-positive against the static
-baseline. We also keep a 4-day trailing mean: GFDS is swath-based, so single days
-are noisy.
+To be explicit about lineage, since the server offers half a dozen layers:
+everything from here on is built from exactly three GFDS inputs. The daily
+`signal_*` files provide $s$; the two static baseline files provide the
+per-pixel mean and sd. We score the signal flood-positive (floods lower it),
+and then compute the 4-day trailing mean ourselves, on the anomaly, in the
+`rolling` call below. JRC's pre-computed `Avg*` layers play no part, and its
+`mag_signal_*` product appears only at the end, as a comparison target.
+Single GFDS days are swath-based and noisy, which is why the smoothed version
+earns its keep.
 
 ```{python}
 anom = ((baseline["avg"] - signal) / baseline["sd"].clip(min=0.005)).transpose(

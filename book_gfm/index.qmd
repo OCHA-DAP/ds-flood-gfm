@@ -21,7 +21,11 @@ The production pipeline is driven by four CLI scripts that can be run for any co
 
 ## What this book covers
 
-- @sec-querying-gfm introduces the GFM data source and demonstrates how to query and retrieve flood tiles from the STAC API
-- @sec-temporal-compositing explains how multiple satellite observations are combined into composite flood maps, and how the provenance tracking system works
-- @sec-population-exposure walks through the population overlay methodology that turns flood maps into humanitarian impact estimates
-- @sec-production-pipeline showcases the complete CLI pipeline with real command examples and the maps they produce
+- @sec-production-pipeline showcases the complete CLI pipeline with real command examples and the maps they produce --- this is the core of the book
+- @sec-alternative-sources evaluates the GDACS Global Flood Detection System (GFDS) as a complementary flood source, validated against FloodScan over the Nigeria 2022 floods
+
+The appendices hold the supporting material:
+
+- **GFM Methodology** (@sec-querying-gfm, @sec-temporal-compositing, @sec-population-exposure) walks through the concepts behind each pipeline stage: querying the STAC API, temporal compositing with provenance tracking, and the population overlay
+- **Design Decisions** documents why we built a custom pipeline instead of using the GFM product layers directly
+- **Early Project Development** preserves the proof-of-concept notebooks and event case studies that shaped the pipeline

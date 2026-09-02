@@ -18,13 +18,19 @@ book:
   
   chapters:
     - index.qmd
-    - 01_querying_gfm.qmd
-    - 02_temporal_compositing.qmd
-    - 03_population_exposure.qmd
-    - 04_production_pipeline.qmd
-    - 05_alternative_flood_sources.qmd
+    - part: "GFM"
+      chapters:
+        - 04_production_pipeline.qmd
+    - part: "Alternative Sources"
+      chapters:
+        - 05_alternative_flood_sources.qmd
 
   appendices:
+    - part: "GFM Methodology"
+      chapters:
+        - 01_querying_gfm.qmd
+        - 02_temporal_compositing.qmd
+        - 03_population_exposure.qmd
     - part: "Design Decisions"
       chapters:
         - A5_why_custom_pipeline.qmd
