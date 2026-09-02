@@ -1,18 +1,26 @@
-# Downscaling GFDS: Proof of Concept {#sec-downscaling-poc}
+# Toward an Open-Source FloodScan? {#sec-downscaling-poc}
 
 ---
 jupyter: ds-flood-gfm
 ---
 
-FloodScan's maps look sharp because of a trick, and the trick is documented
-by its authors: the product "downscales [flooded fraction] to 90-m resolution
-using a database built from topography, hydrology, and Global Surface Water
-Explorer data" ([Galantowicz, AER, AGU 2018](https://ui.adsabs.harvard.edu/abs/2018AGUFM.H51B..03G/abstract);
-the approach dates to Galantowicz 2002). A fine-grained database of where
-water tends to go decides where the coarse satellite signal gets drawn.
-@sec-alternative-sources ended by asking whether we could do the same to
-GFDS, for free. This chapter builds a simplified version and, more
-importantly, measures whether it is worth having.
+FloodScan is a licensed product, but its pipeline is documented by its
+authors. The Data Users Guide states it plainly: "FloodScan processing
+produces an intermediate flooded fraction product at the passive microwave
+satellite data scales (~22-km). The algorithm downscales flooded fraction to
+make its flood depiction products (e.g., 90-m scale)" (FloodScan Data Users
+Guide v05R01, AER 2021, §1.2). The downscaling database is described in
+[Galantowicz (AER, AGU 2018)](https://ui.adsabs.harvard.edu/abs/2018AGUFM.H51B..03G/abstract)
+as "built from topography, hydrology, and Global Surface Water Explorer
+data"; the approach dates to Galantowicz 2002.
+
+Every ingredient in that recipe has a free counterpart: GFDS supplies the
+passive microwave signal (from the same instruments, posted at ~10 km rather
+than ~22 km), and JRC Global Surface Water supplies the water-history
+database. So this chapter takes an angle worth stating explicitly: **can we
+build an open-source FloodScan?** And with a finer-resolution microwave
+input and a 1998-to-present free archive, could it eventually be better?
+This is the first proof of concept along that path.
 
 Two steps are needed, because GFDS does not measure an amount of water. It
 measures how *unusual* a pixel looks compared to its own history, and you
@@ -37,14 +45,14 @@ today's GFDS reading sets *how much* of each pixel is flooded, and the
 historical map decides *which cells* get marked. Today's flood has no
 influence on the placement, only on the amount.
 
-The question this chapter answers is therefore a FloodScan-vs-GFDS question:
-**if the free GFDS input goes through FloodScan's own published recipe, does
-it reproduce the licensed product?** Step 1 compares the two at their native
-10 km scale; the head-to-head section compares the downscaled maps directly.
-Only at the end do we step outside the microwave family for an independent
-check (GFM radar). Downscaling adds no new observation, since all placement
-information is historical, so something external has to tell us how much of
-the final map comes from the satellite at all. Full technical write-up:
+The test throughout is FloodScan-vs-GFDS: **if the free input goes through
+the published recipe, does it reproduce the licensed product?** Step 1
+compares the two as 10 km flooded fractions; the head-to-head section
+compares the downscaled maps directly. At the end, GFM radar makes a
+deliberately limited appearance as an independent cross-check. Downscaling
+adds no new observation, since all placement information is historical, so
+some outside measurement has to tell us how much of the final map comes from
+the satellite at all. Full technical write-up:
 [`docs/gfds-downscaling-poc.md`](https://github.com/OCHA-DAP/ds-flood-gfm/blob/main/docs/gfds-downscaling-poc.md);
 code in `experiments/gfds_downscaling_poc/`.
 
@@ -105,6 +113,40 @@ ax.set_ylabel("flooded area (km²)")
 ax.legend()
 ax.set_title("Nigeria, Jun–Nov 2022")
 plt.show()
+```
+
+### The 10 km fraction, side by side
+
+The area curve compares totals; the spatial view is more demanding. Here is
+the flooded fraction itself at the October peak, free estimate against
+licensed product, on the same grid and color scale. One caution when reading
+the agreement numbers: the conversion tables were trained on alternating
+days from this same season, so part of this agreement is by construction.
+The fair skill test is the held-out-day scores above; this figure shows what
+the resulting product looks like next to the licensed one.
+
+```{python}
+#| fig-cap: "Mean flooded fraction, 6-13 Oct 2022, on the 10 km GFDS grid. Left: the free GFDS-derived estimate. Right: licensed FloodScan SFED. Printed below: pixel-level agreement between the two fields."
+#| fig-height: 5.5
+peak = slice("2022-10-06", "2022-10-13")
+wg = frac.sel(time=peak).mean("time")
+ws = sfed.sel(time=peak).mean("time")
+fig, axes = plt.subplots(1, 2, figsize=(13, 5.5), sharex=True, sharey=True)
+wg.plot(ax=axes[0], vmin=0, vmax=0.5, cmap="Blues", add_colorbar=False)
+axes[0].set_title("GFDS-derived fraction (free)")
+im = ws.plot(ax=axes[1], vmin=0, vmax=0.5, cmap="Blues", add_colorbar=False)
+axes[1].set_title("FloodScan SFED (licensed)")
+fig.colorbar(im, ax=axes, shrink=0.8, label="flooded fraction")
+plt.show()
+
+g, s = wg.values.ravel(), ws.values.ravel()
+ok = np.isfinite(g) & np.isfinite(s)
+wet = ok & ((g > 0.02) | (s > 0.02))
+print(f"pixel correlation, all valid pixels: {np.corrcoef(g[ok], s[ok])[0,1]:.2f}")
+print(f"pixel correlation, pixels either product calls wet (>2%): "
+      f"{np.corrcoef(g[wet], s[wet])[0,1]:.2f} (n={int(wet.sum())})")
+print(f"mean fraction over wet pixels: GFDS {g[wet].mean():.3f} "
+      f"| FloodScan {s[wet].mean():.3f}")
 ```
 
 ## Step 2: allocating the detail
@@ -183,9 +225,11 @@ outside the microwave family.
 
 ## An outside check: radar, and a control with no satellite input
 
-For that we use this project's own GFM data: Sentinel-1 radar flood extent
-for the same dates. This is a deliberately limited appearance, since the full GFM methodology
-has its own chapters, and it comes with a third map: a
+For that we borrow this project's GFM data: Sentinel-1 radar flood extent
+for the same dates. Radar is a different product with a different overpass
+cadence, so disagreement with the daily microwave products is expected and
+does not crown a winner; its job here is only to arbitrate one narrow
+question. Alongside the two downscaled maps we score a third: a
 **control built with no 2022 satellite input at all**, holding the same total
 flooded area but allocated purely by the historical ranking. If the
 satellite-based maps cannot beat the control against the radar, the fine
@@ -292,15 +336,19 @@ FloodScan.
 2. **The 90 m map is an allocation of the coarse estimate, not an
    observation.** It is a reasonable way to decide which communities inside a
    pixel to count when overlaying population, but it must never be read as
-   observed flood extent. When someone needs to know where the water actually
-   is, GFM radar is the tool.
-3. **Free input, licensed input: near-identical results** through this
-   pipeline. Together with the admin-level findings of
-   @sec-alternative-sources, the case for GFDS as a free FloodScan stand-in
-   for riverine monitoring keeps firming up.
+   observed flood extent.
+3. **The open-source FloodScan question survives its first test.** The free
+   reproduction matches the licensed product at 10 km (this chapter's
+   fraction maps), and through the identical downscaling recipe the two maps
+   overlap on 84% of flagged cells with a 0.91 area ratio. Together with the
+   admin-level findings of @sec-alternative-sources, the case keeps firming
+   up.
 
-All of this is one event in one basin. The named next steps: repeat on a
-second basin, calibrate against the radar instead of FloodScan so the free
-product stops inheriting FloodScan's habits, and add terrain to the
-historical map (many floodable cells have no Landsat water history, which
-caps how well any allocation can do).
+One honesty clause on the "open-source" label: the current conversion is
+calibrated *against* FloodScan, so today it is an open reproduction, not yet
+an independent product. Making it stand alone needs a calibration target
+from outside the license: aggregated radar extent, gauges, or a physical
+retrieval. That, plus a second basin, multi-year training, and adding
+terrain to the historical map (many floodable cells have no Landsat water
+history) is the path from "free copy" to "maybe better": finer microwave
+input (~10 km vs ~22 km), a 28-year free archive, and our own baselines.

@@ -71,7 +71,7 @@ completely in what they do with it.
 | Historical sensors | AMSR-E (2002 to 2011), TRMM TMI (1997 to 2015) | AMSR-E era products |
 | Observable | 36.5 GHz H-pol brightness temperature, per swath | Passive microwave brightness temperature, same 36 GHz-class channels |
 | Native footprint at 36 GHz | AMSR2: 7×12 km; GMI: 9.4×15.6 km ([JAXA](https://www.eorc.jaxa.jp/AMSR/resources/pdf/amsr2_data_user_guide_v4.pdf), [NASA](https://gpm.nasa.gov/missions/GPM/GMI)) | Identical (shared instruments) |
-| Working resolution before any downscaling | Posted to the 0.09° (~10 km) grid, close to native | Retrieval runs on ~22 km effective data, coarsened for end-member stability |
+| Working resolution before any downscaling | Posted to the 0.09° (~10 km) grid, close to native | Intermediate flooded fraction produced "at the passive microwave satellite data scales (~22-km)" (FloodScan Data Users Guide v05R01, AER 2021, §1.2) |
 | Core retrieval | Change detection: wet pixel ÷ nearby dry calibration pixel (M/C ratio), a unitless relative signal | Unmixing: wet/dry emissivity end-members convert Tb into a physical *fraction of pixel flooded* |
 | Reference for "dry" | One calibration pixel, chosen as the 95th percentile of a 9×9 neighborhood, same swath | Dry-land end-member predicted per location from local time-series analysis |
 | Long-term baseline | Static per-pixel mean/sd, frozen July 2009 (AMSR-E era) | Maintained dynamically as part of the retrieval |
@@ -490,7 +490,11 @@ The confluence LGAs track FloodScan curve for curve (r = 0.89 to 0.97, with
 cross-correlation lags within 3 days). The instructive failure is Ekeremor: a
 coastal delta LGA where the 10 km microwave footprint mixes with ocean and
 estuary, so GFDS never gets the dry land calibration contrast its physics
-requires. Coastal admin units sit outside its trust region.
+requires. Coastal admin units sit outside its trust region. FloodScan's own
+Users Guide draws the same boundary for itself: "flooding in smaller
+floodplains and within 5-10 km of coastlines is usually not depicted"
+(v05R01, §1.1). This is a limitation of the shared physics, not of either
+implementation.
 
 ### Do we need JRC's magnitude layer at all?
 

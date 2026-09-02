@@ -82,6 +82,11 @@ mix, which likely contributes to the drift.
 | Cost | Free | Licensed (AER) | Free |
 | Usable for exposure? | Yes (core use) | Yes, coarsely | **No** — anomaly, not extent |
 
+(FloodScan's own pipeline, per its Data Users Guide v05R01 §1.2, produces an
+intermediate flooded fraction at ~22 km and downscales it to 90 m; the guide
+also notes small floodplains and areas within 5-10 km of coasts are usually
+not depicted.)
+
 GFDS is essentially a free, rawer cousin of FloodScan from the same sensor
 family: same ~10 km scale, but it delivers a *statistical anomaly* rather than
 a calibrated *fractional flooded area*, with no documented recalibration since
