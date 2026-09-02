@@ -154,6 +154,18 @@ print(f"mean fraction over wet pixels: GFDS-R0 {g[wet].mean():.3f} "
       f"| FloodScan {s[wet].mean():.3f}")
 ```
 
+A note on why the left panel looks as crisp as the right one, when the raw
+GFDS anomaly in @sec-alternative-sources looked visibly blobbier: both panels
+share the same 10 km grid (SFED is resampled onto it for comparison), but
+sharpness of *pattern* is a different thing. The raw anomaly is smooth
+because the radiometer's 7 to 16 km footprints smear across grid cells. The
+R0 map looks sharp because its sharpness is inherited: each pixel's lookup
+table reproduces that pixel's own SFED value range, so a river pixel maps to
+large fractions and its dry neighbour to small ones, regardless of how
+smooth the input anomaly is. GFDS supplies the day-to-day dynamics; the
+spatial crispness here comes from the training target. The independent
+calibrations in the next section do not get this free sharpening.
+
 ## Test 2: independence — can we calibrate without FloodScan?
 
 R0 proves the free input can copy the licensed product, but a copy is not an
