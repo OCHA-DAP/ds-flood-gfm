@@ -159,16 +159,20 @@ print(f"mean fraction over wet pixels: GFDS-R0 {g[wet].mean():.3f} "
 ```
 
 A note on why the left panel looks as crisp as the right one, when the raw
-GFDS anomaly in @sec-alternative-sources looked visibly blobbier: both panels
-share the same 10 km grid (SFED is resampled onto it for comparison), but
-sharpness of *pattern* is a different thing. The raw anomaly is smooth
-because the radiometer's 7 to 16 km footprints smear across grid cells. The
-R0 map looks sharp because its sharpness is inherited: each pixel's lookup
-table reproduces that pixel's own SFED value range, so a river pixel maps to
-large fractions and its dry neighbour to small ones, regardless of how
-smooth the input anomaly is. GFDS supplies the day-to-day dynamics; the
-spatial crispness here comes from the training target. The independent
-calibrations in the next section do not get this free sharpening.
+GFDS anomaly in @sec-alternative-sources looked visibly coarser. We measured
+it, and the coarser look is mostly an optical effect, not a resolution
+difference: the two fields have identical fine-scale smoothness on the
+shared grid (one-cell spatial autocorrelation 0.74 for both season-max
+fields). What differs is how much of each map is lit up. Sixty-one percent
+of the GFDS anomaly map sits above a quarter of its color scale, against 7%
+for SFED, because the anomaly carries low-level wet-season signal everywhere
+while FloodScan's MDFF threshold blanks it. A mostly blank map with thin
+features reads as sharp; a mostly colored map reads as blobby. The R0
+conversion inherits SFED's per-pixel value ranges, which zero that
+background out, so the converted map takes on SFED's sparse look. One real,
+secondary difference survives the measurement: SFED's features stay
+correlated further (0.58 vs 0.45 at two cells), reflecting the organized
+corridors its hydrological database imposes.
 
 ## Test 2: independence — can we calibrate without FloodScan?
 
