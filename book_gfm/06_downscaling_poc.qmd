@@ -4,11 +4,15 @@
 jupyter: ds-flood-gfm
 ---
 
-FloodScan's maps look sharp because of a trick: a fine-grained database of
-where water tends to go decides where the coarse satellite signal gets drawn.
-@sec-alternative-sources ended by asking whether we could do the same trick
-to GFDS, for free. This chapter builds it and, more importantly, measures
-whether it is worth having.
+FloodScan's maps look sharp because of a trick, and the trick is documented
+by its authors: the product "downscales [flooded fraction] to 90-m resolution
+using a database built from topography, hydrology, and Global Surface Water
+Explorer data" ([Galantowicz, AER, AGU 2018](https://ui.adsabs.harvard.edu/abs/2018AGUFM.H51B..03G/abstract);
+the approach dates to Galantowicz 2002). A fine-grained database of where
+water tends to go decides where the coarse satellite signal gets drawn.
+@sec-alternative-sources ended by asking whether we could do the same to
+GFDS, for free. This chapter builds a simplified version and, more
+importantly, measures whether it is worth having.
 
 Two steps are needed, because GFDS does not measure an amount of water. It
 measures how *unusual* a pixel looks compared to its own history, and you
@@ -16,20 +20,26 @@ cannot draw "unusual" on a map at 90 m. So:
 
 1. **Turn "how unusual" into "how much"**: convert the GFDS reading into an
    estimated share of each 10 km pixel that is under water.
-2. **Paint the detail**: spread that share across the small (~83 m) cells
-   inside the pixel, wetting the historically flood-prone cells first.
+2. **Allocate the detail**: split that share among the small (~83 m) cells
+   inside each pixel, marking the most flood-prone cells as flooded first.
+   This follows AER's published description of FloodScan in principle, not
+   their exact algorithm, which is proprietary; rank-and-fill allocation like
+   ours is the standard open-literature version of the operation (e.g.
+   [Fluet-Chouinard et al. 2015](https://cgspace.cgiar.org/items/778c0aed-768d-41f5-8a21-3db0a9943a6c),
+   [Li et al. 2015](https://www.mdpi.com/2072-4292/7/12/15813)).
 
-Step 2 runs on what statisticians call a **prior**: knowledge you already had
-before today's satellite reading. Ours is an old water map, built from every
-Landsat image since 1984, saying how often each ~30 m cell has been wet.
-River channels score near 100%, floodplains somewhere in the tens, dry land
-zero. Painting works like paint-by-numbers: today's GFDS decides *how much*
-of the pixel gets painted, the old map decides *which cells* get the paint.
-Today's flood has no say in the placement, only in the amount.
+Step 2 depends on what statisticians call a **prior**: information that
+existed before today's satellite reading. Ours is a historical water map
+built from every Landsat image since 1984: for each ~30 m cell, the share of
+observations in which it was wet. River channels score near 100%, floodplains
+somewhere in the tens, dry land zero. The division of labour is strict:
+today's GFDS reading sets *how much* of each pixel is flooded, and the
+historical map decides *which cells* get marked. Today's flood has no
+influence on the placement, only on the amount.
 
-That means downscaling adds no new observation. It is educated guessing about
-placement, and the experiment below is built to measure how much of the final
-map is satellite and how much is guesswork. Full technical write-up:
+That means downscaling adds no new observation; all placement information is
+historical. The experiment below measures how much of the final map comes
+from the satellite and how much from the historical map. Full technical write-up:
 [`docs/gfds-downscaling-poc.md`](https://github.com/OCHA-DAP/ds-flood-gfm/blob/main/docs/gfds-downscaling-poc.md);
 code in `experiments/gfds_downscaling_poc/`.
 
@@ -92,13 +102,17 @@ ax.set_title("Nigeria, Jun–Nov 2022")
 plt.show()
 ```
 
-## Step 2: painting the detail
+## Step 2: allocating the detail
 
-The old water map comes from the JRC Global Surface Water dataset (free,
-~30 m, fetched here by reading just the needed window over HTTP). Inside each
-10 km pixel we sort the small cells from most to least water-prone, skip
-cells that are water all the time anyway (lakes, the river channel itself),
-and paint the estimated share from the top of the list down. The scripts:
+The historical water map is the JRC Global Surface Water dataset (free,
+~30 m, fetched here by reading just the needed window over HTTP). This is
+the same dataset AER names as an ingredient of FloodScan's downscaling
+database; their version also folds in topography and hydrology layers, so
+our single-ingredient version is a floor on what the technique can do, not a
+replica. Inside each 10 km pixel we sort the small cells from most to least
+water-prone, exclude cells that are water year-round (lakes, the river
+channel itself), and mark cells as flooded from the top of the list until the
+pixel's estimated share is reached. The scripts:
 
 ```{python}
 #| eval: false
@@ -112,23 +126,22 @@ and paint the estimated share from the top of the list down. The scripts:
 {{< include ../experiments/gfds_downscaling_poc/04_downscale_validate.py >}}
 ```
 
-## Did the painting help? A radar reality check
+## Validation against radar
 
-To judge the painted maps we need a referee that is not a cousin of the
-microwave products. We use this project's own GFM data: Sentinel-1 radar
-flood extent, a completely different kind of measurement, for the October
-2022 peak at the Niger-Benue confluence.
+To evaluate the downscaled maps we need a reference that is independent of
+the microwave products. We use this project's own GFM data: Sentinel-1 radar
+flood extent, a different kind of measurement entirely, for the October 2022
+peak at the Niger-Benue confluence.
 
-Three maps get scored against the radar. The painted GFDS map. The same
-painting fed with licensed FloodScan instead, to see what the free input
-costs. And the one that keeps us honest: a **fake map that uses no 2022
-satellite information at all**. It takes the same total flooded area and
-paints it purely by the old water map's ranking. If painted GFDS cannot beat
-a map drawn without ever looking at the flood, the painting, not the
-satellite, was doing the work.
+Three maps get scored against the radar extent. The downscaled GFDS map. The
+same procedure fed with licensed FloodScan instead, to measure what the free
+input costs. And a **control map built with no 2022 satellite input at all**:
+it has the same total flooded area, allocated purely by the historical
+ranking. If downscaled GFDS cannot beat the control, the skill comes from the
+historical map, not from the satellite.
 
 ```{python}
-#| fig-cap: "Niger-Benue confluence, 6-13 Oct 2022, ~83 m. Each panel compares a painted map against the radar: blue = both agree it flooded, orange = radar saw water the map missed, red = the map painted water the radar never saw. Left: painted GFDS. Right: the fake map drawn only from the old water map. GFDS turns orange into blue across the wide flooding south of the confluence, but pays with red over-spread in rectangular patches at pixel edges."
+#| fig-cap: "Niger-Benue confluence, 6-13 Oct 2022, ~83 m. Each panel compares one map against the radar: blue = both flag flooding, orange = radar flags flooding the map missed, red = the map flags flooding the radar did not see. Left: downscaled GFDS. Right: the history-only control. GFDS converts orange to blue across the wide flooding south of the confluence, at the cost of red false alarms in rectangular blocks at pixel edges."
 #| fig-height: 7
 from matplotlib.colors import ListedColormap
 from matplotlib.patches import Patch
@@ -147,8 +160,8 @@ def agreement(pred):
 
 cmap = ListedColormap(["#f7f7f7", "#2c7fb8", "#fdae61", "#d7191c"])
 fig, axes = plt.subplots(1, 2, figsize=(13, 7), sharex=True, sharey=True)
-for ax, pred, title in [(axes[0], ds_gfds, "painted GFDS vs radar"),
-                        (axes[1], ctrl, "old-water-map-only vs radar")]:
+for ax, pred, title in [(axes[0], ds_gfds, "downscaled GFDS vs radar"),
+                        (axes[1], ctrl, "history-only control vs radar")]:
     ax.imshow(agreement(pred), extent=ext, cmap=cmap, vmin=-0.5, vmax=3.5,
               interpolation="none")
     ax.set_title(title, fontsize=11)
@@ -171,23 +184,24 @@ def score(pred):
     return {"POD": round(h / (h + m), 3), "FAR": round(f / (h + f), 3),
             "CSI": round(h / (h + m + f), 3)}
 
-pd.DataFrame({"painted GFDS": score(ds_gfds),
-              "painted SFED (licensed)": score(ds_sfed),
-              "old water map only": score(ctrl)}).T
+pd.DataFrame({"downscaled GFDS": score(ds_gfds),
+              "downscaled SFED (licensed)": score(ds_sfed),
+              "history-only control": score(ctrl)}).T
 ```
 
 Reading guide for the scores: POD is the share of radar-flooded cells the map
-caught, FAR is the share of the map's painted cells the radar contradicts,
+caught, FAR is the share of the map's flooded cells the radar contradicts,
 and CSI folds both into one overlap number.
 
-The verdict at full 83 m detail is uncomfortable and worth stating plainly:
-**the fake map ties the real ones**. Your eye sees the difference in the
-figure, yet cell by cell the gains on the floodplain are cancelled by the
-blocky over-painting. Also notable: the free GFDS input scores within a
-whisker of the licensed FloodScan input. One fairness note about the referee:
-radar under-detects water beneath vegetation, and we compare three radar
-snapshots against continuous microwave coverage, so part of every map's "red"
-is the referee's blind spots rather than the map's mistakes.
+The result at full 83 m detail is uncomfortable and worth stating plainly:
+**the history-only control ties the maps that used satellite data**. The
+figure shows a visible difference, yet cell by cell the gains on the
+floodplain are cancelled by the block-edge false alarms. Also notable: the
+free GFDS input scores within a whisker of the licensed FloodScan input. One
+fairness note about the reference: radar under-detects water beneath
+vegetation, and we compare three radar snapshots against continuous microwave
+coverage, so part of every map's "red" reflects the reference's blind spots
+rather than the map's errors.
 
 ## Zooming out: where the satellite earns its keep
 
@@ -211,7 +225,7 @@ for k, label in [(1, "83 m"), (6, "0.5 km"), (12, "1 km"), (36, "3 km"), (72, "6
     mm = np.isfinite(g) & (vs > 0.5)
     row = {"scale": label}
     for name, pred in [("GFDS", ds_gfds), ("SFED", ds_sfed),
-                       ("old water map only", ctrl)]:
+                       ("history-only control", ctrl)]:
         p = block_reduce(pred.astype(float), k, dom)
         ok = mm & np.isfinite(p)
         row[name] = round(float(np.corrcoef(p[ok], g[ok])[0, 1]), 3)
@@ -220,9 +234,9 @@ pd.DataFrame(rows).set_index("scale")
 ```
 
 Now the picture is clean. At 83 m all three maps agree with the radar equally
-(and equally poorly). As the zoom coarsens, the maps that actually looked at
-the 2022 flood pull ahead of the one that did not, by a clear margin from
-3 km out. And at every zoom level, free GFDS sits within a hair of licensed
+(and equally poorly). At coarser evaluation grids, the two maps built from
+2022 satellite data pull ahead of the control by a clear margin from 3 km
+out. And at every level, free GFDS sits within a hair of licensed
 FloodScan.
 
 ## What this settles
@@ -231,10 +245,11 @@ FloodScan.
    10 km pixel is flooded" layer gives GFDS physical units, comparable across
    pixels and summable into areas and exposure estimates. That is what
    admin-level monitoring consumes, and it costs nothing.
-2. **The 90 m painting is presentation.** It is a reasonable way to decide
-   which communities inside a pixel to count when overlaying population, but
-   it must never be read as observed flood extent. When someone needs to know
-   where the water actually is, GFM radar is the tool.
+2. **The 90 m map is an allocation of the coarse estimate, not an
+   observation.** It is a reasonable way to decide which communities inside a
+   pixel to count when overlaying population, but it must never be read as
+   observed flood extent. When someone needs to know where the water actually
+   is, GFM radar is the tool.
 3. **Free input, licensed input: near-identical results** through this
    pipeline. Together with the admin-level findings of
    @sec-alternative-sources, the case for GFDS as a free FloodScan stand-in
@@ -242,6 +257,6 @@ FloodScan.
 
 All of this is one event in one basin. The named next steps: repeat on a
 second basin, calibrate against the radar instead of FloodScan so the free
-product stops inheriting FloodScan's habits, and give the old water map a
-terrain supplement (many floodable cells have no Landsat water history, which
-caps how well any painted map can do).
+product stops inheriting FloodScan's habits, and add terrain to the
+historical map (many floodable cells have no Landsat water history, which
+caps how well any allocation can do).
