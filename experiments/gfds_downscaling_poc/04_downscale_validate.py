@@ -132,6 +132,14 @@ res = pd.DataFrame({
 print(res.to_string())
 res.to_csv(OUT / "downscale_skill.csv")
 
+# compact artifact for the book chapter: the four maps + domain + coords
+np.savez_compressed(
+    OUT / "downscale_maps.npz",
+    gfm_wet=gfm_wet, ds_gfds=ds_gfds, ds_sfed=ds_sfed, ctrl=ctrl,
+    dom=dom, x=px, y=py,
+    window=np.array([str(d.date()) for d in have]),
+)
+
 fig, axes = plt.subplots(2, 2, figsize=(14, 12), sharex=True, sharey=True)
 ext = [px.min(), px.max(), py.min(), py.max()]
 show = lambda ax, m, t, cmap: (ax.imshow(np.where(dom, m, np.nan), extent=ext,

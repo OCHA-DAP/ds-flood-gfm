@@ -1,0 +1,205 @@
+# Downscaling GFDS: Proof of Concept {#sec-downscaling-poc}
+
+---
+jupyter: ds-flood-gfm
+---
+
+@sec-alternative-sources ended with FloodScan's structural advantage: its
+published product looks fine-grained because a 90 m hydrological database
+decides where the coarse microwave water goes. This chapter asks whether we
+can do the same to GFDS for free, and, more importantly, whether it is worth
+doing. The answer needs two steps, because GFDS's σ-anomaly is not an area
+and cannot be "redistributed" as-is:
+
+1. **Calibrate**: turn the anomaly into a physical flooded fraction at 10 km,
+   per pixel.
+2. **Disaggregate**: flood-fill that fraction onto ~83 m cells ranked by a
+   water-history prior, exactly the FloodScan trick.
+
+The premise to keep in mind throughout: downscaling adds no information. It
+is prior knowledge about where water goes, painted at finer resolution. The
+experiment below is designed to measure exactly how much is observation and
+how much is paint. Full write-up:
+[`docs/gfds-downscaling-poc.md`](https://github.com/OCHA-DAP/ds-flood-gfm/blob/main/docs/gfds-downscaling-poc.md);
+code in `experiments/gfds_downscaling_poc/`.
+
+## Step 1: anomaly to fraction
+
+A per-pixel monotone quantile mapping from the 4-day GFDS anomaly to
+FloodScan SFED, fit on alternating days and scored on the held-out days
+(every skill number is out-of-sample). The script:
+
+```{python}
+#| eval: false
+#| code-summary: "experiments/gfds_downscaling_poc/01_calibrate_fraction.py"
+{{< include ../experiments/gfds_downscaling_poc/01_calibrate_fraction.py >}}
+```
+
+```{python}
+#| code-summary: "load POC artifacts (fails loudly if the scripts haven't been run)"
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import xarray as xr
+
+POC = next((p for p in (Path("outputs/gfds_downscaling_poc"),
+                        Path("../outputs/gfds_downscaling_poc")) if p.exists()), None)
+if POC is None or not (POC / "downscale_maps.npz").exists():
+    raise FileNotFoundError(
+        "POC outputs not found. Run experiments/gfds_downscaling_poc/ scripts "
+        "01-04 from the repo root first (inputs are cached or range-read)."
+    )
+skill_cal = pd.read_csv(POC / "calibration_skill.csv", index_col=0)
+frac = xr.open_dataarray(POC / "gfds_calibrated_fraction.nc")
+sfed = xr.open_dataarray(POC / "sfed_on_gfds.nc")
+skill_cal
+```
+
+The out-of-sample scores: RMSE 0.040 against 0.048 for the strong baseline of
+predicting each pixel's training-mean SFED, with negligible bias. The more
+tangible check is what the calibration does to *total flooded area*, which a
+σ-anomaly cannot express at all:
+
+```{python}
+#| fig-cap: "Total flooded area over the Nigeria window, daily: GFDS calibrated fraction vs FloodScan SFED. The GFDS-derived curve is built purely from the free signal plus the static baselines; at the SFED peak it reaches 84% of the licensed product's area."
+px_km2 = (0.09 * 111.32) ** 2
+both = np.isfinite(frac.values) & np.isfinite(sfed.values)
+a_gfds = np.where(both, frac.values, 0).sum(axis=(1, 2)) * px_km2
+a_sfed = np.where(both, sfed.values, 0).sum(axis=(1, 2)) * px_km2
+fig, ax = plt.subplots(figsize=(10, 4))
+ax.plot(frac.time, a_gfds, color="tab:red", label="GFDS calibrated (free)")
+ax.plot(sfed.time, a_sfed, color="tab:blue", label="FloodScan SFED (licensed)")
+ax.set_ylabel("flooded area (km²)")
+ax.legend()
+ax.set_title("Nigeria, Jun–Nov 2022")
+plt.show()
+```
+
+## Step 2: flood-fill onto a water-history prior
+
+The prior is JRC Global Surface Water occurrence (~28 m, aggregated to 83 m,
+fetched by HTTP range reads). Inside each 0.09° cell, cells are ranked by
+occurrence, ties broken by distance to historical water, permanent water
+(occurrence > 80%) excluded, and the calibrated fraction filled top-down:
+
+```{python}
+#| eval: false
+#| code-summary: "experiments/gfds_downscaling_poc/02_build_prior.py"
+{{< include ../experiments/gfds_downscaling_poc/02_build_prior.py >}}
+```
+
+```{python}
+#| eval: false
+#| code-summary: "experiments/gfds_downscaling_poc/04_downscale_validate.py"
+{{< include ../experiments/gfds_downscaling_poc/04_downscale_validate.py >}}
+```
+
+## The maps, and the control that keeps us honest
+
+Validation target: GFM Sentinel-1 cumulative extent (a different sensor
+family from both microwave products) for the October 2022 peak over the
+Niger-Benue confluence. Alongside the downscaled GFDS we score two
+comparators: the same flood-fill fed with licensed SFED (upper bound), and a
+**prior-only control** carrying the same total flooded area but allocated by
+the prior alone, ignoring where GFDS put the water at 10 km. If downscaled
+GFDS cannot beat that control, the fine-scale map is pure cartography.
+
+```{python}
+#| fig-cap: "Niger-Benue confluence, 6-13 Oct 2022, ~83 m. Top left: GFM Sentinel-1 max extent (reference). Top right: downscaled GFDS. Bottom left: downscaled SFED. Bottom right: the prior-only control. Grey outside the scoring domain."
+#| fig-height: 12
+z = np.load(POC / "downscale_maps.npz")
+gfm_wet, ds_gfds, ds_sfed, ctrl, dom = (z[k] for k in
+                                        ("gfm_wet", "ds_gfds", "ds_sfed", "ctrl", "dom"))
+ext = [z["x"].min(), z["x"].max(), z["y"].min(), z["y"].max()]
+fig, axes = plt.subplots(2, 2, figsize=(13, 12), sharex=True, sharey=True)
+panels = [
+    (axes[0, 0], gfm_wet, "GFM Sentinel-1 max extent (reference)", "Blues"),
+    (axes[0, 1], ds_gfds, "downscaled GFDS (free, this POC)", "Reds"),
+    (axes[1, 0], ds_sfed, "downscaled SFED (licensed input)", "Purples"),
+    (axes[1, 1], ctrl, "prior-only control (no 10 km information)", "Greys"),
+]
+for ax, m, title, cmap in panels:
+    ax.imshow(np.where(dom, m.astype(float), np.nan), extent=ext, cmap=cmap,
+              vmin=0, vmax=1, interpolation="none")
+    ax.set_title(title, fontsize=11)
+    ax.set_aspect("equal")
+plt.tight_layout()
+plt.show()
+```
+
+```{python}
+#| code-summary: "hit/miss scores at 83 m"
+def score(pred):
+    h = int((pred & gfm_wet & dom).sum())
+    f = int((pred & ~gfm_wet & dom).sum())
+    m = int((~pred & gfm_wet & dom).sum())
+    return {"POD": round(h / (h + m), 3), "FAR": round(f / (h + f), 3),
+            "CSI": round(h / (h + m + f), 3)}
+
+pd.DataFrame({"downscaled GFDS": score(ds_gfds),
+              "downscaled SFED": score(ds_sfed),
+              "prior-only control": score(ctrl)}).T
+```
+
+Reading the maps against the table: the GFDS and SFED maps visibly capture
+the broad inundation south of the confluence that the prior-only control
+misses (it paints thin channels and scattered ponds). Yet at 83 m the control
+ties both on CSI. The trade is symmetric: what the microwave maps gain on the
+flooded plains they give back in blocky over-spread at coarse-cell edges. Two
+further honest notes: free GFDS costs almost nothing against licensed SFED
+through the identical pipeline, and the high FAR everywhere partly reflects
+the reference itself, since SAR under-detects in vegetation and we compare
+three Sentinel-1 dates against continuous microwave coverage.
+
+## Where the 10 km signal starts to matter
+
+If the fine detail is prior-driven, the observation must earn its keep at
+coarser scales. Aggregating all four maps to a ladder of evaluation scales
+and correlating wet fractions:
+
+```{python}
+#| code-summary: "scale ladder: correlation of wet fraction vs GFM"
+def block_reduce(a, k, m):
+    ny, nx = a.shape
+    ny2, nx2 = ny // k * k, nx // k * k
+    aa = np.where(m, a, np.nan)[:ny2, :nx2].reshape(ny2 // k, k, nx2 // k, k)
+    with np.errstate(invalid="ignore"):
+        return np.nanmean(np.nanmean(aa, axis=3), axis=1)
+
+rows = []
+for k, label in [(1, "83 m"), (6, "0.5 km"), (12, "1 km"), (36, "3 km"), (72, "6 km")]:
+    g = block_reduce(gfm_wet.astype(float), k, dom)
+    vs = block_reduce(dom.astype(float), k, np.ones_like(dom, bool))
+    mm = np.isfinite(g) & (vs > 0.5)
+    row = {"scale": label}
+    for name, pred in [("GFDS", ds_gfds), ("SFED", ds_sfed), ("prior-only", ctrl)]:
+        p = block_reduce(pred.astype(float), k, dom)
+        ok = mm & np.isfinite(p)
+        row[name] = round(float(np.corrcoef(p[ok], g[ok])[0, 1]), 3)
+    rows.append(row)
+pd.DataFrame(rows).set_index("scale")
+```
+
+The pattern is clean. At 83 m the three maps are indistinguishable: the prior
+does the work. The microwave signal's added value over the prior grows with
+scale, reaching +0.05 to +0.07 correlation by 3 to 6 km, and GFDS tracks SFED
+within 0.01 to 0.02 at every rung.
+
+## What this settles
+
+1. **The valuable product is the calibrated 10 km fraction.** It converts a
+   free anomaly into FloodScan-comparable physical units, and it is what
+   admin-level monitoring and exposure aggregation actually consume.
+2. **The 90 m map is presentation, not measurement.** Defensible for
+   dasymetric population overlay, where sub-pixel water placement changes who
+   gets counted and the prior is a reasonable allocator. It should never be
+   read as observed extent; for that, GFM is the tool.
+3. **Free vs licensed input barely matters through this pipeline** for this
+   event, which strengthens the admin-level case from @sec-alternative-sources.
+
+Single-event, single-basin caveats apply throughout; the named next steps are
+a second basin, calibration against GFM instead of SFED to break the
+shared-radiometer circularity, and a HAND-augmented prior to raise the bar
+the control sets.

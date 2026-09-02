@@ -24,6 +24,7 @@ book:
     - part: "Alternative Sources"
       chapters:
         - 05_alternative_flood_sources.qmd
+        - 06_downscaling_poc.qmd
 
   appendices:
     - part: "GFM Methodology"
