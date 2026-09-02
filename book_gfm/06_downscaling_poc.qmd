@@ -53,7 +53,7 @@ which figure uses which. Declared once, here:
 
 | Label | Calibration method | Uses licensed data? | Role in this chapter |
 |---|---|---|---|
-| **R0** | Per-pixel lookup table trained on FloodScan SFED (rank matching between each pixel's GFDS and SFED histories) | **Yes**, trained on SFED | The *reproduction* test: how well can free input copy the licensed product? Also the ceiling for the independent methods. **Every downscaled-GFDS map in this chapter uses the R0 fraction as its input.** |
+| **R0** | Per-pixel lookup table trained on FloodScan SFED (rank matching between each pixel's GFDS and SFED histories) | **Yes**, trained on SFED | The *reproduction* test: how well can free input copy the licensed product? Also the ceiling for the independent methods. The downscaled-GFDS maps use the R0 fraction unless labelled otherwise; the allocation score table also includes the R1 chain. |
 | **R1** | Physics: invert the wet/dry mixing equation with a literature emissivity contrast (K ≈ 0.35 at 36 GHz) and each pixel's own dry-season signal level | No | The *independence* test's lead candidate |
 | **R2** | Per-pixel linear map anchored to the driest and wettest fractions Landsat ever observed (Global Surface Water) | No | Independence test, optical anchor |
 | **R3** | Like R2 but the wet anchor is Sentinel-1 extent aggregated to the pixel for the October peak window | No | Independence test, radar anchor |
@@ -104,7 +104,7 @@ POC = next((p for p in (Path("outputs/gfds_downscaling_poc"),
 if POC is None or not (POC / "downscale_maps.npz").exists():
     raise FileNotFoundError(
         "POC outputs not found. Run experiments/gfds_downscaling_poc/ scripts "
-        "01-04 and 06 from the repo root first (inputs are cached or range-read)."
+        "01-07 from the repo root first (inputs are cached or range-read)."
     )
 skill_cal = pd.read_csv(POC / "calibration_skill.csv", index_col=0)
 frac = xr.open_dataarray(POC / "gfds_calibrated_fraction.nc")  # R0 fraction
@@ -368,24 +368,28 @@ def score(pred):
     h = int((pred & gfm_wet & dom).sum())
     f = int((pred & ~gfm_wet & dom).sum())
     m = int((~pred & gfm_wet & dom).sum())
-    return {"POD (recall)": round(h / (h + m), 3),
-            "FAR (1−precision)": round(f / (h + f), 3),
-            "CSI (IoU)": round(h / (h + m + f), 3)}
+    return {"POD/Recall": round(h / (h + m), 3),
+            "FAR (1−Precision)": round(f / (h + f), 3),
+            "CSI/IoU": round(h / (h + m + f), 3)}
 
-pd.DataFrame({"downscaled GFDS (R0)": score(ds_gfds),
+zr1 = np.load(POC / "r1_downscaled.npz")  # from script 07
+pd.DataFrame({"downscaled GFDS (R0, SFED-trained)": score(ds_gfds),
+              "downscaled GFDS (R1 physics, independent)": score(zr1["ds_r1"]),
+              "downscaled GFDS (R1 + MDFF 0.10)": score(zr1["ds_r1m"]),
               "downscaled SFED (licensed)": score(ds_sfed),
               "history-only control": score(ctrl)}).T
 ```
 
-Reading guide for the scores, with their machine-learning twins since both
-vocabularies are in use on the team: POD (probability of detection, identical
-to recall) is the share of radar-flooded cells the map caught; FAR (false
-alarm ratio, identical to 1 − precision) is the share of the map's flooded
-cells the radar contradicts; CSI (critical success index, identical to
-intersection-over-union) folds both into one overlap number.
+POD is the share of radar-flooded cells the map caught, FAR the share of
+the map's flooded cells the radar contradicts, CSI the overall overlap.
 
-The result at full 83 m detail is uncomfortable and worth stating plainly:
-**the history-only control ties the maps that used satellite data**. The
+Two results at full 83 m detail are uncomfortable and worth stating plainly.
+First, **the history-only control ties the maps that used satellite data**.
+Second, the fully independent chain (R1 physics fraction through the same
+allocation) currently scores *below* all of them: its peak-window amplitude
+runs high, painting roughly half again more area than the R0 version, and
+the radar punishes the over-spread as false alarms. Independence is
+demonstrated at 10 km; at 83 m it still needs amplitude tuning. The
 figure shows a visible difference, yet cell by cell the gains on the
 floodplain are cancelled by the block-edge false alarms. Also notable: the
 free GFDS input scores within a whisker of the licensed FloodScan input. One
@@ -449,8 +453,9 @@ FloodScan.
 
 The path from "free copy" to "maybe better" now has concrete work items:
 refine R1 (per-pixel emissivity contrast, a seasonal dry reference instead
-of one quantile, a tuned minimum-detectable threshold), re-run the
-allocation stage on the R1 fraction, train on the 28-year free archive
-rather than one season, add terrain to the historical map, and replicate on
-a second basin. The free input's finer working resolution (~10 km vs ~22 km)
+of one quantile, a tuned minimum-detectable threshold — the allocation test
+above shows its amplitude runs hot at the peak, so this tuning is what
+stands between "independent at 10 km" and "independent end to end"), train
+on the 28-year free archive rather than one season, add terrain to the
+historical map, and replicate on a second basin. The free input's finer working resolution (~10 km vs ~22 km)
 is the standing structural advantage.
