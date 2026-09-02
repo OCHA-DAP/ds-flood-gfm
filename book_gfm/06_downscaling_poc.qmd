@@ -368,17 +368,21 @@ def score(pred):
     h = int((pred & gfm_wet & dom).sum())
     f = int((pred & ~gfm_wet & dom).sum())
     m = int((~pred & gfm_wet & dom).sum())
-    return {"POD": round(h / (h + m), 3), "FAR": round(f / (h + f), 3),
-            "CSI": round(h / (h + m + f), 3)}
+    return {"POD (recall)": round(h / (h + m), 3),
+            "FAR (1−precision)": round(f / (h + f), 3),
+            "CSI (IoU)": round(h / (h + m + f), 3)}
 
 pd.DataFrame({"downscaled GFDS (R0)": score(ds_gfds),
               "downscaled SFED (licensed)": score(ds_sfed),
               "history-only control": score(ctrl)}).T
 ```
 
-Reading guide for the scores: POD is the share of radar-flooded cells the map
-caught, FAR is the share of the map's flooded cells the radar contradicts,
-and CSI folds both into one overlap number.
+Reading guide for the scores, with their machine-learning twins since both
+vocabularies are in use on the team: POD (probability of detection, identical
+to recall) is the share of radar-flooded cells the map caught; FAR (false
+alarm ratio, identical to 1 − precision) is the share of the map's flooded
+cells the radar contradicts; CSI (critical success index, identical to
+intersection-over-union) folds both into one overlap number.
 
 The result at full 83 m detail is uncomfortable and worth stating plainly:
 **the history-only control ties the maps that used satellite data**. The
