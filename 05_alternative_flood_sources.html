@@ -223,7 +223,7 @@ window.Quarto = {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./06_downscaling_poc.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Downscaling GFDS: Proof of Concept</span></span></a>
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Toward an Open-Source FloodScan?</span></span></a>
   </div>
 </li>
       </ul>
@@ -453,7 +453,7 @@ window.Quarto = {
 <tr class="odd">
 <td>Working resolution before any downscaling</td>
 <td>Posted to the 0.09° (~10 km) grid, close to native</td>
-<td>Retrieval runs on ~22 km effective data, coarsened for end-member stability</td>
+<td>Intermediate flooded fraction produced “at the passive microwave satellite data scales (~22-km)” (FloodScan Data Users Guide v05R01, AER 2021, §1.2)</td>
 </tr>
 <tr class="even">
 <td>Core retrieval</td>
@@ -526,7 +526,7 @@ window.Quarto = {
 <section id="data-access-long-fetches-live-in-scripts" class="level2" data-number="2.3">
 <h2 data-number="2.3" class="anchored" data-anchor-id="data-access-long-fetches-live-in-scripts"><span class="header-section-number">2.3</span> Data access: long fetches live in scripts</h2>
 <p>Downloading a season is slow and flaky. During this work the GDACS server swung from ~2 s to ~140 s per file within a single day. So the fetch steps live in standalone, resumable scripts (throttled, per-day <code>.npy</code> cache, a 404 recorded as a <code>.missing</code> marker, any other error raising loudly). The chapter then runs reproducibly off the local cache. The scripts are shown here but not executed at render time:</p>
-<div id="fd060640" class="cell" data-execution_count="1">
+<div id="d1261e45" class="cell" data-execution_count="1">
 <details class="code-fold">
 <summary>experiments/gfds_nga2022/fetch_gfds_nga.py — GFDS signal + magnitude + baselines</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">"""Fetch GFDS daily signal+mag windows over Nigeria, Jun-Dec 2022, plus static baselines.</span></span>
@@ -630,7 +630,7 @@ window.Quarto = {
 <span id="cb1-99"><a href="#cb1-99" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"DONE: </span><span class="sc">{</span>n_sig<span class="sc">}</span><span class="ss"> signal days, </span><span class="sc">{</span>n_mag<span class="sc">}</span><span class="ss"> mag days, </span><span class="sc">{</span>n_miss<span class="sc">}</span><span class="ss"> missing markers"</span>, flush<span class="op">=</span><span class="va">True</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
-<div id="7147fdd7" class="cell" data-execution_count="2">
+<div id="8ab45e5d" class="cell" data-execution_count="2">
 <details class="code-fold">
 <summary>experiments/gfds_nga2022/fetch_sfed_nga.py — FloodScan SFED from team blob</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">"""Fetch FloodScan SFED daily windows over Nigeria, Jun-Dec 2022, from team blob."""</span></span>
@@ -689,7 +689,7 @@ window.Quarto = {
 <section id="the-test-case-nigeria-june-to-december-2022" class="level2" data-number="2.4">
 <h2 data-number="2.4" class="anchored" data-anchor-id="the-test-case-nigeria-june-to-december-2022"><span class="header-section-number">2.4</span> The test case: Nigeria, June to December 2022</h2>
 <p>A near-ideal reference event: <a href="https://reliefweb.int/report/nigeria/acaps-briefing-note-nigeria-country-wide-flooding-21-october-2022">Lagdo Dam releases from 13 September 2022</a>, the Niger-Benue confluence (Lokoja) peaking early to mid October, Bayelsa flooding downstream into November. We know where and when, so we can score GFDS against FloodScan at the places that mattered.</p>
-<div id="e1afbf2d" class="cell" data-execution_count="3">
+<div id="012c0ec5" class="cell" data-execution_count="3">
 <details class="code-fold">
 <summary>load cached stacks (fails loudly if the fetch scripts haven’t been run)</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
@@ -765,7 +765,7 @@ window.Quarto = {
 <section id="a-do-it-yourself-anomaly" class="level3" data-number="2.4.1">
 <h3 data-number="2.4.1" class="anchored" data-anchor-id="a-do-it-yourself-anomaly"><span class="header-section-number">2.4.1</span> A do-it-yourself anomaly</h3>
 <p>To be explicit about lineage, since the server offers half a dozen layers: everything from here on is built from exactly three GFDS inputs. The daily <code>signal_*</code> files provide <span class="math inline">\(s\)</span>; the two static baseline files provide the per-pixel mean and sd. We score the signal flood-positive (floods lower it), and then compute the 4-day trailing mean ourselves, on the anomaly, in the <code>rolling</code> call below. JRC’s pre-computed <code>Avg*</code> layers play no part, and its <code>mag_signal_*</code> product appears only at the end, as a comparison target. Single GFDS days are swath-based and noisy, which is why the smoothed version earns its keep.</p>
-<div id="87eaf690" class="cell" data-execution_count="4">
+<div id="b8d927dc" class="cell" data-execution_count="4">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>anom <span class="op">=</span> ((baseline[<span class="st">"avg"</span>] <span class="op">-</span> signal) <span class="op">/</span> baseline[<span class="st">"sd"</span>].clip(<span class="bu">min</span><span class="op">=</span><span class="fl">0.005</span>)).transpose(</span>
@@ -778,7 +778,7 @@ window.Quarto = {
 </section>
 <section id="sanity-check-the-lokoja-pixel" class="level3" data-number="2.4.2">
 <h3 data-number="2.4.2" class="anchored" data-anchor-id="sanity-check-the-lokoja-pixel"><span class="header-section-number">2.4.2</span> Sanity check: the Lokoja pixel</h3>
-<div id="dc0d8e13" class="cell" data-execution_count="5">
+<div id="36ed8742" class="cell" data-execution_count="5">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="dv">10</span>, <span class="dv">4</span>))</span>
@@ -810,7 +810,7 @@ window.Quarto = {
 <section id="where-does-gfds-agree-with-floodscan" class="level3" data-number="2.4.3">
 <h3 data-number="2.4.3" class="anchored" data-anchor-id="where-does-gfds-agree-with-floodscan"><span class="header-section-number">2.4.3</span> Where does GFDS agree with FloodScan?</h3>
 <p>A note on method before the maps: the correlation below is a plain Pearson r on the continuous daily values. Per pixel, we correlate the 4-day-mean GFDS anomaly (σ) against SFED (fraction) over the days where both are finite, requiring at least 60 shared days. Nothing is classified or thresholded before correlating; thresholds appear only afterwards, to stratify the results by how much flooding a pixel actually saw.</p>
-<div id="712f8984" class="cell" data-fig-height="14" data-execution_count="6">
+<div id="d0526898" class="cell" data-fig-height="14" data-execution_count="6">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> pixel_corr(a_stack, b_stack, min_days<span class="op">=</span><span class="dv">60</span>):</span>
@@ -864,7 +864,7 @@ window.Quarto = {
 <li>The pale stripe hugging the coastline in the top panel is the ocean contamination effect: sea water in the 10 km footprint wrecks the wet/dry calibration contrast. This is Ekeremor’s failure (next section) visible as geography.</li>
 </ul>
 <p>The disagreements are worth quantifying, because they define what GFDS must not be used for:</p>
-<div id="d5bef304" class="cell" data-execution_count="7">
+<div id="8274d32e" class="cell" data-execution_count="7">
 <details class="code-fold">
 <summary>cross-tab: where each product flags high</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>gf_hi <span class="op">=</span> (gfds_max <span class="op">&gt;</span> <span class="dv">3</span>).values.ravel()</span>
@@ -899,7 +899,7 @@ median r — both high: 0.51 | GFDS-only: 0.15 | SFED-only: 0.33</code></pre>
 <h3 data-number="2.4.4" class="anchored" data-anchor-id="the-test-that-matters-admin-level"><span class="header-section-number">2.4.4</span> The test that matters: admin level</h3>
 <p>The team’s operational pattern (e.g.&nbsp;<code>floodscan_exposure</code>) is a daily zonal statistic per admin unit. We aggregate both products to Nigeria’s 774 LGAs over the complete event window and score each LGA on correlation and timing.</p>
 <p>Timing needs care. The obvious metric, day of GFDS maximum minus day of SFED maximum, turned out to be fragile: a single noisy spike moves the argmax, and the 4-day trailing mean shifts GFDS peaks late by construction. For the same LGA it flipped by up to 16 days depending only on the smoothing choice. We use the lag that maximises the cross-correlation between the two daily series (bounded at ±15 days) instead, which was stable across smoothing choices in our checks. Positive lag means GFDS moves later than SFED.</p>
-<div id="b055f272" class="cell" data-execution_count="8">
+<div id="62a55ec6" class="cell" data-execution_count="8">
 <details class="code-fold">
 <summary>daily zonal means per LGA (few minutes; frozen after first render)</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> ocha_stratus <span class="im">as</span> stratus</span>
@@ -932,7 +932,7 @@ median r — both high: 0.51 | GFDS-only: 0.15 | SFED-only: 0.33</code></pre>
 <span id="cb11-28"><a href="#cb11-28" aria-hidden="true" tabindex="-1"></a>lga_daily <span class="op">=</span> pd.DataFrame(rows)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
-<div id="395823ab" class="cell" data-execution_count="9">
+<div id="a366cd32" class="cell" data-execution_count="9">
 <details class="code-fold">
 <summary>score each LGA: correlation + cross-correlation lag</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> best_lag(a, b, max_lag<span class="op">=</span><span class="dv">15</span>):</span>
@@ -1020,7 +1020,7 @@ median r — both high: 0.51 | GFDS-only: 0.15 | SFED-only: 0.33</code></pre>
 </div>
 </div>
 <p>Correlation rises monotonically with flood severity, and the timing alignment tightens with it. That is the signature of a real shared signal rather than a lucky fit. One honest framing caveat: 2022 in this basin is essentially a single flood wave, so these correlations measure agreement on one event’s rise, peak, and recession, computed over the full daily series, not skill across many independent events. (The season-max maps above are used only for display and stratification.) A multi-year replication is the obvious next step. And in the LGAs we know flooded:</p>
-<div id="ec6dbda5" class="cell" data-execution_count="10">
+<div id="13628e1e" class="cell" data-execution_count="10">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>REF <span class="op">=</span> [<span class="st">"Lokoja"</span>, <span class="st">"Ajaokuta"</span>, <span class="st">"Ibaji"</span>, <span class="st">"Bassa"</span>, <span class="st">"Kogi"</span>,</span>
@@ -1124,7 +1124,7 @@ median r — both high: 0.51 | GFDS-only: 0.15 | SFED-only: 0.33</code></pre>
 </div>
 </div>
 </div>
-<div id="9c7bd539" class="cell" data-execution_count="11">
+<div id="6592164d" class="cell" data-execution_count="11">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">2</span>, <span class="dv">3</span>, figsize<span class="op">=</span>(<span class="dv">14</span>, <span class="dv">6</span>), sharex<span class="op">=</span><span class="va">True</span>)</span>
@@ -1150,12 +1150,12 @@ median r — both high: 0.51 | GFDS-only: 0.15 | SFED-only: 0.33</code></pre>
 </div>
 </div>
 </div>
-<p>The confluence LGAs track FloodScan curve for curve (r = 0.89 to 0.97, with cross-correlation lags within 3 days). The instructive failure is Ekeremor: a coastal delta LGA where the 10 km microwave footprint mixes with ocean and estuary, so GFDS never gets the dry land calibration contrast its physics requires. Coastal admin units sit outside its trust region.</p>
+<p>The confluence LGAs track FloodScan curve for curve (r = 0.89 to 0.97, with cross-correlation lags within 3 days). The instructive failure is Ekeremor: a coastal delta LGA where the 10 km microwave footprint mixes with ocean and estuary, so GFDS never gets the dry land calibration contrast its physics requires. Coastal admin units sit outside its trust region. FloodScan’s own Users Guide draws the same boundary for itself: “flooding in smaller floodplains and within 5-10 km of coastlines is usually not depicted” (v05R01, §1.1). This is a limitation of the shared physics, not of either implementation.</p>
 </section>
 <section id="do-we-need-jrcs-magnitude-layer-at-all" class="level3" data-number="2.4.5">
 <h3 data-number="2.4.5" class="anchored" data-anchor-id="do-we-need-jrcs-magnitude-layer-at-all"><span class="header-section-number">2.4.5</span> Do we need JRC’s magnitude layer at all?</h3>
 <p>JRC publishes its own σ-scored product (<code>mag_signal</code>), computed against a baseline frozen in July 2009 and built from a sensor (AMSR-E) that died in 2011. If our DIY anomaly matches it, ingestion only needs the raw signal.</p>
-<div id="610569dc" class="cell" data-execution_count="12">
+<div id="73c963b3" class="cell" data-execution_count="12">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>corr_mag, _, _ <span class="op">=</span> pixel_corr(mag, sfed_g)</span>
@@ -1645,8 +1645,8 @@ median r — both high: 0.51 | GFDS-only: 0.15 | SFED-only: 0.33</code></pre>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="./06_downscaling_poc.html" class="pagination-link" aria-label="Downscaling GFDS: Proof of Concept">
-        <span class="nav-page-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Downscaling GFDS: Proof of Concept</span></span> <i class="bi bi-arrow-right-short"></i>
+      <a href="./06_downscaling_poc.html" class="pagination-link" aria-label="Toward an Open-Source FloodScan?">
+        <span class="nav-page-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Toward an Open-Source FloodScan?</span></span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav><div class="modal fade" id="quarto-embedded-source-code-modal" tabindex="-1" aria-labelledby="quarto-embedded-source-code-modal-label" aria-hidden="true"><div class="modal-dialog modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="quarto-embedded-source-code-modal-label">Source Code</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="">
@@ -1723,7 +1723,7 @@ median r — both high: 0.51 | GFDS-only: 0.15 | SFED-only: 0.33</code></pre>
 <span id="cb17-71"><a href="#cb17-71" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Historical sensors <span class="pp">|</span> AMSR-E (2002 to 2011), TRMM TMI (1997 to 2015) <span class="pp">|</span> AMSR-E era products <span class="pp">|</span></span>
 <span id="cb17-72"><a href="#cb17-72" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Observable <span class="pp">|</span> 36.5 GHz H-pol brightness temperature, per swath <span class="pp">|</span> Passive microwave brightness temperature, same 36 GHz-class channels <span class="pp">|</span></span>
 <span id="cb17-73"><a href="#cb17-73" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Native footprint at 36 GHz <span class="pp">|</span> AMSR2: 7×12 km; GMI: 9.4×15.6 km (<span class="co">[</span><span class="ot">JAXA</span><span class="co">](https://www.eorc.jaxa.jp/AMSR/resources/pdf/amsr2_data_user_guide_v4.pdf)</span>, <span class="co">[</span><span class="ot">NASA</span><span class="co">](https://gpm.nasa.gov/missions/GPM/GMI)</span>) <span class="pp">|</span> Identical (shared instruments) <span class="pp">|</span></span>
-<span id="cb17-74"><a href="#cb17-74" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Working resolution before any downscaling <span class="pp">|</span> Posted to the 0.09° (~10 km) grid, close to native <span class="pp">|</span> Retrieval runs on ~22 km effective data, coarsened for end-member stability <span class="pp">|</span></span>
+<span id="cb17-74"><a href="#cb17-74" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Working resolution before any downscaling <span class="pp">|</span> Posted to the 0.09° (~10 km) grid, close to native <span class="pp">|</span> Intermediate flooded fraction produced "at the passive microwave satellite data scales (~22-km)" (FloodScan Data Users Guide v05R01, AER 2021, §1.2) <span class="pp">|</span></span>
 <span id="cb17-75"><a href="#cb17-75" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Core retrieval <span class="pp">|</span> Change detection: wet pixel ÷ nearby dry calibration pixel (M/C ratio), a unitless relative signal <span class="pp">|</span> Unmixing: wet/dry emissivity end-members convert Tb into a physical *fraction of pixel flooded* <span class="pp">|</span></span>
 <span id="cb17-76"><a href="#cb17-76" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Reference for "dry" <span class="pp">|</span> One calibration pixel, chosen as the 95th percentile of a 9×9 neighborhood, same swath <span class="pp">|</span> Dry-land end-member predicted per location from local time-series analysis <span class="pp">|</span></span>
 <span id="cb17-77"><a href="#cb17-77" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Long-term baseline <span class="pp">|</span> Static per-pixel mean/sd, frozen July 2009 (AMSR-E era) <span class="pp">|</span> Maintained dynamically as part of the retrieval <span class="pp">|</span></span>
@@ -2142,49 +2142,53 @@ median r — both high: 0.51 | GFDS-only: 0.15 | SFED-only: 0.33</code></pre>
 <span id="cb17-512"><a href="#cb17-512" aria-hidden="true" tabindex="-1"></a>cross-correlation lags within 3 days). The instructive failure is Ekeremor: a</span>
 <span id="cb17-513"><a href="#cb17-513" aria-hidden="true" tabindex="-1"></a>coastal delta LGA where the 10 km microwave footprint mixes with ocean and</span>
 <span id="cb17-514"><a href="#cb17-514" aria-hidden="true" tabindex="-1"></a>estuary, so GFDS never gets the dry land calibration contrast its physics</span>
-<span id="cb17-515"><a href="#cb17-515" aria-hidden="true" tabindex="-1"></a>requires. Coastal admin units sit outside its trust region.</span>
-<span id="cb17-516"><a href="#cb17-516" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-517"><a href="#cb17-517" aria-hidden="true" tabindex="-1"></a><span class="fu">### Do we need JRC's magnitude layer at all?</span></span>
-<span id="cb17-518"><a href="#cb17-518" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-519"><a href="#cb17-519" aria-hidden="true" tabindex="-1"></a>JRC publishes its own σ-scored product (<span class="in">`mag_signal`</span>), computed against a</span>
-<span id="cb17-520"><a href="#cb17-520" aria-hidden="true" tabindex="-1"></a>baseline frozen in July 2009 and built from a sensor (AMSR-E) that died in</span>
-<span id="cb17-521"><a href="#cb17-521" aria-hidden="true" tabindex="-1"></a><span class="ss">2011. </span>If our DIY anomaly matches it, ingestion only needs the raw signal.</span>
+<span id="cb17-515"><a href="#cb17-515" aria-hidden="true" tabindex="-1"></a>requires. Coastal admin units sit outside its trust region. FloodScan's own</span>
+<span id="cb17-516"><a href="#cb17-516" aria-hidden="true" tabindex="-1"></a>Users Guide draws the same boundary for itself: "flooding in smaller</span>
+<span id="cb17-517"><a href="#cb17-517" aria-hidden="true" tabindex="-1"></a>floodplains and within 5-10 km of coastlines is usually not depicted"</span>
+<span id="cb17-518"><a href="#cb17-518" aria-hidden="true" tabindex="-1"></a>(v05R01, §1.1). This is a limitation of the shared physics, not of either</span>
+<span id="cb17-519"><a href="#cb17-519" aria-hidden="true" tabindex="-1"></a>implementation.</span>
+<span id="cb17-520"><a href="#cb17-520" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-521"><a href="#cb17-521" aria-hidden="true" tabindex="-1"></a><span class="fu">### Do we need JRC's magnitude layer at all?</span></span>
 <span id="cb17-522"><a href="#cb17-522" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-525"><a href="#cb17-525" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
-<span id="cb17-526"><a href="#cb17-526" aria-hidden="true" tabindex="-1"></a>corr_mag, _, _ <span class="op">=</span> pixel_corr(mag, sfed_g)</span>
-<span id="cb17-527"><a href="#cb17-527" aria-hidden="true" tabindex="-1"></a>cm <span class="op">=</span> corr_mag.values.ravel()</span>
-<span id="cb17-528"><a href="#cb17-528" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"median r vs SFED over flooded pixels — "</span></span>
-<span id="cb17-529"><a href="#cb17-529" aria-hidden="true" tabindex="-1"></a>      <span class="ss">f"DIY anomaly: </span><span class="sc">{</span>np<span class="sc">.</span>nanmedian(cv[flooded])<span class="sc">:.2f}</span><span class="ss"> | "</span></span>
-<span id="cb17-530"><a href="#cb17-530" aria-hidden="true" tabindex="-1"></a>      <span class="ss">f"JRC magnitude: </span><span class="sc">{</span>np<span class="sc">.</span>nanmedian(cm[flooded])<span class="sc">:.2f}</span><span class="ss">"</span>)</span>
-<span id="cb17-531"><a href="#cb17-531" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb17-532"><a href="#cb17-532" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-533"><a href="#cb17-533" aria-hidden="true" tabindex="-1"></a>On this event the DIY anomaly clearly beats JRC's own magnitude, which is what</span>
-<span id="cb17-534"><a href="#cb17-534" aria-hidden="true" tabindex="-1"></a>you'd expect when modern AMSR2/GPM measurements are scored against an</span>
-<span id="cb17-535"><a href="#cb17-535" aria-hidden="true" tabindex="-1"></a>AMSR-E-era baseline. The staleness that makes GFDS's global alerting noisy</span>
-<span id="cb17-536"><a href="#cb17-536" aria-hidden="true" tabindex="-1"></a>(documented in the assessment) costs it here too. Ingest the raw signal only</span>
-<span id="cb17-537"><a href="#cb17-537" aria-hidden="true" tabindex="-1"></a>and score it ourselves.</span>
-<span id="cb17-538"><a href="#cb17-538" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-539"><a href="#cb17-539" aria-hidden="true" tabindex="-1"></a><span class="fu">## What this settles</span></span>
-<span id="cb17-540"><a href="#cb17-540" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-541"><a href="#cb17-541" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>Ingest one layer: daily <span class="in">`signal`</span>, roughly 13 MB/day re-encoded as a uint16</span>
-<span id="cb17-542"><a href="#cb17-542" aria-hidden="true" tabindex="-1"></a>   COG, plus the two static baseline files fetched once. Magnitude, the 4-day</span>
-<span id="cb17-543"><a href="#cb17-543" aria-hidden="true" tabindex="-1"></a>   averages, and the legacy layers are all derivable or ignorable.</span>
-<span id="cb17-544"><a href="#cb17-544" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>The common data model fits directly. A daily zonal mean of the 4-day</span>
-<span id="cb17-545"><a href="#cb17-545" aria-hidden="true" tabindex="-1"></a>   smoothed anomaly per admin unit has the same <span class="in">`(pcode, date, value)`</span> shape</span>
-<span id="cb17-546"><a href="#cb17-546" aria-hidden="true" tabindex="-1"></a>   as the team's <span class="in">`floodscan_exposure`</span> table.</span>
-<span id="cb17-547"><a href="#cb17-547" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>The trust region is measured, not guessed: substantial riverine flooding.</span>
-<span id="cb17-548"><a href="#cb17-548" aria-hidden="true" tabindex="-1"></a>   Among LGAs whose SFED max passed 0.10, 58% correlate at r ≥ 0.6; past</span>
-<span id="cb17-549"><a href="#cb17-549" aria-hidden="true" tabindex="-1"></a>   0.20 the median r is 0.75. Coastal units, marginal flooding, and</span>
-<span id="cb17-550"><a href="#cb17-550" aria-hidden="true" tabindex="-1"></a>   single-day values sit outside it.</span>
-<span id="cb17-551"><a href="#cb17-551" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>The static 2009 baseline is enough for within-season tracking. Cross-season</span>
-<span id="cb17-552"><a href="#cb17-552" aria-hidden="true" tabindex="-1"></a>   return periods want a day-of-year climatology computed from the 2015+</span>
-<span id="cb17-553"><a href="#cb17-553" aria-hidden="true" tabindex="-1"></a>   AMSR2/GPM archive, which the assessment verified is complete.</span>
-<span id="cb17-554"><a href="#cb17-554" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-555"><a href="#cb17-555" aria-hidden="true" tabindex="-1"></a>Bottom line: raw GFDS signal, scored and aggregated ourselves, is a credible</span>
-<span id="cb17-556"><a href="#cb17-556" aria-hidden="true" tabindex="-1"></a>free FloodScan analogue for admin-level riverine flood monitoring, with an</span>
-<span id="cb17-557"><a href="#cb17-557" aria-hidden="true" tabindex="-1"></a>archive from 1997 to present at roughly 3 hour latency. The one operational</span>
-<span id="cb17-558"><a href="#cb17-558" aria-hidden="true" tabindex="-1"></a>caveat is the 2009-era GDACS server, which demands resumable, patient</span>
-<span id="cb17-559"><a href="#cb17-559" aria-hidden="true" tabindex="-1"></a>ingestion.</span>
+<span id="cb17-523"><a href="#cb17-523" aria-hidden="true" tabindex="-1"></a>JRC publishes its own σ-scored product (<span class="in">`mag_signal`</span>), computed against a</span>
+<span id="cb17-524"><a href="#cb17-524" aria-hidden="true" tabindex="-1"></a>baseline frozen in July 2009 and built from a sensor (AMSR-E) that died in</span>
+<span id="cb17-525"><a href="#cb17-525" aria-hidden="true" tabindex="-1"></a><span class="ss">2011. </span>If our DIY anomaly matches it, ingestion only needs the raw signal.</span>
+<span id="cb17-526"><a href="#cb17-526" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-529"><a href="#cb17-529" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb17-530"><a href="#cb17-530" aria-hidden="true" tabindex="-1"></a>corr_mag, _, _ <span class="op">=</span> pixel_corr(mag, sfed_g)</span>
+<span id="cb17-531"><a href="#cb17-531" aria-hidden="true" tabindex="-1"></a>cm <span class="op">=</span> corr_mag.values.ravel()</span>
+<span id="cb17-532"><a href="#cb17-532" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"median r vs SFED over flooded pixels — "</span></span>
+<span id="cb17-533"><a href="#cb17-533" aria-hidden="true" tabindex="-1"></a>      <span class="ss">f"DIY anomaly: </span><span class="sc">{</span>np<span class="sc">.</span>nanmedian(cv[flooded])<span class="sc">:.2f}</span><span class="ss"> | "</span></span>
+<span id="cb17-534"><a href="#cb17-534" aria-hidden="true" tabindex="-1"></a>      <span class="ss">f"JRC magnitude: </span><span class="sc">{</span>np<span class="sc">.</span>nanmedian(cm[flooded])<span class="sc">:.2f}</span><span class="ss">"</span>)</span>
+<span id="cb17-535"><a href="#cb17-535" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb17-536"><a href="#cb17-536" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-537"><a href="#cb17-537" aria-hidden="true" tabindex="-1"></a>On this event the DIY anomaly clearly beats JRC's own magnitude, which is what</span>
+<span id="cb17-538"><a href="#cb17-538" aria-hidden="true" tabindex="-1"></a>you'd expect when modern AMSR2/GPM measurements are scored against an</span>
+<span id="cb17-539"><a href="#cb17-539" aria-hidden="true" tabindex="-1"></a>AMSR-E-era baseline. The staleness that makes GFDS's global alerting noisy</span>
+<span id="cb17-540"><a href="#cb17-540" aria-hidden="true" tabindex="-1"></a>(documented in the assessment) costs it here too. Ingest the raw signal only</span>
+<span id="cb17-541"><a href="#cb17-541" aria-hidden="true" tabindex="-1"></a>and score it ourselves.</span>
+<span id="cb17-542"><a href="#cb17-542" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-543"><a href="#cb17-543" aria-hidden="true" tabindex="-1"></a><span class="fu">## What this settles</span></span>
+<span id="cb17-544"><a href="#cb17-544" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-545"><a href="#cb17-545" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>Ingest one layer: daily <span class="in">`signal`</span>, roughly 13 MB/day re-encoded as a uint16</span>
+<span id="cb17-546"><a href="#cb17-546" aria-hidden="true" tabindex="-1"></a>   COG, plus the two static baseline files fetched once. Magnitude, the 4-day</span>
+<span id="cb17-547"><a href="#cb17-547" aria-hidden="true" tabindex="-1"></a>   averages, and the legacy layers are all derivable or ignorable.</span>
+<span id="cb17-548"><a href="#cb17-548" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>The common data model fits directly. A daily zonal mean of the 4-day</span>
+<span id="cb17-549"><a href="#cb17-549" aria-hidden="true" tabindex="-1"></a>   smoothed anomaly per admin unit has the same <span class="in">`(pcode, date, value)`</span> shape</span>
+<span id="cb17-550"><a href="#cb17-550" aria-hidden="true" tabindex="-1"></a>   as the team's <span class="in">`floodscan_exposure`</span> table.</span>
+<span id="cb17-551"><a href="#cb17-551" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>The trust region is measured, not guessed: substantial riverine flooding.</span>
+<span id="cb17-552"><a href="#cb17-552" aria-hidden="true" tabindex="-1"></a>   Among LGAs whose SFED max passed 0.10, 58% correlate at r ≥ 0.6; past</span>
+<span id="cb17-553"><a href="#cb17-553" aria-hidden="true" tabindex="-1"></a>   0.20 the median r is 0.75. Coastal units, marginal flooding, and</span>
+<span id="cb17-554"><a href="#cb17-554" aria-hidden="true" tabindex="-1"></a>   single-day values sit outside it.</span>
+<span id="cb17-555"><a href="#cb17-555" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>The static 2009 baseline is enough for within-season tracking. Cross-season</span>
+<span id="cb17-556"><a href="#cb17-556" aria-hidden="true" tabindex="-1"></a>   return periods want a day-of-year climatology computed from the 2015+</span>
+<span id="cb17-557"><a href="#cb17-557" aria-hidden="true" tabindex="-1"></a>   AMSR2/GPM archive, which the assessment verified is complete.</span>
+<span id="cb17-558"><a href="#cb17-558" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-559"><a href="#cb17-559" aria-hidden="true" tabindex="-1"></a>Bottom line: raw GFDS signal, scored and aggregated ourselves, is a credible</span>
+<span id="cb17-560"><a href="#cb17-560" aria-hidden="true" tabindex="-1"></a>free FloodScan analogue for admin-level riverine flood monitoring, with an</span>
+<span id="cb17-561"><a href="#cb17-561" aria-hidden="true" tabindex="-1"></a>archive from 1997 to present at roughly 3 hour latency. The one operational</span>
+<span id="cb17-562"><a href="#cb17-562" aria-hidden="true" tabindex="-1"></a>caveat is the 2009-era GDACS server, which demands resumable, patient</span>
+<span id="cb17-563"><a href="#cb17-563" aria-hidden="true" tabindex="-1"></a>ingestion.</span>
 </code></pre></div><button title="Copy to Clipboard" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
 </div></div></div></div></div>
 </div> <!-- /content -->
