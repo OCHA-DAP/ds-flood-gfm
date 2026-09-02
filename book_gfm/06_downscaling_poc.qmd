@@ -398,6 +398,54 @@ vegetation, and we compare three radar snapshots against continuous microwave
 coverage, so part of every map's "red" reflects the reference's blind spots
 rather than the map's errors.
 
+### Where it really flooded: beyond the historical envelope
+
+A fair objection to everything above: cells with Landsat water history are
+easy, the fill paints them first, so scores there flatter every map. The
+telling stratum is the cells *outside* the historical envelope, where water
+appeared in places the 1984-2021 record never saw it. Detection there cannot
+come from water history.
+
+```{python}
+#| code-summary: "stratify the radar comparison by the historical water envelope"
+prior = np.load(POC / "gsw_prior_aoi.npz")
+occ = prior["occ"]
+inside = dom & (occ > 0)
+outside = dom & (occ == 0)
+wet_in = int((gfm_wet & inside).sum())
+wet_out = int((gfm_wet & outside).sum())
+print(f"radar-flooded cells with water history: {wet_in:,} | without: {wet_out:,} "
+      f"({wet_out/(wet_in+wet_out):.0%} of the flood was outside the envelope)")
+
+rows = {}
+for name, pred in [("R0 (SFED-trained)", ds_gfds),
+                   ("R1 physics", zr1["ds_r1"]),
+                   ("SFED (licensed)", ds_sfed),
+                   ("history-only control", ctrl)]:
+    hi = int((pred & gfm_wet & inside).sum()); mi = int((~pred & gfm_wet & inside).sum())
+    ho = int((pred & gfm_wet & outside).sum()); mo = int((~pred & gfm_wet & outside).sum())
+    fo = int((pred & ~gfm_wet & outside).sum())
+    rows[name] = {"POD/Recall inside": round(hi/(hi+mi), 2),
+                  "POD/Recall outside": round(ho/(ho+mo), 2),
+                  "FAR outside": round(fo/(ho+fo), 2),
+                  "CSI/IoU outside": round(ho/(ho+mo+fo), 3)}
+pd.DataFrame(rows).T
+```
+
+Three things fall out. First, the headline: **85% of this flood happened in
+cells with no Landsat water history at all**. A flood mask built from
+historical water alone would have missed most of the event; that single
+number is the case for satellite monitoring of extremes. Second, inside the
+envelope everyone scores near-perfect detection, confirming that stratum
+tells you nothing. Third, outside the envelope the satellite-informed maps
+do detect more (licensed SFED reaches 0.64 recall, R0 0.57, against 0.53
+for the control) but no more precisely, so the overlap scores still tie.
+One design honesty note explains why the control stays competitive even
+here: its tie-break ranks cells by distance to historical water, and since
+rivers flood outward, proximity geometry alone predicts much of even the
+novel flooding. Strictly, the control is "history plus geometry", and at
+83 m that combination remains hard for a 10 km satellite signal to beat.
+
 ### Zooming out: where the satellite earns its keep
 
 If the fine detail is mostly the historical map, the satellite has to prove
