@@ -37,9 +37,14 @@ today's GFDS reading sets *how much* of each pixel is flooded, and the
 historical map decides *which cells* get marked. Today's flood has no
 influence on the placement, only on the amount.
 
-That means downscaling adds no new observation; all placement information is
-historical. The experiment below measures how much of the final map comes
-from the satellite and how much from the historical map. Full technical write-up:
+The question this chapter answers is therefore a FloodScan-vs-GFDS question:
+**if the free GFDS input goes through FloodScan's own published recipe, does
+it reproduce the licensed product?** Step 1 compares the two at their native
+10 km scale; the head-to-head section compares the downscaled maps directly.
+Only at the end do we step outside the microwave family for an independent
+check (GFM radar). Downscaling adds no new observation, since all placement
+information is historical, so something external has to tell us how much of
+the final map comes from the satellite at all. Full technical write-up:
 [`docs/gfds-downscaling-poc.md`](https://github.com/OCHA-DAP/ds-flood-gfm/blob/main/docs/gfds-downscaling-poc.md);
 code in `experiments/gfds_downscaling_poc/`.
 
@@ -126,23 +131,15 @@ pixel's estimated share is reached. The scripts:
 {{< include ../experiments/gfds_downscaling_poc/04_downscale_validate.py >}}
 ```
 
-## Validation against radar
+## Head to head: downscaled GFDS vs downscaled FloodScan
 
-To evaluate the downscaled maps we need a reference that is independent of
-the microwave products. We use this project's own GFM data: Sentinel-1 radar
-flood extent, a different kind of measurement entirely, for the October 2022
-peak at the Niger-Benue confluence.
-
-Three maps get scored against the radar extent. The downscaled GFDS map. The
-same procedure fed with licensed FloodScan instead, to measure what the free
-input costs. And a **control map built with no 2022 satellite input at all**:
-it has the same total flooded area, allocated purely by the historical
-ranking. If downscaled GFDS cannot beat the control, the skill comes from the
-historical map, not from the satellite.
+The core comparison. Both inputs go through the identical Step 2 procedure
+over the Niger-Benue confluence for the October 2022 peak; the question is
+how much of the licensed product's map the free input reproduces.
 
 ```{python}
-#| fig-cap: "Niger-Benue confluence, 6-13 Oct 2022, ~83 m. Each panel compares one map against the radar: blue = both flag flooding, orange = radar flags flooding the map missed, red = the map flags flooding the radar did not see. Left: downscaled GFDS. Right: the history-only control. GFDS converts orange to blue across the wide flooding south of the confluence, at the cost of red false alarms in rectangular blocks at pixel edges."
-#| fig-height: 7
+#| fig-cap: "Downscaled GFDS vs downscaled FloodScan, Niger-Benue confluence, 6-13 Oct 2022, ~83 m. Blue = both flag flooding, orange = only the FloodScan-based map, red = only the GFDS-based map."
+#| fig-height: 8
 from matplotlib.colors import ListedColormap
 from matplotlib.patches import Patch
 
@@ -151,6 +148,53 @@ gfm_wet, ds_gfds, ds_sfed, ctrl, dom = (z[k] for k in
                                         ("gfm_wet", "ds_gfds", "ds_sfed", "ctrl", "dom"))
 ext = [z["x"].min(), z["x"].max(), z["y"].min(), z["y"].max()]
 
+cat = np.zeros(ds_gfds.shape, dtype=float)
+cat[ds_sfed & ds_gfds] = 1
+cat[ds_sfed & ~ds_gfds] = 2
+cat[~ds_sfed & ds_gfds] = 3
+cmap = ListedColormap(["#f7f7f7", "#2c7fb8", "#fdae61", "#d7191c"])
+fig, ax = plt.subplots(figsize=(8, 8))
+ax.imshow(np.where(dom, cat, np.nan), extent=ext, cmap=cmap,
+          vmin=-0.5, vmax=3.5, interpolation="none")
+ax.set_aspect("equal")
+ax.legend(handles=[
+    Patch(color="#2c7fb8", label="both flag flooding"),
+    Patch(color="#fdae61", label="FloodScan-based only"),
+    Patch(color="#d7191c", label="GFDS-based only")],
+    loc="lower left", fontsize=9, framealpha=0.9)
+plt.show()
+
+both_n = int((ds_gfds & ds_sfed & dom).sum())
+either_n = int(((ds_gfds | ds_sfed) & dom).sum())
+a_g = int((ds_gfds & dom).sum()) * 0.0835**2
+a_s = int((ds_sfed & dom).sum()) * 0.0835**2
+print(f"flooded area: GFDS-based {a_g:,.0f} km2 | FloodScan-based {a_s:,.0f} km2 "
+      f"(ratio {a_g/a_s:.2f})")
+print(f"overlap: {both_n/either_n:.0%} of all cells flagged by either map "
+      "are flagged by both")
+```
+
+The two maps flag nearly the same total area and mostly the same cells; the
+disagreements sit at pixel edges where the two 10 km inputs put slightly
+different amounts into neighbouring pixels. Through an identical recipe, the
+free input substitutes for the licensed one with little visible cost. Whether
+either map is *right* is a separate question, which needs a reference from
+outside the microwave family.
+
+## An outside check: radar, and a control with no satellite input
+
+For that we use this project's own GFM data: Sentinel-1 radar flood extent
+for the same dates. This is a deliberately limited appearance, since the full GFM methodology
+has its own chapters, and it comes with a third map: a
+**control built with no 2022 satellite input at all**, holding the same total
+flooded area but allocated purely by the historical ranking. If the
+satellite-based maps cannot beat the control against the radar, the fine
+detail is coming from the historical map, not from either satellite
+product.
+
+```{python}
+#| fig-cap: "Niger-Benue confluence, 6-13 Oct 2022, ~83 m. Each panel compares one map against the radar: blue = both flag flooding, orange = radar flags flooding the map missed, red = the map flags flooding the radar did not see. Left: downscaled GFDS. Right: the history-only control. GFDS converts orange to blue across the wide flooding south of the confluence, at the cost of red false alarms in rectangular blocks at pixel edges."
+#| fig-height: 7
 def agreement(pred):
     cat = np.zeros(pred.shape, dtype=float)          # 0: dry in both
     cat[gfm_wet & pred] = 1                           # both wet
