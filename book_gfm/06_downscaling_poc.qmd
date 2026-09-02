@@ -28,7 +28,11 @@ and you cannot draw "unusual" on a map at 90 m:
 1. **Calibrate**: convert the GFDS reading into an estimated share of each
    10 km pixel that is under water (a flooded fraction).
 2. **Allocate**: split that share among the small (~83 m) cells inside each
-   pixel, marking the most flood-prone cells as flooded first.
+   pixel, marking the most flood-prone cells as flooded first. (Why the odd
+   83 m: the Landsat water map comes at ~28 m; we aggregate it 3×3 to
+   0.00075°, chosen because 0.09° divides by it exactly, so every GFDS pixel
+   holds a clean 120×120 block of fine cells. FloodScan's "90 m" is 3
+   arcseconds; ours is 2.7, the price of nesting into the GFDS grid.)
 
 Stage 2 depends on what statisticians call a **prior**: information that
 existed before today's satellite reading. Ours is a historical water map
