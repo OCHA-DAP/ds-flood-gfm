@@ -267,12 +267,15 @@ the documented peak week. Not bad for a 10 km radiometer ratio scored against a
 A note on method before the maps: the correlation below is a plain Pearson r
 on the continuous daily values. Per pixel, we correlate the 4-day-mean GFDS
 anomaly (σ) against SFED (fraction) over the days where both are finite,
-requiring at least 60 shared days. Nothing is classified or thresholded before
+requiring at least 60 shared days. SFED is first resampled (bilinear) from
+its native 0.083° grid onto the GFDS 0.09° grid, so every pixel-level
+comparison in this chapter happens on the GFDS grid. Nothing is classified
+or thresholded before
 correlating; thresholds appear only afterwards, to stratify the results by
 how much flooding a pixel actually saw.
 
 ```{python}
-#| fig-cap: "Top: GFDS anomaly seasonal max. Middle: FloodScan SFED seasonal max. Bottom: per-pixel Pearson correlation of the daily series. GFDS lights up far more area than SFED; the correlation map shows where that extra signal tracks real flooding (river corridors) and where it does not."
+#| fig-cap: "Top: GFDS anomaly seasonal max. Middle: FloodScan SFED seasonal max (resampled to the GFDS 0.09° grid, as in all pixel comparisons here). Bottom: per-pixel Pearson correlation of the daily series. GFDS lights up far more area than SFED; the correlation map shows where that extra signal tracks real flooding (river corridors) and where it does not."
 #| fig-height: 14
 def pixel_corr(a_stack, b_stack, min_days=60):
     a2, b2 = xr.align(a_stack, b_stack)

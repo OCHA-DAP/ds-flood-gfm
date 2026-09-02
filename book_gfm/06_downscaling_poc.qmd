@@ -120,7 +120,7 @@ now express something it never could before: how many square kilometres are
 under water.
 
 ```{python}
-#| fig-cap: "Flooded area per day over Nigeria. Red: fraction from the R0 lookup (free input, SFED-trained). Blue: licensed FloodScan SFED. At FloodScan's peak, the R0 estimate reaches 84% of its area."
+#| fig-cap: "Flooded area per day over Nigeria. Red: fraction from the R0 lookup (free input, SFED-trained). Blue: licensed FloodScan SFED (here and in every comparison, resampled onto the GFDS 0.09° grid). At FloodScan's peak, the R0 estimate reaches 84% of its area."
 px_km2 = (0.09 * 111.32) ** 2
 both = np.isfinite(frac.values) & np.isfinite(sfed.values)
 a_gfds = np.where(both, frac.values, 0).sum(axis=(1, 2)) * px_km2
@@ -135,7 +135,7 @@ plt.show()
 ```
 
 ```{python}
-#| fig-cap: "CALIBRATION STAGE ONLY, 10 km grid, no downscaling. Mean flooded fraction 6-13 Oct 2022. Left: the R0 (SFED-trained) fraction from the free GFDS input. Right: licensed FloodScan SFED. Because R0 is trained on SFED (alternating days from this same season), close agreement here is partly by construction; the held-out-day scores above are the fair skill test."
+#| fig-cap: "CALIBRATION STAGE ONLY, 10 km grid, no downscaling. Mean flooded fraction 6-13 Oct 2022. Left: the R0 (SFED-trained) fraction from the free GFDS input. Right: licensed FloodScan SFED, resampled from its native 0.083° grid onto the GFDS 0.09° grid so the two fields compare cell by cell. Because R0 is trained on SFED (alternating days from this same season), close agreement here is partly by construction; the held-out-day scores above are the fair skill test."
 #| fig-height: 5.5
 peak = slice("2022-10-06", "2022-10-13")
 wg = frac.sel(time=peak).mean("time")
