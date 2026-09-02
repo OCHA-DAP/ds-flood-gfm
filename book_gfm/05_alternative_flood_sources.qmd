@@ -69,7 +69,9 @@ completely in what they do with it.
 |---|---|---|
 | Sensors today | AMSR2 (GCOM-W), GMI (GPM) | AMSR2 (GCOM-W), GMI (GPM) |
 | Historical sensors | AMSR-E (2002 to 2011), TRMM TMI (1997 to 2015) | AMSR-E era products |
-| Observable | 36.5 GHz H-pol brightness temperature, per swath | Passive microwave brightness temperature, ~22 km footprints |
+| Observable | 36.5 GHz H-pol brightness temperature, per swath | Passive microwave brightness temperature, same 36 GHz-class channels |
+| Native footprint at 36 GHz | AMSR2: 7×12 km; GMI: 9.4×15.6 km ([JAXA](https://www.eorc.jaxa.jp/AMSR/resources/pdf/amsr2_data_user_guide_v4.pdf), [NASA](https://gpm.nasa.gov/missions/GPM/GMI)) | Identical (shared instruments) |
+| Working resolution before any downscaling | Posted to the 0.09° (~10 km) grid, close to native | Retrieval runs on ~22 km effective data, coarsened for end-member stability |
 | Core retrieval | Change detection: wet pixel ÷ nearby dry calibration pixel (M/C ratio), a unitless relative signal | Unmixing: wet/dry emissivity end-members convert Tb into a physical *fraction of pixel flooded* |
 | Reference for "dry" | One calibration pixel, chosen as the 95th percentile of a 9×9 neighborhood, same swath | Dry-land end-member predicted per location from local time-series analysis |
 | Long-term baseline | Static per-pixel mean/sd, frozen July 2009 (AMSR-E era) | Maintained dynamically as part of the retrieval |
@@ -82,6 +84,16 @@ completely in what they do with it.
 | Output variable | σ-anomaly of a wetness ratio; no physical units | Flooded fraction, 0 to 1 (SFED; MFED for maximum) |
 | Alert layer | ~10k manually curated virtual-gauge sites; 4 to 6σ thresholds set empirically | Products consumed directly; the team computes its own baselines and return periods |
 | Access | Free, no auth, plain HTTP | Commercial license (AER) |
+
+A detail in that table deserves emphasis, because it inverts the intuition
+the two products' grids give you. The raw radiometry is identical, roughly 7
+to 16 km footprints from the same two instruments. From there the systems
+move in opposite directions: GFDS keeps close to native resolution (~10 km
+posting) and never downscales, while FloodScan first *coarsens* to ~22 km
+effective for a stable retrieval and only then paints 90 m detail from its
+hydrological database. FloodScan's fine appearance is entirely prior
+knowledge about where water goes, not finer measurement; at the radiometric
+level GFDS actually retains slightly more spatial information.
 
 Three things follow from this table.
 
