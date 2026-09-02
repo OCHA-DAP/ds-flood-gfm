@@ -401,7 +401,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="test-1-reproduction-the-r0-lookup-vs-floodscan" class="level2" data-number="3.2">
 <h2 data-number="3.2" class="anchored" data-anchor-id="test-1-reproduction-the-r0-lookup-vs-floodscan"><span class="header-section-number">3.2</span> Test 1: reproduction — the R0 lookup vs FloodScan</h2>
 <p>R0 is a per-pixel lookup table. For each 10 km pixel we line up its history of GFDS readings against its history of FloodScan readings: a middling GFDS day maps to that pixel’s typical FloodScan value, an extreme day to an extreme value. To keep ourselves honest, the table is built from half the days (alternating) and every score below comes from the other half, days the table never saw.</p>
-<div id="977dd567" class="cell" data-execution_count="1">
+<div id="f679d776" class="cell" data-execution_count="1">
 <details class="code-fold">
 <summary>experiments/gfds_downscaling_poc/01_calibrate_fraction.py (method R0)</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">"""POC step 1: calibrate GFDS anomaly -&gt; flooded fraction at 10 km.</span></span>
@@ -546,7 +546,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-140"><a href="#cb1-140" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"wrote"</span>, OUT <span class="op">/</span> <span class="st">"gfds_calibrated_fraction.nc"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
-<div id="553398cb" class="cell" data-execution_count="2">
+<div id="27db5eee" class="cell" data-execution_count="2">
 <details class="code-fold">
 <summary>load POC results (fails loudly if the scripts haven’t been run)</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
@@ -611,7 +611,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <p>On the unseen days, R0 predicts FloodScan’s value with a typical error of 0.040 (in flooded-share units, over pixels that actually flooded), versus 0.048 for the lazy strategy of always guessing each pixel’s average. A modest margin, honestly earned. The more tangible payoff is that GFDS can now express something it never could before: how many square kilometres are under water.</p>
-<div id="a8174c22" class="cell" data-execution_count="3">
+<div id="dadea95d" class="cell" data-execution_count="3">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>px_km2 <span class="op">=</span> (<span class="fl">0.09</span> <span class="op">*</span> <span class="fl">111.32</span>) <span class="op">**</span> <span class="dv">2</span></span>
@@ -635,7 +635,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
-<div id="a364b7cd" class="cell" data-fig-height="5.5" data-execution_count="4">
+<div id="fd441457" class="cell" data-fig-height="5.5" data-execution_count="4">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>peak <span class="op">=</span> <span class="bu">slice</span>(<span class="st">"2022-10-06"</span>, <span class="st">"2022-10-13"</span>)</span>
@@ -677,7 +677,7 @@ mean fraction over wet pixels: GFDS-R0 0.114 | FloodScan 0.110</code></pre>
 <section id="test-2-independence-can-we-calibrate-without-floodscan" class="level2" data-number="3.3">
 <h2 data-number="3.3" class="anchored" data-anchor-id="test-2-independence-can-we-calibrate-without-floodscan"><span class="header-section-number">3.3</span> Test 2: independence — can we calibrate without FloodScan?</h2>
 <p>R0 proves the free input can copy the licensed product, but a copy is not an independent product. AER did not have a reference product when they built FloodScan; they got flooded fraction from brightness temperature with physics: a partly flooded pixel’s signal is a mix of a wet and a dry component, and the mixing equation can be inverted. R1, R2, and R3 are three ways to do that without touching FloodScan, which makes SFED a fully fair external benchmark for them.</p>
-<div id="0d515d14" class="cell" data-execution_count="5">
+<div id="364f24cb" class="cell" data-execution_count="5">
 <details class="code-fold">
 <summary>experiments/gfds_downscaling_poc/06_independent_fractions.py (methods R1, R2, R3)</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co">"""POC step 6: three FloodScan-independent routes from GFDS signal to flooded</span></span>
@@ -832,7 +832,7 @@ mean fraction over wet pixels: GFDS-R0 0.114 | FloodScan 0.110</code></pre>
 <span id="cb6-150"><a href="#cb6-150" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"wrote independent_fraction_areas.png + independent_fractions.npz"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
-<div id="e81c8ce5" class="cell" data-execution_count="6">
+<div id="27da22a4" class="cell" data-execution_count="6">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>z2 <span class="op">=</span> np.load(POC <span class="op">/</span> <span class="st">"independent_fractions.npz"</span>)</span>
@@ -928,7 +928,7 @@ mean fraction over wet pixels: GFDS-R0 0.114 | FloodScan 0.110</code></pre>
 <h2 data-number="3.4" class="anchored" data-anchor-id="test-3-allocation-the-83-m-maps"><span class="header-section-number">3.4</span> Test 3: allocation — the 83 m maps</h2>
 <p>The remaining stage is spatial. The historical water map is the JRC Global Surface Water dataset (free, ~30 m, fetched here by reading just the needed window over HTTP). This is the same dataset AER names as an ingredient of FloodScan’s downscaling database; their version also folds in topography and hydrology layers, so our single-ingredient version is a floor on what the technique can do, not a replica. Inside each 10 km pixel we sort the small cells from most to least water-prone, exclude cells that are water year-round (lakes, the river channel itself), and mark cells as flooded from the top of the list until the pixel’s estimated share is reached.</p>
 <p>One method note before the maps: the allocation experiments below were run with the <strong>R0 fraction as the GFDS-side input</strong> (they predate the R1 results; re-running them on R1 is listed in the next steps). The scripts:</p>
-<div id="2b06e52a" class="cell" data-execution_count="7">
+<div id="1422b50a" class="cell" data-execution_count="7">
 <details class="code-fold">
 <summary>experiments/gfds_downscaling_poc/02_build_prior.py</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co">"""POC step 2: build the downscaling prior for the confluence AOI.</span></span>
@@ -976,7 +976,7 @@ mean fraction over wet pixels: GFDS-R0 0.114 | FloodScan 0.110</code></pre>
 <span id="cb8-43"><a href="#cb8-43" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"wrote"</span>, OUT <span class="op">/</span> <span class="st">"gsw_prior_aoi.npz"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
-<div id="71db1565" class="cell" data-execution_count="8">
+<div id="b8e905cf" class="cell" data-execution_count="8">
 <details class="code-fold">
 <summary>experiments/gfds_downscaling_poc/04_downscale_validate.py</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co">"""POC step 4: downscale the calibrated GFDS fraction to ~83 m and validate</span></span>
@@ -1142,7 +1142,7 @@ mean fraction over wet pixels: GFDS-R0 0.114 | FloodScan 0.110</code></pre>
 <section id="head-to-head-downscaled-gfds-vs-downscaled-floodscan" class="level3" data-number="3.4.1">
 <h3 data-number="3.4.1" class="anchored" data-anchor-id="head-to-head-downscaled-gfds-vs-downscaled-floodscan"><span class="header-section-number">3.4.1</span> Head to head: downscaled GFDS vs downscaled FloodScan</h3>
 <p>Test 1 compared the two products at the calibration stage, on the 10 km grid. This figure is the next stage of the same story: the same two 10 km fractions, now pushed through the identical allocation, compared as 83 m maps over the confluence for the October peak.</p>
-<div id="3b5b90f2" class="cell" data-fig-height="8" data-execution_count="9">
+<div id="dfefbfeb" class="cell" data-fig-height="8" data-execution_count="9">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> matplotlib.colors <span class="im">import</span> ListedColormap</span>
@@ -1196,7 +1196,7 @@ overlap: 84% of all cells flagged by either map are flagged by both</code></pre>
 <section id="an-outside-check-radar-and-a-control-with-no-satellite-input" class="level3" data-number="3.4.2">
 <h3 data-number="3.4.2" class="anchored" data-anchor-id="an-outside-check-radar-and-a-control-with-no-satellite-input"><span class="header-section-number">3.4.2</span> An outside check: radar, and a control with no satellite input</h3>
 <p>For that we borrow this project’s GFM data: Sentinel-1 radar flood extent for the same dates. Radar is a different product with a different overpass cadence, so disagreement with the daily microwave products is expected and does not crown a winner; its job here is only to arbitrate one narrow question. Alongside the two downscaled maps we score a third: the <strong>history-only control</strong> defined in the methods section, same total flooded area, no 2022 satellite input. If the satellite-based maps cannot beat the control against the radar, the fine detail is coming from the historical map, not from either satellite product.</p>
-<div id="51d2f6d0" class="cell" data-fig-height="7" data-execution_count="10">
+<div id="52e16c41" class="cell" data-fig-height="7" data-execution_count="10">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> agreement(pred):</span>
@@ -1231,19 +1231,20 @@ overlap: 84% of all cells flagged by either map are flagged by both</code></pre>
 </div>
 </div>
 </div>
-<div id="99ffb063" class="cell" data-execution_count="11">
+<div id="5842008f" class="cell" data-execution_count="11">
 <details class="code-fold">
 <summary>scores at 83 m</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> score(pred):</span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    h <span class="op">=</span> <span class="bu">int</span>((pred <span class="op">&amp;</span> gfm_wet <span class="op">&amp;</span> dom).<span class="bu">sum</span>())</span>
 <span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    f <span class="op">=</span> <span class="bu">int</span>((pred <span class="op">&amp;</span> <span class="op">~</span>gfm_wet <span class="op">&amp;</span> dom).<span class="bu">sum</span>())</span>
 <span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    m <span class="op">=</span> <span class="bu">int</span>((<span class="op">~</span>pred <span class="op">&amp;</span> gfm_wet <span class="op">&amp;</span> dom).<span class="bu">sum</span>())</span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> {<span class="st">"POD"</span>: <span class="bu">round</span>(h <span class="op">/</span> (h <span class="op">+</span> m), <span class="dv">3</span>), <span class="st">"FAR"</span>: <span class="bu">round</span>(f <span class="op">/</span> (h <span class="op">+</span> f), <span class="dv">3</span>),</span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>            <span class="st">"CSI"</span>: <span class="bu">round</span>(h <span class="op">/</span> (h <span class="op">+</span> m <span class="op">+</span> f), <span class="dv">3</span>)}</span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>pd.DataFrame({<span class="st">"downscaled GFDS (R0)"</span>: score(ds_gfds),</span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>              <span class="st">"downscaled SFED (licensed)"</span>: score(ds_sfed),</span>
-<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>              <span class="st">"history-only control"</span>: score(ctrl)}).T</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> {<span class="st">"POD (recall)"</span>: <span class="bu">round</span>(h <span class="op">/</span> (h <span class="op">+</span> m), <span class="dv">3</span>),</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>            <span class="st">"FAR (1−precision)"</span>: <span class="bu">round</span>(f <span class="op">/</span> (h <span class="op">+</span> f), <span class="dv">3</span>),</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>            <span class="st">"CSI (IoU)"</span>: <span class="bu">round</span>(h <span class="op">/</span> (h <span class="op">+</span> m <span class="op">+</span> f), <span class="dv">3</span>)}</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>pd.DataFrame({<span class="st">"downscaled GFDS (R0)"</span>: score(ds_gfds),</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>              <span class="st">"downscaled SFED (licensed)"</span>: score(ds_sfed),</span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>              <span class="st">"history-only control"</span>: score(ctrl)}).T</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-display" data-execution_count="7">
 <div>
@@ -1253,9 +1254,9 @@ overlap: 84% of all cells flagged by either map are flagged by both</code></pre>
 <thead>
 <tr class="header">
 <th data-quarto-table-cell-role="th"></th>
-<th data-quarto-table-cell-role="th">POD</th>
-<th data-quarto-table-cell-role="th">FAR</th>
-<th data-quarto-table-cell-role="th">CSI</th>
+<th data-quarto-table-cell-role="th">POD (recall)</th>
+<th data-quarto-table-cell-role="th">FAR (1−precision)</th>
+<th data-quarto-table-cell-role="th">CSI (IoU)</th>
 </tr>
 </thead>
 <tbody>
@@ -1283,13 +1284,13 @@ overlap: 84% of all cells flagged by either map are flagged by both</code></pre>
 </div>
 </div>
 </div>
-<p>Reading guide for the scores: POD is the share of radar-flooded cells the map caught, FAR is the share of the map’s flooded cells the radar contradicts, and CSI folds both into one overlap number.</p>
+<p>Reading guide for the scores, with their machine-learning twins since both vocabularies are in use on the team: POD (probability of detection, identical to recall) is the share of radar-flooded cells the map caught; FAR (false alarm ratio, identical to 1 − precision) is the share of the map’s flooded cells the radar contradicts; CSI (critical success index, identical to intersection-over-union) folds both into one overlap number.</p>
 <p>The result at full 83 m detail is uncomfortable and worth stating plainly: <strong>the history-only control ties the maps that used satellite data</strong>. The figure shows a visible difference, yet cell by cell the gains on the floodplain are cancelled by the block-edge false alarms. Also notable: the free GFDS input scores within a whisker of the licensed FloodScan input. One fairness note about the reference: radar under-detects water beneath vegetation, and we compare three radar snapshots against continuous microwave coverage, so part of every map’s “red” reflects the reference’s blind spots rather than the map’s errors.</p>
 </section>
 <section id="zooming-out-where-the-satellite-earns-its-keep" class="level3" data-number="3.4.3">
 <h3 data-number="3.4.3" class="anchored" data-anchor-id="zooming-out-where-the-satellite-earns-its-keep"><span class="header-section-number">3.4.3</span> Zooming out: where the satellite earns its keep</h3>
 <p>If the fine detail is mostly the historical map, the satellite has to prove itself at coarser zoom. We blur all the maps to a series of coarser grids and check how well each tracks the radar:</p>
-<div id="d933aec9" class="cell" data-execution_count="12">
+<div id="cc980506" class="cell" data-execution_count="12">
 <details class="code-fold">
 <summary>agreement with radar (correlation) at increasing blur</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> block_reduce(a, k, m):</span>
@@ -2220,88 +2221,92 @@ overlap: 84% of all cells flagged by either map are flagged by both</code></pre>
 <span id="cb15-390"><a href="#cb15-390" aria-hidden="true" tabindex="-1"></a>    h <span class="op">=</span> <span class="bu">int</span>((pred <span class="op">&amp;</span> gfm_wet <span class="op">&amp;</span> dom).<span class="bu">sum</span>())</span>
 <span id="cb15-391"><a href="#cb15-391" aria-hidden="true" tabindex="-1"></a>    f <span class="op">=</span> <span class="bu">int</span>((pred <span class="op">&amp;</span> <span class="op">~</span>gfm_wet <span class="op">&amp;</span> dom).<span class="bu">sum</span>())</span>
 <span id="cb15-392"><a href="#cb15-392" aria-hidden="true" tabindex="-1"></a>    m <span class="op">=</span> <span class="bu">int</span>((<span class="op">~</span>pred <span class="op">&amp;</span> gfm_wet <span class="op">&amp;</span> dom).<span class="bu">sum</span>())</span>
-<span id="cb15-393"><a href="#cb15-393" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> {<span class="st">"POD"</span>: <span class="bu">round</span>(h <span class="op">/</span> (h <span class="op">+</span> m), <span class="dv">3</span>), <span class="st">"FAR"</span>: <span class="bu">round</span>(f <span class="op">/</span> (h <span class="op">+</span> f), <span class="dv">3</span>),</span>
-<span id="cb15-394"><a href="#cb15-394" aria-hidden="true" tabindex="-1"></a>            <span class="st">"CSI"</span>: <span class="bu">round</span>(h <span class="op">/</span> (h <span class="op">+</span> m <span class="op">+</span> f), <span class="dv">3</span>)}</span>
-<span id="cb15-395"><a href="#cb15-395" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-396"><a href="#cb15-396" aria-hidden="true" tabindex="-1"></a>pd.DataFrame({<span class="st">"downscaled GFDS (R0)"</span>: score(ds_gfds),</span>
-<span id="cb15-397"><a href="#cb15-397" aria-hidden="true" tabindex="-1"></a>              <span class="st">"downscaled SFED (licensed)"</span>: score(ds_sfed),</span>
-<span id="cb15-398"><a href="#cb15-398" aria-hidden="true" tabindex="-1"></a>              <span class="st">"history-only control"</span>: score(ctrl)}).T</span>
-<span id="cb15-399"><a href="#cb15-399" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb15-400"><a href="#cb15-400" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-401"><a href="#cb15-401" aria-hidden="true" tabindex="-1"></a>Reading guide for the scores: POD is the share of radar-flooded cells the map</span>
-<span id="cb15-402"><a href="#cb15-402" aria-hidden="true" tabindex="-1"></a>caught, FAR is the share of the map's flooded cells the radar contradicts,</span>
-<span id="cb15-403"><a href="#cb15-403" aria-hidden="true" tabindex="-1"></a>and CSI folds both into one overlap number.</span>
-<span id="cb15-404"><a href="#cb15-404" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-405"><a href="#cb15-405" aria-hidden="true" tabindex="-1"></a>The result at full 83 m detail is uncomfortable and worth stating plainly:</span>
-<span id="cb15-406"><a href="#cb15-406" aria-hidden="true" tabindex="-1"></a>**the history-only control ties the maps that used satellite data**. The</span>
-<span id="cb15-407"><a href="#cb15-407" aria-hidden="true" tabindex="-1"></a>figure shows a visible difference, yet cell by cell the gains on the</span>
-<span id="cb15-408"><a href="#cb15-408" aria-hidden="true" tabindex="-1"></a>floodplain are cancelled by the block-edge false alarms. Also notable: the</span>
-<span id="cb15-409"><a href="#cb15-409" aria-hidden="true" tabindex="-1"></a>free GFDS input scores within a whisker of the licensed FloodScan input. One</span>
-<span id="cb15-410"><a href="#cb15-410" aria-hidden="true" tabindex="-1"></a>fairness note about the reference: radar under-detects water beneath</span>
-<span id="cb15-411"><a href="#cb15-411" aria-hidden="true" tabindex="-1"></a>vegetation, and we compare three radar snapshots against continuous microwave</span>
-<span id="cb15-412"><a href="#cb15-412" aria-hidden="true" tabindex="-1"></a>coverage, so part of every map's "red" reflects the reference's blind spots</span>
-<span id="cb15-413"><a href="#cb15-413" aria-hidden="true" tabindex="-1"></a>rather than the map's errors.</span>
-<span id="cb15-414"><a href="#cb15-414" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-415"><a href="#cb15-415" aria-hidden="true" tabindex="-1"></a><span class="fu">### Zooming out: where the satellite earns its keep</span></span>
-<span id="cb15-416"><a href="#cb15-416" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-417"><a href="#cb15-417" aria-hidden="true" tabindex="-1"></a>If the fine detail is mostly the historical map, the satellite has to prove</span>
-<span id="cb15-418"><a href="#cb15-418" aria-hidden="true" tabindex="-1"></a>itself at coarser zoom. We blur all the maps to a series of coarser grids</span>
-<span id="cb15-419"><a href="#cb15-419" aria-hidden="true" tabindex="-1"></a>and check how well each tracks the radar:</span>
+<span id="cb15-393"><a href="#cb15-393" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> {<span class="st">"POD (recall)"</span>: <span class="bu">round</span>(h <span class="op">/</span> (h <span class="op">+</span> m), <span class="dv">3</span>),</span>
+<span id="cb15-394"><a href="#cb15-394" aria-hidden="true" tabindex="-1"></a>            <span class="st">"FAR (1−precision)"</span>: <span class="bu">round</span>(f <span class="op">/</span> (h <span class="op">+</span> f), <span class="dv">3</span>),</span>
+<span id="cb15-395"><a href="#cb15-395" aria-hidden="true" tabindex="-1"></a>            <span class="st">"CSI (IoU)"</span>: <span class="bu">round</span>(h <span class="op">/</span> (h <span class="op">+</span> m <span class="op">+</span> f), <span class="dv">3</span>)}</span>
+<span id="cb15-396"><a href="#cb15-396" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-397"><a href="#cb15-397" aria-hidden="true" tabindex="-1"></a>pd.DataFrame({<span class="st">"downscaled GFDS (R0)"</span>: score(ds_gfds),</span>
+<span id="cb15-398"><a href="#cb15-398" aria-hidden="true" tabindex="-1"></a>              <span class="st">"downscaled SFED (licensed)"</span>: score(ds_sfed),</span>
+<span id="cb15-399"><a href="#cb15-399" aria-hidden="true" tabindex="-1"></a>              <span class="st">"history-only control"</span>: score(ctrl)}).T</span>
+<span id="cb15-400"><a href="#cb15-400" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-401"><a href="#cb15-401" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-402"><a href="#cb15-402" aria-hidden="true" tabindex="-1"></a>Reading guide for the scores, with their machine-learning twins since both</span>
+<span id="cb15-403"><a href="#cb15-403" aria-hidden="true" tabindex="-1"></a>vocabularies are in use on the team: POD (probability of detection, identical</span>
+<span id="cb15-404"><a href="#cb15-404" aria-hidden="true" tabindex="-1"></a>to recall) is the share of radar-flooded cells the map caught; FAR (false</span>
+<span id="cb15-405"><a href="#cb15-405" aria-hidden="true" tabindex="-1"></a>alarm ratio, identical to 1 − precision) is the share of the map's flooded</span>
+<span id="cb15-406"><a href="#cb15-406" aria-hidden="true" tabindex="-1"></a>cells the radar contradicts; CSI (critical success index, identical to</span>
+<span id="cb15-407"><a href="#cb15-407" aria-hidden="true" tabindex="-1"></a>intersection-over-union) folds both into one overlap number.</span>
+<span id="cb15-408"><a href="#cb15-408" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-409"><a href="#cb15-409" aria-hidden="true" tabindex="-1"></a>The result at full 83 m detail is uncomfortable and worth stating plainly:</span>
+<span id="cb15-410"><a href="#cb15-410" aria-hidden="true" tabindex="-1"></a>**the history-only control ties the maps that used satellite data**. The</span>
+<span id="cb15-411"><a href="#cb15-411" aria-hidden="true" tabindex="-1"></a>figure shows a visible difference, yet cell by cell the gains on the</span>
+<span id="cb15-412"><a href="#cb15-412" aria-hidden="true" tabindex="-1"></a>floodplain are cancelled by the block-edge false alarms. Also notable: the</span>
+<span id="cb15-413"><a href="#cb15-413" aria-hidden="true" tabindex="-1"></a>free GFDS input scores within a whisker of the licensed FloodScan input. One</span>
+<span id="cb15-414"><a href="#cb15-414" aria-hidden="true" tabindex="-1"></a>fairness note about the reference: radar under-detects water beneath</span>
+<span id="cb15-415"><a href="#cb15-415" aria-hidden="true" tabindex="-1"></a>vegetation, and we compare three radar snapshots against continuous microwave</span>
+<span id="cb15-416"><a href="#cb15-416" aria-hidden="true" tabindex="-1"></a>coverage, so part of every map's "red" reflects the reference's blind spots</span>
+<span id="cb15-417"><a href="#cb15-417" aria-hidden="true" tabindex="-1"></a>rather than the map's errors.</span>
+<span id="cb15-418"><a href="#cb15-418" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-419"><a href="#cb15-419" aria-hidden="true" tabindex="-1"></a><span class="fu">### Zooming out: where the satellite earns its keep</span></span>
 <span id="cb15-420"><a href="#cb15-420" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-423"><a href="#cb15-423" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
-<span id="cb15-424"><a href="#cb15-424" aria-hidden="true" tabindex="-1"></a><span class="co">#| code-summary: "agreement with radar (correlation) at increasing blur"</span></span>
-<span id="cb15-425"><a href="#cb15-425" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> block_reduce(a, k, m):</span>
-<span id="cb15-426"><a href="#cb15-426" aria-hidden="true" tabindex="-1"></a>    ny, nx <span class="op">=</span> a.shape</span>
-<span id="cb15-427"><a href="#cb15-427" aria-hidden="true" tabindex="-1"></a>    ny2, nx2 <span class="op">=</span> ny <span class="op">//</span> k <span class="op">*</span> k, nx <span class="op">//</span> k <span class="op">*</span> k</span>
-<span id="cb15-428"><a href="#cb15-428" aria-hidden="true" tabindex="-1"></a>    aa <span class="op">=</span> np.where(m, a, np.nan)[:ny2, :nx2].reshape(ny2 <span class="op">//</span> k, k, nx2 <span class="op">//</span> k, k)</span>
-<span id="cb15-429"><a href="#cb15-429" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> np.errstate(invalid<span class="op">=</span><span class="st">"ignore"</span>):</span>
-<span id="cb15-430"><a href="#cb15-430" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> np.nanmean(np.nanmean(aa, axis<span class="op">=</span><span class="dv">3</span>), axis<span class="op">=</span><span class="dv">1</span>)</span>
-<span id="cb15-431"><a href="#cb15-431" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-432"><a href="#cb15-432" aria-hidden="true" tabindex="-1"></a>rows <span class="op">=</span> []</span>
-<span id="cb15-433"><a href="#cb15-433" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> k, label <span class="kw">in</span> [(<span class="dv">1</span>, <span class="st">"83 m"</span>), (<span class="dv">6</span>, <span class="st">"0.5 km"</span>), (<span class="dv">12</span>, <span class="st">"1 km"</span>), (<span class="dv">36</span>, <span class="st">"3 km"</span>), (<span class="dv">72</span>, <span class="st">"6 km"</span>)]:</span>
-<span id="cb15-434"><a href="#cb15-434" aria-hidden="true" tabindex="-1"></a>    g <span class="op">=</span> block_reduce(gfm_wet.astype(<span class="bu">float</span>), k, dom)</span>
-<span id="cb15-435"><a href="#cb15-435" aria-hidden="true" tabindex="-1"></a>    vs <span class="op">=</span> block_reduce(dom.astype(<span class="bu">float</span>), k, np.ones_like(dom, <span class="bu">bool</span>))</span>
-<span id="cb15-436"><a href="#cb15-436" aria-hidden="true" tabindex="-1"></a>    mm <span class="op">=</span> np.isfinite(g) <span class="op">&amp;</span> (vs <span class="op">&gt;</span> <span class="fl">0.5</span>)</span>
-<span id="cb15-437"><a href="#cb15-437" aria-hidden="true" tabindex="-1"></a>    row <span class="op">=</span> {<span class="st">"scale"</span>: label}</span>
-<span id="cb15-438"><a href="#cb15-438" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> name, pred <span class="kw">in</span> [(<span class="st">"GFDS (R0)"</span>, ds_gfds), (<span class="st">"SFED"</span>, ds_sfed),</span>
-<span id="cb15-439"><a href="#cb15-439" aria-hidden="true" tabindex="-1"></a>                       (<span class="st">"history-only control"</span>, ctrl)]:</span>
-<span id="cb15-440"><a href="#cb15-440" aria-hidden="true" tabindex="-1"></a>        p <span class="op">=</span> block_reduce(pred.astype(<span class="bu">float</span>), k, dom)</span>
-<span id="cb15-441"><a href="#cb15-441" aria-hidden="true" tabindex="-1"></a>        ok <span class="op">=</span> mm <span class="op">&amp;</span> np.isfinite(p)</span>
-<span id="cb15-442"><a href="#cb15-442" aria-hidden="true" tabindex="-1"></a>        row[name] <span class="op">=</span> <span class="bu">round</span>(<span class="bu">float</span>(np.corrcoef(p[ok], g[ok])[<span class="dv">0</span>, <span class="dv">1</span>]), <span class="dv">3</span>)</span>
-<span id="cb15-443"><a href="#cb15-443" aria-hidden="true" tabindex="-1"></a>    rows.append(row)</span>
-<span id="cb15-444"><a href="#cb15-444" aria-hidden="true" tabindex="-1"></a>pd.DataFrame(rows).set_index(<span class="st">"scale"</span>)</span>
-<span id="cb15-445"><a href="#cb15-445" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb15-446"><a href="#cb15-446" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-447"><a href="#cb15-447" aria-hidden="true" tabindex="-1"></a>Now the picture is clean. At 83 m all three maps agree with the radar equally</span>
-<span id="cb15-448"><a href="#cb15-448" aria-hidden="true" tabindex="-1"></a>(and equally poorly). At coarser evaluation grids, the two maps built from</span>
-<span id="cb15-449"><a href="#cb15-449" aria-hidden="true" tabindex="-1"></a>2022 satellite data pull ahead of the control by a clear margin from 3 km</span>
-<span id="cb15-450"><a href="#cb15-450" aria-hidden="true" tabindex="-1"></a>out. And at every level, free GFDS sits within a hair of licensed</span>
-<span id="cb15-451"><a href="#cb15-451" aria-hidden="true" tabindex="-1"></a>FloodScan.</span>
-<span id="cb15-452"><a href="#cb15-452" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-453"><a href="#cb15-453" aria-hidden="true" tabindex="-1"></a><span class="fu">## What this settles</span></span>
-<span id="cb15-454"><a href="#cb15-454" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-455"><a href="#cb15-455" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>**The useful product is the calibrated 10 km fraction, not the 83 m map.**</span>
-<span id="cb15-456"><a href="#cb15-456" aria-hidden="true" tabindex="-1"></a>   It gives GFDS physical units, comparable across pixels and summable into</span>
-<span id="cb15-457"><a href="#cb15-457" aria-hidden="true" tabindex="-1"></a>   areas and exposure estimates. That is what admin-level monitoring</span>
-<span id="cb15-458"><a href="#cb15-458" aria-hidden="true" tabindex="-1"></a>   consumes, and it costs nothing.</span>
-<span id="cb15-459"><a href="#cb15-459" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>**The 83 m map is an allocation of the coarse estimate, not an</span>
-<span id="cb15-460"><a href="#cb15-460" aria-hidden="true" tabindex="-1"></a>   observation.** It is a reasonable way to decide which communities inside a</span>
-<span id="cb15-461"><a href="#cb15-461" aria-hidden="true" tabindex="-1"></a>   pixel to count when overlaying population, but it must never be read as</span>
-<span id="cb15-462"><a href="#cb15-462" aria-hidden="true" tabindex="-1"></a>   observed flood extent.</span>
-<span id="cb15-463"><a href="#cb15-463" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>**Both open-source questions survive their first test.** Reproduction:</span>
-<span id="cb15-464"><a href="#cb15-464" aria-hidden="true" tabindex="-1"></a>   the R0 lookup matches the licensed product at 10 km, and through the</span>
-<span id="cb15-465"><a href="#cb15-465" aria-hidden="true" tabindex="-1"></a>   identical allocation the two 83 m maps overlap on 84% of flagged cells</span>
-<span id="cb15-466"><a href="#cb15-466" aria-hidden="true" tabindex="-1"></a>   with a 0.91 area ratio. Independence: the R1 physics calibration needs no</span>
-<span id="cb15-467"><a href="#cb15-467" aria-hidden="true" tabindex="-1"></a>   licensed data at all and reaches r = 0.84 and 99% of peak area against</span>
-<span id="cb15-468"><a href="#cb15-468" aria-hidden="true" tabindex="-1"></a>   the licensed product.</span>
-<span id="cb15-469"><a href="#cb15-469" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-470"><a href="#cb15-470" aria-hidden="true" tabindex="-1"></a>The path from "free copy" to "maybe better" now has concrete work items:</span>
-<span id="cb15-471"><a href="#cb15-471" aria-hidden="true" tabindex="-1"></a>refine R1 (per-pixel emissivity contrast, a seasonal dry reference instead</span>
-<span id="cb15-472"><a href="#cb15-472" aria-hidden="true" tabindex="-1"></a>of one quantile, a tuned minimum-detectable threshold), re-run the</span>
-<span id="cb15-473"><a href="#cb15-473" aria-hidden="true" tabindex="-1"></a>allocation stage on the R1 fraction, train on the 28-year free archive</span>
-<span id="cb15-474"><a href="#cb15-474" aria-hidden="true" tabindex="-1"></a>rather than one season, add terrain to the historical map, and replicate on</span>
-<span id="cb15-475"><a href="#cb15-475" aria-hidden="true" tabindex="-1"></a>a second basin. The free input's finer working resolution (~10 km vs ~22 km)</span>
-<span id="cb15-476"><a href="#cb15-476" aria-hidden="true" tabindex="-1"></a>is the standing structural advantage.</span>
+<span id="cb15-421"><a href="#cb15-421" aria-hidden="true" tabindex="-1"></a>If the fine detail is mostly the historical map, the satellite has to prove</span>
+<span id="cb15-422"><a href="#cb15-422" aria-hidden="true" tabindex="-1"></a>itself at coarser zoom. We blur all the maps to a series of coarser grids</span>
+<span id="cb15-423"><a href="#cb15-423" aria-hidden="true" tabindex="-1"></a>and check how well each tracks the radar:</span>
+<span id="cb15-424"><a href="#cb15-424" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-427"><a href="#cb15-427" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb15-428"><a href="#cb15-428" aria-hidden="true" tabindex="-1"></a><span class="co">#| code-summary: "agreement with radar (correlation) at increasing blur"</span></span>
+<span id="cb15-429"><a href="#cb15-429" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> block_reduce(a, k, m):</span>
+<span id="cb15-430"><a href="#cb15-430" aria-hidden="true" tabindex="-1"></a>    ny, nx <span class="op">=</span> a.shape</span>
+<span id="cb15-431"><a href="#cb15-431" aria-hidden="true" tabindex="-1"></a>    ny2, nx2 <span class="op">=</span> ny <span class="op">//</span> k <span class="op">*</span> k, nx <span class="op">//</span> k <span class="op">*</span> k</span>
+<span id="cb15-432"><a href="#cb15-432" aria-hidden="true" tabindex="-1"></a>    aa <span class="op">=</span> np.where(m, a, np.nan)[:ny2, :nx2].reshape(ny2 <span class="op">//</span> k, k, nx2 <span class="op">//</span> k, k)</span>
+<span id="cb15-433"><a href="#cb15-433" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> np.errstate(invalid<span class="op">=</span><span class="st">"ignore"</span>):</span>
+<span id="cb15-434"><a href="#cb15-434" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> np.nanmean(np.nanmean(aa, axis<span class="op">=</span><span class="dv">3</span>), axis<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb15-435"><a href="#cb15-435" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-436"><a href="#cb15-436" aria-hidden="true" tabindex="-1"></a>rows <span class="op">=</span> []</span>
+<span id="cb15-437"><a href="#cb15-437" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> k, label <span class="kw">in</span> [(<span class="dv">1</span>, <span class="st">"83 m"</span>), (<span class="dv">6</span>, <span class="st">"0.5 km"</span>), (<span class="dv">12</span>, <span class="st">"1 km"</span>), (<span class="dv">36</span>, <span class="st">"3 km"</span>), (<span class="dv">72</span>, <span class="st">"6 km"</span>)]:</span>
+<span id="cb15-438"><a href="#cb15-438" aria-hidden="true" tabindex="-1"></a>    g <span class="op">=</span> block_reduce(gfm_wet.astype(<span class="bu">float</span>), k, dom)</span>
+<span id="cb15-439"><a href="#cb15-439" aria-hidden="true" tabindex="-1"></a>    vs <span class="op">=</span> block_reduce(dom.astype(<span class="bu">float</span>), k, np.ones_like(dom, <span class="bu">bool</span>))</span>
+<span id="cb15-440"><a href="#cb15-440" aria-hidden="true" tabindex="-1"></a>    mm <span class="op">=</span> np.isfinite(g) <span class="op">&amp;</span> (vs <span class="op">&gt;</span> <span class="fl">0.5</span>)</span>
+<span id="cb15-441"><a href="#cb15-441" aria-hidden="true" tabindex="-1"></a>    row <span class="op">=</span> {<span class="st">"scale"</span>: label}</span>
+<span id="cb15-442"><a href="#cb15-442" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> name, pred <span class="kw">in</span> [(<span class="st">"GFDS (R0)"</span>, ds_gfds), (<span class="st">"SFED"</span>, ds_sfed),</span>
+<span id="cb15-443"><a href="#cb15-443" aria-hidden="true" tabindex="-1"></a>                       (<span class="st">"history-only control"</span>, ctrl)]:</span>
+<span id="cb15-444"><a href="#cb15-444" aria-hidden="true" tabindex="-1"></a>        p <span class="op">=</span> block_reduce(pred.astype(<span class="bu">float</span>), k, dom)</span>
+<span id="cb15-445"><a href="#cb15-445" aria-hidden="true" tabindex="-1"></a>        ok <span class="op">=</span> mm <span class="op">&amp;</span> np.isfinite(p)</span>
+<span id="cb15-446"><a href="#cb15-446" aria-hidden="true" tabindex="-1"></a>        row[name] <span class="op">=</span> <span class="bu">round</span>(<span class="bu">float</span>(np.corrcoef(p[ok], g[ok])[<span class="dv">0</span>, <span class="dv">1</span>]), <span class="dv">3</span>)</span>
+<span id="cb15-447"><a href="#cb15-447" aria-hidden="true" tabindex="-1"></a>    rows.append(row)</span>
+<span id="cb15-448"><a href="#cb15-448" aria-hidden="true" tabindex="-1"></a>pd.DataFrame(rows).set_index(<span class="st">"scale"</span>)</span>
+<span id="cb15-449"><a href="#cb15-449" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-450"><a href="#cb15-450" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-451"><a href="#cb15-451" aria-hidden="true" tabindex="-1"></a>Now the picture is clean. At 83 m all three maps agree with the radar equally</span>
+<span id="cb15-452"><a href="#cb15-452" aria-hidden="true" tabindex="-1"></a>(and equally poorly). At coarser evaluation grids, the two maps built from</span>
+<span id="cb15-453"><a href="#cb15-453" aria-hidden="true" tabindex="-1"></a>2022 satellite data pull ahead of the control by a clear margin from 3 km</span>
+<span id="cb15-454"><a href="#cb15-454" aria-hidden="true" tabindex="-1"></a>out. And at every level, free GFDS sits within a hair of licensed</span>
+<span id="cb15-455"><a href="#cb15-455" aria-hidden="true" tabindex="-1"></a>FloodScan.</span>
+<span id="cb15-456"><a href="#cb15-456" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-457"><a href="#cb15-457" aria-hidden="true" tabindex="-1"></a><span class="fu">## What this settles</span></span>
+<span id="cb15-458"><a href="#cb15-458" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-459"><a href="#cb15-459" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>**The useful product is the calibrated 10 km fraction, not the 83 m map.**</span>
+<span id="cb15-460"><a href="#cb15-460" aria-hidden="true" tabindex="-1"></a>   It gives GFDS physical units, comparable across pixels and summable into</span>
+<span id="cb15-461"><a href="#cb15-461" aria-hidden="true" tabindex="-1"></a>   areas and exposure estimates. That is what admin-level monitoring</span>
+<span id="cb15-462"><a href="#cb15-462" aria-hidden="true" tabindex="-1"></a>   consumes, and it costs nothing.</span>
+<span id="cb15-463"><a href="#cb15-463" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>**The 83 m map is an allocation of the coarse estimate, not an</span>
+<span id="cb15-464"><a href="#cb15-464" aria-hidden="true" tabindex="-1"></a>   observation.** It is a reasonable way to decide which communities inside a</span>
+<span id="cb15-465"><a href="#cb15-465" aria-hidden="true" tabindex="-1"></a>   pixel to count when overlaying population, but it must never be read as</span>
+<span id="cb15-466"><a href="#cb15-466" aria-hidden="true" tabindex="-1"></a>   observed flood extent.</span>
+<span id="cb15-467"><a href="#cb15-467" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>**Both open-source questions survive their first test.** Reproduction:</span>
+<span id="cb15-468"><a href="#cb15-468" aria-hidden="true" tabindex="-1"></a>   the R0 lookup matches the licensed product at 10 km, and through the</span>
+<span id="cb15-469"><a href="#cb15-469" aria-hidden="true" tabindex="-1"></a>   identical allocation the two 83 m maps overlap on 84% of flagged cells</span>
+<span id="cb15-470"><a href="#cb15-470" aria-hidden="true" tabindex="-1"></a>   with a 0.91 area ratio. Independence: the R1 physics calibration needs no</span>
+<span id="cb15-471"><a href="#cb15-471" aria-hidden="true" tabindex="-1"></a>   licensed data at all and reaches r = 0.84 and 99% of peak area against</span>
+<span id="cb15-472"><a href="#cb15-472" aria-hidden="true" tabindex="-1"></a>   the licensed product.</span>
+<span id="cb15-473"><a href="#cb15-473" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-474"><a href="#cb15-474" aria-hidden="true" tabindex="-1"></a>The path from "free copy" to "maybe better" now has concrete work items:</span>
+<span id="cb15-475"><a href="#cb15-475" aria-hidden="true" tabindex="-1"></a>refine R1 (per-pixel emissivity contrast, a seasonal dry reference instead</span>
+<span id="cb15-476"><a href="#cb15-476" aria-hidden="true" tabindex="-1"></a>of one quantile, a tuned minimum-detectable threshold), re-run the</span>
+<span id="cb15-477"><a href="#cb15-477" aria-hidden="true" tabindex="-1"></a>allocation stage on the R1 fraction, train on the 28-year free archive</span>
+<span id="cb15-478"><a href="#cb15-478" aria-hidden="true" tabindex="-1"></a>rather than one season, add terrain to the historical map, and replicate on</span>
+<span id="cb15-479"><a href="#cb15-479" aria-hidden="true" tabindex="-1"></a>a second basin. The free input's finer working resolution (~10 km vs ~22 km)</span>
+<span id="cb15-480"><a href="#cb15-480" aria-hidden="true" tabindex="-1"></a>is the standing structural advantage.</span>
 </code></pre></div><button title="Copy to Clipboard" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
 </div></div></div></div></div>
 </div> <!-- /content -->
