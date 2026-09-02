@@ -1,4 +1,4 @@
-# The Production Pipeline {#sec-production-pipeline}
+# Production Pipeline {#sec-production-pipeline}
 
 ---
 jupyter: ds-flood-gfm
@@ -6,7 +6,7 @@ execute:
   eval: false
 ---
 
-The concepts from the previous chapters --- STAC queries, temporal compositing, provenance tracking, and population overlay --- are automated by four CLI scripts in the `scripts/` directory. This chapter walks through the pipeline, shows the actual command-line calls, and showcases the outputs.
+Four CLI scripts in the `scripts/` directory automate the full workflow --- STAC queries, temporal compositing, provenance tracking, and population overlay. This chapter walks through the pipeline, shows the actual command-line calls, and showcases the outputs. The methodology behind each stage is covered in depth in the appendices: @sec-querying-gfm, @sec-temporal-compositing, and @sec-population-exposure.
 
 ```{python}
 import geopandas as gpd
