@@ -401,7 +401,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="test-1-reproduction-the-r0-lookup-vs-floodscan" class="level2" data-number="3.2">
 <h2 data-number="3.2" class="anchored" data-anchor-id="test-1-reproduction-the-r0-lookup-vs-floodscan"><span class="header-section-number">3.2</span> Test 1: reproduction — the R0 lookup vs FloodScan</h2>
 <p>R0 is a per-pixel lookup table. For each 10 km pixel we line up its history of GFDS readings against its history of FloodScan readings: a middling GFDS day maps to that pixel’s typical FloodScan value, an extreme day to an extreme value. To keep ourselves honest, the table is built from half the days (alternating) and every score below comes from the other half, days the table never saw.</p>
-<div id="d08934c0" class="cell" data-execution_count="1">
+<div id="1cd7f69d" class="cell" data-execution_count="1">
 <details class="code-fold">
 <summary>experiments/gfds_downscaling_poc/01_calibrate_fraction.py (method R0)</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">"""POC step 1: calibrate GFDS anomaly -&gt; flooded fraction at 10 km.</span></span>
@@ -546,7 +546,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-140"><a href="#cb1-140" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"wrote"</span>, OUT <span class="op">/</span> <span class="st">"gfds_calibrated_fraction.nc"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
-<div id="7a807dd0" class="cell" data-execution_count="2">
+<div id="3831e065" class="cell" data-execution_count="2">
 <details class="code-fold">
 <summary>load POC results (fails loudly if the scripts haven’t been run)</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
@@ -611,7 +611,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <p>On the unseen days, R0 predicts FloodScan’s value with a typical error of 0.040 (in flooded-share units, over pixels that actually flooded), versus 0.048 for the lazy strategy of always guessing each pixel’s average. A modest margin, honestly earned. The more tangible payoff is that GFDS can now express something it never could before: how many square kilometres are under water.</p>
-<div id="ac5c2b0c" class="cell" data-execution_count="3">
+<div id="f8bdd894" class="cell" data-execution_count="3">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>px_km2 <span class="op">=</span> (<span class="fl">0.09</span> <span class="op">*</span> <span class="fl">111.32</span>) <span class="op">**</span> <span class="dv">2</span></span>
@@ -635,7 +635,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
-<div id="e449de3f" class="cell" data-fig-height="5.5" data-execution_count="4">
+<div id="76c65273" class="cell" data-fig-height="5.5" data-execution_count="4">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>peak <span class="op">=</span> <span class="bu">slice</span>(<span class="st">"2022-10-06"</span>, <span class="st">"2022-10-13"</span>)</span>
@@ -672,11 +672,12 @@ pixel correlation, pixels either product calls wet (&gt;2%): 0.96 (n=1699)
 mean fraction over wet pixels: GFDS-R0 0.114 | FloodScan 0.110</code></pre>
 </div>
 </div>
+<p>A note on why the left panel looks as crisp as the right one, when the raw GFDS anomaly in <a href="05_alternative_flood_sources.html" class="quarto-xref"><span>Chapter 2</span></a> looked visibly blobbier: both panels share the same 10 km grid (SFED is resampled onto it for comparison), but sharpness of <em>pattern</em> is a different thing. The raw anomaly is smooth because the radiometer’s 7 to 16 km footprints smear across grid cells. The R0 map looks sharp because its sharpness is inherited: each pixel’s lookup table reproduces that pixel’s own SFED value range, so a river pixel maps to large fractions and its dry neighbour to small ones, regardless of how smooth the input anomaly is. GFDS supplies the day-to-day dynamics; the spatial crispness here comes from the training target. The independent calibrations in the next section do not get this free sharpening.</p>
 </section>
 <section id="test-2-independence-can-we-calibrate-without-floodscan" class="level2" data-number="3.3">
 <h2 data-number="3.3" class="anchored" data-anchor-id="test-2-independence-can-we-calibrate-without-floodscan"><span class="header-section-number">3.3</span> Test 2: independence — can we calibrate without FloodScan?</h2>
 <p>R0 proves the free input can copy the licensed product, but a copy is not an independent product. AER did not have a reference product when they built FloodScan; they got flooded fraction from brightness temperature with physics: a partly flooded pixel’s signal is a mix of a wet and a dry component, and the mixing equation can be inverted. R1, R2, and R3 are three ways to do that without touching FloodScan, which makes SFED a fully fair external benchmark for them.</p>
-<div id="6ee187e5" class="cell" data-execution_count="5">
+<div id="24c5f3f9" class="cell" data-execution_count="5">
 <details class="code-fold">
 <summary>experiments/gfds_downscaling_poc/06_independent_fractions.py (methods R1, R2, R3)</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co">"""POC step 6: three FloodScan-independent routes from GFDS signal to flooded</span></span>
@@ -831,7 +832,7 @@ mean fraction over wet pixels: GFDS-R0 0.114 | FloodScan 0.110</code></pre>
 <span id="cb6-150"><a href="#cb6-150" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"wrote independent_fraction_areas.png + independent_fractions.npz"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
-<div id="b88a31a0" class="cell" data-execution_count="6">
+<div id="f2c5bd37" class="cell" data-execution_count="6">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>z2 <span class="op">=</span> np.load(POC <span class="op">/</span> <span class="st">"independent_fractions.npz"</span>)</span>
@@ -927,7 +928,7 @@ mean fraction over wet pixels: GFDS-R0 0.114 | FloodScan 0.110</code></pre>
 <h2 data-number="3.4" class="anchored" data-anchor-id="test-3-allocation-the-83-m-maps"><span class="header-section-number">3.4</span> Test 3: allocation — the 83 m maps</h2>
 <p>The remaining stage is spatial. The historical water map is the JRC Global Surface Water dataset (free, ~30 m, fetched here by reading just the needed window over HTTP). This is the same dataset AER names as an ingredient of FloodScan’s downscaling database; their version also folds in topography and hydrology layers, so our single-ingredient version is a floor on what the technique can do, not a replica. Inside each 10 km pixel we sort the small cells from most to least water-prone, exclude cells that are water year-round (lakes, the river channel itself), and mark cells as flooded from the top of the list until the pixel’s estimated share is reached.</p>
 <p>One method note before the maps: the allocation experiments below were run with the <strong>R0 fraction as the GFDS-side input</strong> (they predate the R1 results; re-running them on R1 is listed in the next steps). The scripts:</p>
-<div id="2a25bab4" class="cell" data-execution_count="7">
+<div id="369afb2d" class="cell" data-execution_count="7">
 <details class="code-fold">
 <summary>experiments/gfds_downscaling_poc/02_build_prior.py</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co">"""POC step 2: build the downscaling prior for the confluence AOI.</span></span>
@@ -975,7 +976,7 @@ mean fraction over wet pixels: GFDS-R0 0.114 | FloodScan 0.110</code></pre>
 <span id="cb8-43"><a href="#cb8-43" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"wrote"</span>, OUT <span class="op">/</span> <span class="st">"gsw_prior_aoi.npz"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
-<div id="a4fb5e4c" class="cell" data-execution_count="8">
+<div id="001fb653" class="cell" data-execution_count="8">
 <details class="code-fold">
 <summary>experiments/gfds_downscaling_poc/04_downscale_validate.py</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co">"""POC step 4: downscale the calibrated GFDS fraction to ~83 m and validate</span></span>
@@ -1141,7 +1142,7 @@ mean fraction over wet pixels: GFDS-R0 0.114 | FloodScan 0.110</code></pre>
 <section id="head-to-head-downscaled-gfds-vs-downscaled-floodscan" class="level3" data-number="3.4.1">
 <h3 data-number="3.4.1" class="anchored" data-anchor-id="head-to-head-downscaled-gfds-vs-downscaled-floodscan"><span class="header-section-number">3.4.1</span> Head to head: downscaled GFDS vs downscaled FloodScan</h3>
 <p>Test 1 compared the two products at the calibration stage, on the 10 km grid. This figure is the next stage of the same story: the same two 10 km fractions, now pushed through the identical allocation, compared as 83 m maps over the confluence for the October peak.</p>
-<div id="fe5c4df3" class="cell" data-fig-height="8" data-execution_count="9">
+<div id="f73212b6" class="cell" data-fig-height="8" data-execution_count="9">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> matplotlib.colors <span class="im">import</span> ListedColormap</span>
@@ -1195,7 +1196,7 @@ overlap: 84% of all cells flagged by either map are flagged by both</code></pre>
 <section id="an-outside-check-radar-and-a-control-with-no-satellite-input" class="level3" data-number="3.4.2">
 <h3 data-number="3.4.2" class="anchored" data-anchor-id="an-outside-check-radar-and-a-control-with-no-satellite-input"><span class="header-section-number">3.4.2</span> An outside check: radar, and a control with no satellite input</h3>
 <p>For that we borrow this project’s GFM data: Sentinel-1 radar flood extent for the same dates. Radar is a different product with a different overpass cadence, so disagreement with the daily microwave products is expected and does not crown a winner; its job here is only to arbitrate one narrow question. Alongside the two downscaled maps we score a third: the <strong>history-only control</strong> defined in the methods section, same total flooded area, no 2022 satellite input. If the satellite-based maps cannot beat the control against the radar, the fine detail is coming from the historical map, not from either satellite product.</p>
-<div id="43a454f0" class="cell" data-fig-height="7" data-execution_count="10">
+<div id="f844ea0a" class="cell" data-fig-height="7" data-execution_count="10">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> agreement(pred):</span>
@@ -1230,7 +1231,7 @@ overlap: 84% of all cells flagged by either map are flagged by both</code></pre>
 </div>
 </div>
 </div>
-<div id="6dfe5614" class="cell" data-execution_count="11">
+<div id="3875c5d1" class="cell" data-execution_count="11">
 <details class="code-fold">
 <summary>scores at 83 m</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> score(pred):</span>
@@ -1288,7 +1289,7 @@ overlap: 84% of all cells flagged by either map are flagged by both</code></pre>
 <section id="zooming-out-where-the-satellite-earns-its-keep" class="level3" data-number="3.4.3">
 <h3 data-number="3.4.3" class="anchored" data-anchor-id="zooming-out-where-the-satellite-earns-its-keep"><span class="header-section-number">3.4.3</span> Zooming out: where the satellite earns its keep</h3>
 <p>If the fine detail is mostly the historical map, the satellite has to prove itself at coarser zoom. We blur all the maps to a series of coarser grids and check how well each tracks the radar:</p>
-<div id="bd96e2d8" class="cell" data-execution_count="12">
+<div id="600780bc" class="cell" data-execution_count="12">
 <details class="code-fold">
 <summary>agreement with radar (correlation) at increasing blur</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> block_reduce(a, k, m):</span>
@@ -2005,282 +2006,294 @@ overlap: 84% of all cells flagged by either map are flagged by both</code></pre>
 <span id="cb15-162"><a href="#cb15-162" aria-hidden="true" tabindex="-1"></a>      <span class="ss">f"| FloodScan </span><span class="sc">{</span>s[wet]<span class="sc">.</span>mean()<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
 <span id="cb15-163"><a href="#cb15-163" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb15-164"><a href="#cb15-164" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-165"><a href="#cb15-165" aria-hidden="true" tabindex="-1"></a><span class="fu">## Test 2: independence — can we calibrate without FloodScan?</span></span>
-<span id="cb15-166"><a href="#cb15-166" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-167"><a href="#cb15-167" aria-hidden="true" tabindex="-1"></a>R0 proves the free input can copy the licensed product, but a copy is not an</span>
-<span id="cb15-168"><a href="#cb15-168" aria-hidden="true" tabindex="-1"></a>independent product. AER did not have a reference product when they built</span>
-<span id="cb15-169"><a href="#cb15-169" aria-hidden="true" tabindex="-1"></a>FloodScan; they got flooded fraction from brightness temperature with</span>
-<span id="cb15-170"><a href="#cb15-170" aria-hidden="true" tabindex="-1"></a>physics: a partly flooded pixel's signal is a mix of a wet and a dry</span>
-<span id="cb15-171"><a href="#cb15-171" aria-hidden="true" tabindex="-1"></a>component, and the mixing equation can be inverted. R1, R2, and R3 are three</span>
-<span id="cb15-172"><a href="#cb15-172" aria-hidden="true" tabindex="-1"></a>ways to do that without touching FloodScan, which makes SFED a fully fair</span>
-<span id="cb15-173"><a href="#cb15-173" aria-hidden="true" tabindex="-1"></a>external benchmark for them.</span>
-<span id="cb15-174"><a href="#cb15-174" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-177"><a href="#cb15-177" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
-<span id="cb15-178"><a href="#cb15-178" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
-<span id="cb15-179"><a href="#cb15-179" aria-hidden="true" tabindex="-1"></a><span class="co">#| code-summary: "experiments/gfds_downscaling_poc/06_independent_fractions.py (methods R1, R2, R3)"</span></span>
-<span id="cb15-180"><a href="#cb15-180" aria-hidden="true" tabindex="-1"></a>{{<span class="op">&lt;</span> include ..<span class="op">/</span>experiments<span class="op">/</span>gfds_downscaling_poc<span class="op">/</span><span class="dv">0</span><span class="er">6_independent_fractions</span>.py <span class="op">&gt;</span>}}</span>
-<span id="cb15-181"><a href="#cb15-181" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb15-182"><a href="#cb15-182" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-185"><a href="#cb15-185" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
-<span id="cb15-186"><a href="#cb15-186" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "Flooded area over the confluence AOI: the three FloodScan-free calibrations (R1-R3), the SFED-trained ceiling (R0), and FloodScan itself. R1 (green) reproduces the flood wave and its peak with no FloodScan input; both anchor routes flatline because their anchors never saw a 2022-sized flood."</span></span>
-<span id="cb15-187"><a href="#cb15-187" aria-hidden="true" tabindex="-1"></a>z2 <span class="op">=</span> np.load(POC <span class="op">/</span> <span class="st">"independent_fractions.npz"</span>)</span>
-<span id="cb15-188"><a href="#cb15-188" aria-hidden="true" tabindex="-1"></a>R1, R2, R3, R0, W <span class="op">=</span> (z2[k] <span class="cf">for</span> k <span class="kw">in</span> (<span class="st">"R1"</span>, <span class="st">"R2"</span>, <span class="st">"R3"</span>, <span class="st">"R0"</span>, <span class="st">"W"</span>))</span>
-<span id="cb15-189"><a href="#cb15-189" aria-hidden="true" tabindex="-1"></a>tt <span class="op">=</span> pd.to_datetime(z2[<span class="st">"time"</span>])</span>
-<span id="cb15-190"><a href="#cb15-190" aria-hidden="true" tabindex="-1"></a>pxa <span class="op">=</span> (<span class="fl">0.09</span> <span class="op">*</span> <span class="fl">111.32</span>) <span class="op">**</span> <span class="dv">2</span></span>
-<span id="cb15-191"><a href="#cb15-191" aria-hidden="true" tabindex="-1"></a>okW <span class="op">=</span> np.isfinite(W)</span>
-<span id="cb15-192"><a href="#cb15-192" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="dv">11</span>, <span class="fl">4.5</span>))</span>
-<span id="cb15-193"><a href="#cb15-193" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> P, lab, col <span class="kw">in</span> [(R1, <span class="st">"R1 physics"</span>, <span class="st">"tab:green"</span>),</span>
-<span id="cb15-194"><a href="#cb15-194" aria-hidden="true" tabindex="-1"></a>                    (R2, <span class="st">"R2 optical anchor"</span>, <span class="st">"tab:red"</span>),</span>
-<span id="cb15-195"><a href="#cb15-195" aria-hidden="true" tabindex="-1"></a>                    (R3, <span class="st">"R3 radar anchor"</span>, <span class="st">"tab:orange"</span>),</span>
-<span id="cb15-196"><a href="#cb15-196" aria-hidden="true" tabindex="-1"></a>                    (R0, <span class="st">"R0 SFED-trained (ceiling)"</span>, <span class="st">"tab:grey"</span>)]:</span>
-<span id="cb15-197"><a href="#cb15-197" aria-hidden="true" tabindex="-1"></a>    okp <span class="op">=</span> np.isfinite(P) <span class="op">&amp;</span> okW</span>
-<span id="cb15-198"><a href="#cb15-198" aria-hidden="true" tabindex="-1"></a>    ax.plot(tt, np.nansum(np.where(okp, P, <span class="dv">0</span>), axis<span class="op">=</span><span class="dv">1</span>) <span class="op">*</span> pxa, label<span class="op">=</span>lab,</span>
-<span id="cb15-199"><a href="#cb15-199" aria-hidden="true" tabindex="-1"></a>            color<span class="op">=</span>col, lw<span class="op">=</span><span class="fl">1.2</span>)</span>
-<span id="cb15-200"><a href="#cb15-200" aria-hidden="true" tabindex="-1"></a>ax.plot(tt, np.nansum(np.where(okW, W, <span class="dv">0</span>), axis<span class="op">=</span><span class="dv">1</span>) <span class="op">*</span> pxa,</span>
-<span id="cb15-201"><a href="#cb15-201" aria-hidden="true" tabindex="-1"></a>        label<span class="op">=</span><span class="st">"FloodScan SFED (benchmark)"</span>, color<span class="op">=</span><span class="st">"tab:blue"</span>, lw<span class="op">=</span><span class="dv">2</span>)</span>
-<span id="cb15-202"><a href="#cb15-202" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">"flooded area (km²)"</span>)</span>
-<span id="cb15-203"><a href="#cb15-203" aria-hidden="true" tabindex="-1"></a>ax.legend(fontsize<span class="op">=</span><span class="dv">8</span>)</span>
-<span id="cb15-204"><a href="#cb15-204" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
-<span id="cb15-205"><a href="#cb15-205" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-206"><a href="#cb15-206" aria-hidden="true" tabindex="-1"></a>wet_cells <span class="op">=</span> z2[<span class="st">"wet_cells"</span>]</span>
-<span id="cb15-207"><a href="#cb15-207" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> rscore(P):</span>
-<span id="cb15-208"><a href="#cb15-208" aria-hidden="true" tabindex="-1"></a>    m <span class="op">=</span> np.isfinite(P) <span class="op">&amp;</span> np.isfinite(W) <span class="op">&amp;</span> wet_cells[<span class="va">None</span>, :]</span>
-<span id="cb15-209"><a href="#cb15-209" aria-hidden="true" tabindex="-1"></a>    a_p <span class="op">=</span> np.nansum(np.where(np.isfinite(P) <span class="op">&amp;</span> okW, P, <span class="dv">0</span>), axis<span class="op">=</span><span class="dv">1</span>)</span>
-<span id="cb15-210"><a href="#cb15-210" aria-hidden="true" tabindex="-1"></a>    a_w <span class="op">=</span> np.nansum(np.where(okW, W, <span class="dv">0</span>), axis<span class="op">=</span><span class="dv">1</span>)</span>
-<span id="cb15-211"><a href="#cb15-211" aria-hidden="true" tabindex="-1"></a>    pk <span class="op">=</span> <span class="bu">int</span>(np.nanargmax(a_w))</span>
-<span id="cb15-212"><a href="#cb15-212" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> {<span class="st">"r vs SFED (wet cells)"</span>: <span class="bu">round</span>(<span class="bu">float</span>(np.corrcoef(P[m], W[m])[<span class="dv">0</span>, <span class="dv">1</span>]), <span class="dv">2</span>),</span>
-<span id="cb15-213"><a href="#cb15-213" aria-hidden="true" tabindex="-1"></a>            <span class="st">"area ratio at peak"</span>: <span class="bu">round</span>(<span class="bu">float</span>(a_p[pk] <span class="op">/</span> a_w[pk]), <span class="dv">2</span>)}</span>
-<span id="cb15-214"><a href="#cb15-214" aria-hidden="true" tabindex="-1"></a>r1m <span class="op">=</span> np.where(R1 <span class="op">&gt;=</span> <span class="fl">0.10</span>, R1, <span class="fl">0.0</span>)</span>
-<span id="cb15-215"><a href="#cb15-215" aria-hidden="true" tabindex="-1"></a>pd.DataFrame({<span class="st">"R1 physics"</span>: rscore(R1),</span>
-<span id="cb15-216"><a href="#cb15-216" aria-hidden="true" tabindex="-1"></a>              <span class="st">"R1 physics + minimum-detectable threshold"</span>: rscore(r1m),</span>
-<span id="cb15-217"><a href="#cb15-217" aria-hidden="true" tabindex="-1"></a>              <span class="st">"R2 optical anchor"</span>: rscore(R2),</span>
-<span id="cb15-218"><a href="#cb15-218" aria-hidden="true" tabindex="-1"></a>              <span class="st">"R3 radar anchor"</span>: rscore(R3),</span>
-<span id="cb15-219"><a href="#cb15-219" aria-hidden="true" tabindex="-1"></a>              <span class="st">"R0 SFED-trained (ceiling)"</span>: rscore(R0)}).T</span>
-<span id="cb15-220"><a href="#cb15-220" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb15-221"><a href="#cb15-221" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-222"><a href="#cb15-222" aria-hidden="true" tabindex="-1"></a>The physics route wins, and not narrowly: r = 0.84 against SFED and 99% of</span>
-<span id="cb15-223"><a href="#cb15-223" aria-hidden="true" tabindex="-1"></a>its peak area, from a literature constant and the pixel's own history. The</span>
-<span id="cb15-224"><a href="#cb15-224" aria-hidden="true" tabindex="-1"></a>anchor routes fail for a structural reason worth remembering: 2022 flooded</span>
-<span id="cb15-225"><a href="#cb15-225" aria-hidden="true" tabindex="-1"></a>beyond anything in their anchors' experience, so amplitudes calibrated to</span>
-<span id="cb15-226"><a href="#cb15-226" aria-hidden="true" tabindex="-1"></a>Landsat history or three radar snapshots cap out far too low. You cannot</span>
-<span id="cb15-227"><a href="#cb15-227" aria-hidden="true" tabindex="-1"></a>anchor an extreme to a record that never contained one.</span>
-<span id="cb15-228"><a href="#cb15-228" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-229"><a href="#cb15-229" aria-hidden="true" tabindex="-1"></a>R1's one visible flaw is a dry-season floor: a few hundred km² of low-level</span>
-<span id="cb15-230"><a href="#cb15-230" aria-hidden="true" tabindex="-1"></a>"flood" in June-August where SFED reports almost none, from soil moisture</span>
-<span id="cb15-231"><a href="#cb15-231" aria-hidden="true" tabindex="-1"></a>and seasonal wetness leaking into the signal. FloodScan's Users Guide</span>
-<span id="cb15-232"><a href="#cb15-232" aria-hidden="true" tabindex="-1"></a>documents the identical problem and its fix, a "minimum detectable flooded</span>
-<span id="cb15-233"><a href="#cb15-233" aria-hidden="true" tabindex="-1"></a>fraction (MDFF) threshold" applied to filter "low level flooded fraction</span>
-<span id="cb15-234"><a href="#cb15-234" aria-hidden="true" tabindex="-1"></a>noise" (v05R01, §1.2). Applying the same idea (zero out fractions below</span>
-<span id="cb15-235"><a href="#cb15-235" aria-hidden="true" tabindex="-1"></a>0.10) cuts our June floor to SFED's level while keeping r = 0.83 and 86% of</span>
-<span id="cb15-236"><a href="#cb15-236" aria-hidden="true" tabindex="-1"></a>peak area. Independently rediscovering the need for their threshold is about</span>
-<span id="cb15-237"><a href="#cb15-237" aria-hidden="true" tabindex="-1"></a>as strong a confirmation of the shared physics as one event can give.</span>
-<span id="cb15-238"><a href="#cb15-238" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-239"><a href="#cb15-239" aria-hidden="true" tabindex="-1"></a><span class="fu">## Test 3: allocation — the 83 m maps</span></span>
+<span id="cb15-165"><a href="#cb15-165" aria-hidden="true" tabindex="-1"></a>A note on why the left panel looks as crisp as the right one, when the raw</span>
+<span id="cb15-166"><a href="#cb15-166" aria-hidden="true" tabindex="-1"></a>GFDS anomaly in @sec-alternative-sources looked visibly blobbier: both panels</span>
+<span id="cb15-167"><a href="#cb15-167" aria-hidden="true" tabindex="-1"></a>share the same 10 km grid (SFED is resampled onto it for comparison), but</span>
+<span id="cb15-168"><a href="#cb15-168" aria-hidden="true" tabindex="-1"></a>sharpness of *pattern* is a different thing. The raw anomaly is smooth</span>
+<span id="cb15-169"><a href="#cb15-169" aria-hidden="true" tabindex="-1"></a>because the radiometer's 7 to 16 km footprints smear across grid cells. The</span>
+<span id="cb15-170"><a href="#cb15-170" aria-hidden="true" tabindex="-1"></a>R0 map looks sharp because its sharpness is inherited: each pixel's lookup</span>
+<span id="cb15-171"><a href="#cb15-171" aria-hidden="true" tabindex="-1"></a>table reproduces that pixel's own SFED value range, so a river pixel maps to</span>
+<span id="cb15-172"><a href="#cb15-172" aria-hidden="true" tabindex="-1"></a>large fractions and its dry neighbour to small ones, regardless of how</span>
+<span id="cb15-173"><a href="#cb15-173" aria-hidden="true" tabindex="-1"></a>smooth the input anomaly is. GFDS supplies the day-to-day dynamics; the</span>
+<span id="cb15-174"><a href="#cb15-174" aria-hidden="true" tabindex="-1"></a>spatial crispness here comes from the training target. The independent</span>
+<span id="cb15-175"><a href="#cb15-175" aria-hidden="true" tabindex="-1"></a>calibrations in the next section do not get this free sharpening.</span>
+<span id="cb15-176"><a href="#cb15-176" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-177"><a href="#cb15-177" aria-hidden="true" tabindex="-1"></a><span class="fu">## Test 2: independence — can we calibrate without FloodScan?</span></span>
+<span id="cb15-178"><a href="#cb15-178" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-179"><a href="#cb15-179" aria-hidden="true" tabindex="-1"></a>R0 proves the free input can copy the licensed product, but a copy is not an</span>
+<span id="cb15-180"><a href="#cb15-180" aria-hidden="true" tabindex="-1"></a>independent product. AER did not have a reference product when they built</span>
+<span id="cb15-181"><a href="#cb15-181" aria-hidden="true" tabindex="-1"></a>FloodScan; they got flooded fraction from brightness temperature with</span>
+<span id="cb15-182"><a href="#cb15-182" aria-hidden="true" tabindex="-1"></a>physics: a partly flooded pixel's signal is a mix of a wet and a dry</span>
+<span id="cb15-183"><a href="#cb15-183" aria-hidden="true" tabindex="-1"></a>component, and the mixing equation can be inverted. R1, R2, and R3 are three</span>
+<span id="cb15-184"><a href="#cb15-184" aria-hidden="true" tabindex="-1"></a>ways to do that without touching FloodScan, which makes SFED a fully fair</span>
+<span id="cb15-185"><a href="#cb15-185" aria-hidden="true" tabindex="-1"></a>external benchmark for them.</span>
+<span id="cb15-186"><a href="#cb15-186" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-189"><a href="#cb15-189" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb15-190"><a href="#cb15-190" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
+<span id="cb15-191"><a href="#cb15-191" aria-hidden="true" tabindex="-1"></a><span class="co">#| code-summary: "experiments/gfds_downscaling_poc/06_independent_fractions.py (methods R1, R2, R3)"</span></span>
+<span id="cb15-192"><a href="#cb15-192" aria-hidden="true" tabindex="-1"></a>{{<span class="op">&lt;</span> include ..<span class="op">/</span>experiments<span class="op">/</span>gfds_downscaling_poc<span class="op">/</span><span class="dv">0</span><span class="er">6_independent_fractions</span>.py <span class="op">&gt;</span>}}</span>
+<span id="cb15-193"><a href="#cb15-193" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-194"><a href="#cb15-194" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-197"><a href="#cb15-197" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb15-198"><a href="#cb15-198" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "Flooded area over the confluence AOI: the three FloodScan-free calibrations (R1-R3), the SFED-trained ceiling (R0), and FloodScan itself. R1 (green) reproduces the flood wave and its peak with no FloodScan input; both anchor routes flatline because their anchors never saw a 2022-sized flood."</span></span>
+<span id="cb15-199"><a href="#cb15-199" aria-hidden="true" tabindex="-1"></a>z2 <span class="op">=</span> np.load(POC <span class="op">/</span> <span class="st">"independent_fractions.npz"</span>)</span>
+<span id="cb15-200"><a href="#cb15-200" aria-hidden="true" tabindex="-1"></a>R1, R2, R3, R0, W <span class="op">=</span> (z2[k] <span class="cf">for</span> k <span class="kw">in</span> (<span class="st">"R1"</span>, <span class="st">"R2"</span>, <span class="st">"R3"</span>, <span class="st">"R0"</span>, <span class="st">"W"</span>))</span>
+<span id="cb15-201"><a href="#cb15-201" aria-hidden="true" tabindex="-1"></a>tt <span class="op">=</span> pd.to_datetime(z2[<span class="st">"time"</span>])</span>
+<span id="cb15-202"><a href="#cb15-202" aria-hidden="true" tabindex="-1"></a>pxa <span class="op">=</span> (<span class="fl">0.09</span> <span class="op">*</span> <span class="fl">111.32</span>) <span class="op">**</span> <span class="dv">2</span></span>
+<span id="cb15-203"><a href="#cb15-203" aria-hidden="true" tabindex="-1"></a>okW <span class="op">=</span> np.isfinite(W)</span>
+<span id="cb15-204"><a href="#cb15-204" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="dv">11</span>, <span class="fl">4.5</span>))</span>
+<span id="cb15-205"><a href="#cb15-205" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> P, lab, col <span class="kw">in</span> [(R1, <span class="st">"R1 physics"</span>, <span class="st">"tab:green"</span>),</span>
+<span id="cb15-206"><a href="#cb15-206" aria-hidden="true" tabindex="-1"></a>                    (R2, <span class="st">"R2 optical anchor"</span>, <span class="st">"tab:red"</span>),</span>
+<span id="cb15-207"><a href="#cb15-207" aria-hidden="true" tabindex="-1"></a>                    (R3, <span class="st">"R3 radar anchor"</span>, <span class="st">"tab:orange"</span>),</span>
+<span id="cb15-208"><a href="#cb15-208" aria-hidden="true" tabindex="-1"></a>                    (R0, <span class="st">"R0 SFED-trained (ceiling)"</span>, <span class="st">"tab:grey"</span>)]:</span>
+<span id="cb15-209"><a href="#cb15-209" aria-hidden="true" tabindex="-1"></a>    okp <span class="op">=</span> np.isfinite(P) <span class="op">&amp;</span> okW</span>
+<span id="cb15-210"><a href="#cb15-210" aria-hidden="true" tabindex="-1"></a>    ax.plot(tt, np.nansum(np.where(okp, P, <span class="dv">0</span>), axis<span class="op">=</span><span class="dv">1</span>) <span class="op">*</span> pxa, label<span class="op">=</span>lab,</span>
+<span id="cb15-211"><a href="#cb15-211" aria-hidden="true" tabindex="-1"></a>            color<span class="op">=</span>col, lw<span class="op">=</span><span class="fl">1.2</span>)</span>
+<span id="cb15-212"><a href="#cb15-212" aria-hidden="true" tabindex="-1"></a>ax.plot(tt, np.nansum(np.where(okW, W, <span class="dv">0</span>), axis<span class="op">=</span><span class="dv">1</span>) <span class="op">*</span> pxa,</span>
+<span id="cb15-213"><a href="#cb15-213" aria-hidden="true" tabindex="-1"></a>        label<span class="op">=</span><span class="st">"FloodScan SFED (benchmark)"</span>, color<span class="op">=</span><span class="st">"tab:blue"</span>, lw<span class="op">=</span><span class="dv">2</span>)</span>
+<span id="cb15-214"><a href="#cb15-214" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">"flooded area (km²)"</span>)</span>
+<span id="cb15-215"><a href="#cb15-215" aria-hidden="true" tabindex="-1"></a>ax.legend(fontsize<span class="op">=</span><span class="dv">8</span>)</span>
+<span id="cb15-216"><a href="#cb15-216" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="cb15-217"><a href="#cb15-217" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-218"><a href="#cb15-218" aria-hidden="true" tabindex="-1"></a>wet_cells <span class="op">=</span> z2[<span class="st">"wet_cells"</span>]</span>
+<span id="cb15-219"><a href="#cb15-219" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> rscore(P):</span>
+<span id="cb15-220"><a href="#cb15-220" aria-hidden="true" tabindex="-1"></a>    m <span class="op">=</span> np.isfinite(P) <span class="op">&amp;</span> np.isfinite(W) <span class="op">&amp;</span> wet_cells[<span class="va">None</span>, :]</span>
+<span id="cb15-221"><a href="#cb15-221" aria-hidden="true" tabindex="-1"></a>    a_p <span class="op">=</span> np.nansum(np.where(np.isfinite(P) <span class="op">&amp;</span> okW, P, <span class="dv">0</span>), axis<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb15-222"><a href="#cb15-222" aria-hidden="true" tabindex="-1"></a>    a_w <span class="op">=</span> np.nansum(np.where(okW, W, <span class="dv">0</span>), axis<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb15-223"><a href="#cb15-223" aria-hidden="true" tabindex="-1"></a>    pk <span class="op">=</span> <span class="bu">int</span>(np.nanargmax(a_w))</span>
+<span id="cb15-224"><a href="#cb15-224" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> {<span class="st">"r vs SFED (wet cells)"</span>: <span class="bu">round</span>(<span class="bu">float</span>(np.corrcoef(P[m], W[m])[<span class="dv">0</span>, <span class="dv">1</span>]), <span class="dv">2</span>),</span>
+<span id="cb15-225"><a href="#cb15-225" aria-hidden="true" tabindex="-1"></a>            <span class="st">"area ratio at peak"</span>: <span class="bu">round</span>(<span class="bu">float</span>(a_p[pk] <span class="op">/</span> a_w[pk]), <span class="dv">2</span>)}</span>
+<span id="cb15-226"><a href="#cb15-226" aria-hidden="true" tabindex="-1"></a>r1m <span class="op">=</span> np.where(R1 <span class="op">&gt;=</span> <span class="fl">0.10</span>, R1, <span class="fl">0.0</span>)</span>
+<span id="cb15-227"><a href="#cb15-227" aria-hidden="true" tabindex="-1"></a>pd.DataFrame({<span class="st">"R1 physics"</span>: rscore(R1),</span>
+<span id="cb15-228"><a href="#cb15-228" aria-hidden="true" tabindex="-1"></a>              <span class="st">"R1 physics + minimum-detectable threshold"</span>: rscore(r1m),</span>
+<span id="cb15-229"><a href="#cb15-229" aria-hidden="true" tabindex="-1"></a>              <span class="st">"R2 optical anchor"</span>: rscore(R2),</span>
+<span id="cb15-230"><a href="#cb15-230" aria-hidden="true" tabindex="-1"></a>              <span class="st">"R3 radar anchor"</span>: rscore(R3),</span>
+<span id="cb15-231"><a href="#cb15-231" aria-hidden="true" tabindex="-1"></a>              <span class="st">"R0 SFED-trained (ceiling)"</span>: rscore(R0)}).T</span>
+<span id="cb15-232"><a href="#cb15-232" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-233"><a href="#cb15-233" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-234"><a href="#cb15-234" aria-hidden="true" tabindex="-1"></a>The physics route wins, and not narrowly: r = 0.84 against SFED and 99% of</span>
+<span id="cb15-235"><a href="#cb15-235" aria-hidden="true" tabindex="-1"></a>its peak area, from a literature constant and the pixel's own history. The</span>
+<span id="cb15-236"><a href="#cb15-236" aria-hidden="true" tabindex="-1"></a>anchor routes fail for a structural reason worth remembering: 2022 flooded</span>
+<span id="cb15-237"><a href="#cb15-237" aria-hidden="true" tabindex="-1"></a>beyond anything in their anchors' experience, so amplitudes calibrated to</span>
+<span id="cb15-238"><a href="#cb15-238" aria-hidden="true" tabindex="-1"></a>Landsat history or three radar snapshots cap out far too low. You cannot</span>
+<span id="cb15-239"><a href="#cb15-239" aria-hidden="true" tabindex="-1"></a>anchor an extreme to a record that never contained one.</span>
 <span id="cb15-240"><a href="#cb15-240" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-241"><a href="#cb15-241" aria-hidden="true" tabindex="-1"></a>The remaining stage is spatial. The historical water map is the JRC Global</span>
-<span id="cb15-242"><a href="#cb15-242" aria-hidden="true" tabindex="-1"></a>Surface Water dataset (free, ~30 m, fetched here by reading just the needed</span>
-<span id="cb15-243"><a href="#cb15-243" aria-hidden="true" tabindex="-1"></a>window over HTTP). This is the same dataset AER names as an ingredient of</span>
-<span id="cb15-244"><a href="#cb15-244" aria-hidden="true" tabindex="-1"></a>FloodScan's downscaling database; their version also folds in topography and</span>
-<span id="cb15-245"><a href="#cb15-245" aria-hidden="true" tabindex="-1"></a>hydrology layers, so our single-ingredient version is a floor on what the</span>
-<span id="cb15-246"><a href="#cb15-246" aria-hidden="true" tabindex="-1"></a>technique can do, not a replica. Inside each 10 km pixel we sort the small</span>
-<span id="cb15-247"><a href="#cb15-247" aria-hidden="true" tabindex="-1"></a>cells from most to least water-prone, exclude cells that are water</span>
-<span id="cb15-248"><a href="#cb15-248" aria-hidden="true" tabindex="-1"></a>year-round (lakes, the river channel itself), and mark cells as flooded from</span>
-<span id="cb15-249"><a href="#cb15-249" aria-hidden="true" tabindex="-1"></a>the top of the list until the pixel's estimated share is reached.</span>
+<span id="cb15-241"><a href="#cb15-241" aria-hidden="true" tabindex="-1"></a>R1's one visible flaw is a dry-season floor: a few hundred km² of low-level</span>
+<span id="cb15-242"><a href="#cb15-242" aria-hidden="true" tabindex="-1"></a>"flood" in June-August where SFED reports almost none, from soil moisture</span>
+<span id="cb15-243"><a href="#cb15-243" aria-hidden="true" tabindex="-1"></a>and seasonal wetness leaking into the signal. FloodScan's Users Guide</span>
+<span id="cb15-244"><a href="#cb15-244" aria-hidden="true" tabindex="-1"></a>documents the identical problem and its fix, a "minimum detectable flooded</span>
+<span id="cb15-245"><a href="#cb15-245" aria-hidden="true" tabindex="-1"></a>fraction (MDFF) threshold" applied to filter "low level flooded fraction</span>
+<span id="cb15-246"><a href="#cb15-246" aria-hidden="true" tabindex="-1"></a>noise" (v05R01, §1.2). Applying the same idea (zero out fractions below</span>
+<span id="cb15-247"><a href="#cb15-247" aria-hidden="true" tabindex="-1"></a>0.10) cuts our June floor to SFED's level while keeping r = 0.83 and 86% of</span>
+<span id="cb15-248"><a href="#cb15-248" aria-hidden="true" tabindex="-1"></a>peak area. Independently rediscovering the need for their threshold is about</span>
+<span id="cb15-249"><a href="#cb15-249" aria-hidden="true" tabindex="-1"></a>as strong a confirmation of the shared physics as one event can give.</span>
 <span id="cb15-250"><a href="#cb15-250" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-251"><a href="#cb15-251" aria-hidden="true" tabindex="-1"></a>One method note before the maps: the allocation experiments below were run</span>
-<span id="cb15-252"><a href="#cb15-252" aria-hidden="true" tabindex="-1"></a>with the **R0 fraction as the GFDS-side input** (they predate the R1</span>
-<span id="cb15-253"><a href="#cb15-253" aria-hidden="true" tabindex="-1"></a>results; re-running them on R1 is listed in the next steps). The scripts:</span>
-<span id="cb15-254"><a href="#cb15-254" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-257"><a href="#cb15-257" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
-<span id="cb15-258"><a href="#cb15-258" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
-<span id="cb15-259"><a href="#cb15-259" aria-hidden="true" tabindex="-1"></a><span class="co">#| code-summary: "experiments/gfds_downscaling_poc/02_build_prior.py"</span></span>
-<span id="cb15-260"><a href="#cb15-260" aria-hidden="true" tabindex="-1"></a>{{<span class="op">&lt;</span> include ..<span class="op">/</span>experiments<span class="op">/</span>gfds_downscaling_poc<span class="op">/</span><span class="dv">0</span><span class="er">2_build_prior</span>.py <span class="op">&gt;</span>}}</span>
-<span id="cb15-261"><a href="#cb15-261" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-251"><a href="#cb15-251" aria-hidden="true" tabindex="-1"></a><span class="fu">## Test 3: allocation — the 83 m maps</span></span>
+<span id="cb15-252"><a href="#cb15-252" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-253"><a href="#cb15-253" aria-hidden="true" tabindex="-1"></a>The remaining stage is spatial. The historical water map is the JRC Global</span>
+<span id="cb15-254"><a href="#cb15-254" aria-hidden="true" tabindex="-1"></a>Surface Water dataset (free, ~30 m, fetched here by reading just the needed</span>
+<span id="cb15-255"><a href="#cb15-255" aria-hidden="true" tabindex="-1"></a>window over HTTP). This is the same dataset AER names as an ingredient of</span>
+<span id="cb15-256"><a href="#cb15-256" aria-hidden="true" tabindex="-1"></a>FloodScan's downscaling database; their version also folds in topography and</span>
+<span id="cb15-257"><a href="#cb15-257" aria-hidden="true" tabindex="-1"></a>hydrology layers, so our single-ingredient version is a floor on what the</span>
+<span id="cb15-258"><a href="#cb15-258" aria-hidden="true" tabindex="-1"></a>technique can do, not a replica. Inside each 10 km pixel we sort the small</span>
+<span id="cb15-259"><a href="#cb15-259" aria-hidden="true" tabindex="-1"></a>cells from most to least water-prone, exclude cells that are water</span>
+<span id="cb15-260"><a href="#cb15-260" aria-hidden="true" tabindex="-1"></a>year-round (lakes, the river channel itself), and mark cells as flooded from</span>
+<span id="cb15-261"><a href="#cb15-261" aria-hidden="true" tabindex="-1"></a>the top of the list until the pixel's estimated share is reached.</span>
 <span id="cb15-262"><a href="#cb15-262" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-265"><a href="#cb15-265" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
-<span id="cb15-266"><a href="#cb15-266" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
-<span id="cb15-267"><a href="#cb15-267" aria-hidden="true" tabindex="-1"></a><span class="co">#| code-summary: "experiments/gfds_downscaling_poc/04_downscale_validate.py"</span></span>
-<span id="cb15-268"><a href="#cb15-268" aria-hidden="true" tabindex="-1"></a>{{<span class="op">&lt;</span> include ..<span class="op">/</span>experiments<span class="op">/</span>gfds_downscaling_poc<span class="op">/</span><span class="dv">0</span><span class="er">4_downscale_validate</span>.py <span class="op">&gt;</span>}}</span>
-<span id="cb15-269"><a href="#cb15-269" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb15-270"><a href="#cb15-270" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-271"><a href="#cb15-271" aria-hidden="true" tabindex="-1"></a><span class="fu">### Head to head: downscaled GFDS vs downscaled FloodScan</span></span>
-<span id="cb15-272"><a href="#cb15-272" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-273"><a href="#cb15-273" aria-hidden="true" tabindex="-1"></a>Test 1 compared the two products at the calibration stage, on the 10 km</span>
-<span id="cb15-274"><a href="#cb15-274" aria-hidden="true" tabindex="-1"></a>grid. This figure is the next stage of the same story: the same two 10 km</span>
-<span id="cb15-275"><a href="#cb15-275" aria-hidden="true" tabindex="-1"></a>fractions, now pushed through the identical allocation, compared as 83 m</span>
-<span id="cb15-276"><a href="#cb15-276" aria-hidden="true" tabindex="-1"></a>maps over the confluence for the October peak.</span>
-<span id="cb15-277"><a href="#cb15-277" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-280"><a href="#cb15-280" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
-<span id="cb15-281"><a href="#cb15-281" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "CALIBRATION + ALLOCATION, ~83 m. The same two 10 km fractions from Test 1 after downscaling, Niger-Benue confluence, 6-13 Oct 2022. Blue = both flag flooding, orange = only the FloodScan-based map, red = only the GFDS-based map."</span></span>
-<span id="cb15-282"><a href="#cb15-282" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-height: 8</span></span>
-<span id="cb15-283"><a href="#cb15-283" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> matplotlib.colors <span class="im">import</span> ListedColormap</span>
-<span id="cb15-284"><a href="#cb15-284" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> matplotlib.patches <span class="im">import</span> Patch</span>
-<span id="cb15-285"><a href="#cb15-285" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-286"><a href="#cb15-286" aria-hidden="true" tabindex="-1"></a>z <span class="op">=</span> np.load(POC <span class="op">/</span> <span class="st">"downscale_maps.npz"</span>)</span>
-<span id="cb15-287"><a href="#cb15-287" aria-hidden="true" tabindex="-1"></a>gfm_wet, ds_gfds, ds_sfed, ctrl, dom <span class="op">=</span> (z[k] <span class="cf">for</span> k <span class="kw">in</span></span>
-<span id="cb15-288"><a href="#cb15-288" aria-hidden="true" tabindex="-1"></a>                                        (<span class="st">"gfm_wet"</span>, <span class="st">"ds_gfds"</span>, <span class="st">"ds_sfed"</span>, <span class="st">"ctrl"</span>, <span class="st">"dom"</span>))</span>
-<span id="cb15-289"><a href="#cb15-289" aria-hidden="true" tabindex="-1"></a>ext <span class="op">=</span> [z[<span class="st">"x"</span>].<span class="bu">min</span>(), z[<span class="st">"x"</span>].<span class="bu">max</span>(), z[<span class="st">"y"</span>].<span class="bu">min</span>(), z[<span class="st">"y"</span>].<span class="bu">max</span>()]</span>
-<span id="cb15-290"><a href="#cb15-290" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-291"><a href="#cb15-291" aria-hidden="true" tabindex="-1"></a>cat <span class="op">=</span> np.zeros(ds_gfds.shape, dtype<span class="op">=</span><span class="bu">float</span>)</span>
-<span id="cb15-292"><a href="#cb15-292" aria-hidden="true" tabindex="-1"></a>cat[ds_sfed <span class="op">&amp;</span> ds_gfds] <span class="op">=</span> <span class="dv">1</span></span>
-<span id="cb15-293"><a href="#cb15-293" aria-hidden="true" tabindex="-1"></a>cat[ds_sfed <span class="op">&amp;</span> <span class="op">~</span>ds_gfds] <span class="op">=</span> <span class="dv">2</span></span>
-<span id="cb15-294"><a href="#cb15-294" aria-hidden="true" tabindex="-1"></a>cat[<span class="op">~</span>ds_sfed <span class="op">&amp;</span> ds_gfds] <span class="op">=</span> <span class="dv">3</span></span>
-<span id="cb15-295"><a href="#cb15-295" aria-hidden="true" tabindex="-1"></a>cmap <span class="op">=</span> ListedColormap([<span class="st">"#f7f7f7"</span>, <span class="st">"#2c7fb8"</span>, <span class="st">"#fdae61"</span>, <span class="st">"#d7191c"</span>])</span>
-<span id="cb15-296"><a href="#cb15-296" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="dv">8</span>, <span class="dv">8</span>))</span>
-<span id="cb15-297"><a href="#cb15-297" aria-hidden="true" tabindex="-1"></a>ax.imshow(np.where(dom, cat, np.nan), extent<span class="op">=</span>ext, cmap<span class="op">=</span>cmap,</span>
-<span id="cb15-298"><a href="#cb15-298" aria-hidden="true" tabindex="-1"></a>          vmin<span class="op">=-</span><span class="fl">0.5</span>, vmax<span class="op">=</span><span class="fl">3.5</span>, interpolation<span class="op">=</span><span class="st">"none"</span>)</span>
-<span id="cb15-299"><a href="#cb15-299" aria-hidden="true" tabindex="-1"></a>ax.set_aspect(<span class="st">"equal"</span>)</span>
-<span id="cb15-300"><a href="#cb15-300" aria-hidden="true" tabindex="-1"></a>ax.legend(handles<span class="op">=</span>[</span>
-<span id="cb15-301"><a href="#cb15-301" aria-hidden="true" tabindex="-1"></a>    Patch(color<span class="op">=</span><span class="st">"#2c7fb8"</span>, label<span class="op">=</span><span class="st">"both flag flooding"</span>),</span>
-<span id="cb15-302"><a href="#cb15-302" aria-hidden="true" tabindex="-1"></a>    Patch(color<span class="op">=</span><span class="st">"#fdae61"</span>, label<span class="op">=</span><span class="st">"FloodScan-based only"</span>),</span>
-<span id="cb15-303"><a href="#cb15-303" aria-hidden="true" tabindex="-1"></a>    Patch(color<span class="op">=</span><span class="st">"#d7191c"</span>, label<span class="op">=</span><span class="st">"GFDS-based only"</span>)],</span>
-<span id="cb15-304"><a href="#cb15-304" aria-hidden="true" tabindex="-1"></a>    loc<span class="op">=</span><span class="st">"lower left"</span>, fontsize<span class="op">=</span><span class="dv">9</span>, framealpha<span class="op">=</span><span class="fl">0.9</span>)</span>
-<span id="cb15-305"><a href="#cb15-305" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
-<span id="cb15-306"><a href="#cb15-306" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-307"><a href="#cb15-307" aria-hidden="true" tabindex="-1"></a>both_n <span class="op">=</span> <span class="bu">int</span>((ds_gfds <span class="op">&amp;</span> ds_sfed <span class="op">&amp;</span> dom).<span class="bu">sum</span>())</span>
-<span id="cb15-308"><a href="#cb15-308" aria-hidden="true" tabindex="-1"></a>either_n <span class="op">=</span> <span class="bu">int</span>(((ds_gfds <span class="op">|</span> ds_sfed) <span class="op">&amp;</span> dom).<span class="bu">sum</span>())</span>
-<span id="cb15-309"><a href="#cb15-309" aria-hidden="true" tabindex="-1"></a>a_g <span class="op">=</span> <span class="bu">int</span>((ds_gfds <span class="op">&amp;</span> dom).<span class="bu">sum</span>()) <span class="op">*</span> <span class="fl">0.0835</span><span class="op">**</span><span class="dv">2</span></span>
-<span id="cb15-310"><a href="#cb15-310" aria-hidden="true" tabindex="-1"></a>a_s <span class="op">=</span> <span class="bu">int</span>((ds_sfed <span class="op">&amp;</span> dom).<span class="bu">sum</span>()) <span class="op">*</span> <span class="fl">0.0835</span><span class="op">**</span><span class="dv">2</span></span>
-<span id="cb15-311"><a href="#cb15-311" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"flooded area: GFDS-based </span><span class="sc">{</span>a_g<span class="sc">:,.0f}</span><span class="ss"> km2 | FloodScan-based </span><span class="sc">{</span>a_s<span class="sc">:,.0f}</span><span class="ss"> km2 "</span></span>
-<span id="cb15-312"><a href="#cb15-312" aria-hidden="true" tabindex="-1"></a>      <span class="ss">f"(ratio </span><span class="sc">{</span>a_g<span class="op">/</span>a_s<span class="sc">:.2f}</span><span class="ss">)"</span>)</span>
-<span id="cb15-313"><a href="#cb15-313" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"overlap: </span><span class="sc">{</span>both_n<span class="op">/</span>either_n<span class="sc">:.0%}</span><span class="ss"> of all cells flagged by either map "</span></span>
-<span id="cb15-314"><a href="#cb15-314" aria-hidden="true" tabindex="-1"></a>      <span class="st">"are flagged by both"</span>)</span>
-<span id="cb15-315"><a href="#cb15-315" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb15-316"><a href="#cb15-316" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-317"><a href="#cb15-317" aria-hidden="true" tabindex="-1"></a>The two maps flag nearly the same total area and mostly the same cells; the</span>
-<span id="cb15-318"><a href="#cb15-318" aria-hidden="true" tabindex="-1"></a>disagreements sit at pixel edges where the two 10 km inputs put slightly</span>
-<span id="cb15-319"><a href="#cb15-319" aria-hidden="true" tabindex="-1"></a>different amounts into neighbouring pixels. Through an identical recipe, the</span>
-<span id="cb15-320"><a href="#cb15-320" aria-hidden="true" tabindex="-1"></a>free input substitutes for the licensed one with little visible cost.</span>
-<span id="cb15-321"><a href="#cb15-321" aria-hidden="true" tabindex="-1"></a>Whether either map is *right* is a separate question, which needs a</span>
-<span id="cb15-322"><a href="#cb15-322" aria-hidden="true" tabindex="-1"></a>reference from outside the microwave family.</span>
-<span id="cb15-323"><a href="#cb15-323" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-324"><a href="#cb15-324" aria-hidden="true" tabindex="-1"></a><span class="fu">### An outside check: radar, and a control with no satellite input</span></span>
-<span id="cb15-325"><a href="#cb15-325" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-326"><a href="#cb15-326" aria-hidden="true" tabindex="-1"></a>For that we borrow this project's GFM data: Sentinel-1 radar flood extent</span>
-<span id="cb15-327"><a href="#cb15-327" aria-hidden="true" tabindex="-1"></a>for the same dates. Radar is a different product with a different overpass</span>
-<span id="cb15-328"><a href="#cb15-328" aria-hidden="true" tabindex="-1"></a>cadence, so disagreement with the daily microwave products is expected and</span>
-<span id="cb15-329"><a href="#cb15-329" aria-hidden="true" tabindex="-1"></a>does not crown a winner; its job here is only to arbitrate one narrow</span>
-<span id="cb15-330"><a href="#cb15-330" aria-hidden="true" tabindex="-1"></a>question. Alongside the two downscaled maps we score a third: the</span>
-<span id="cb15-331"><a href="#cb15-331" aria-hidden="true" tabindex="-1"></a>**history-only control** defined in the methods section, same total flooded</span>
-<span id="cb15-332"><a href="#cb15-332" aria-hidden="true" tabindex="-1"></a>area, no 2022 satellite input. If the satellite-based maps cannot beat the</span>
-<span id="cb15-333"><a href="#cb15-333" aria-hidden="true" tabindex="-1"></a>control against the radar, the fine detail is coming from the historical</span>
-<span id="cb15-334"><a href="#cb15-334" aria-hidden="true" tabindex="-1"></a>map, not from either satellite product.</span>
+<span id="cb15-263"><a href="#cb15-263" aria-hidden="true" tabindex="-1"></a>One method note before the maps: the allocation experiments below were run</span>
+<span id="cb15-264"><a href="#cb15-264" aria-hidden="true" tabindex="-1"></a>with the **R0 fraction as the GFDS-side input** (they predate the R1</span>
+<span id="cb15-265"><a href="#cb15-265" aria-hidden="true" tabindex="-1"></a>results; re-running them on R1 is listed in the next steps). The scripts:</span>
+<span id="cb15-266"><a href="#cb15-266" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-269"><a href="#cb15-269" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb15-270"><a href="#cb15-270" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
+<span id="cb15-271"><a href="#cb15-271" aria-hidden="true" tabindex="-1"></a><span class="co">#| code-summary: "experiments/gfds_downscaling_poc/02_build_prior.py"</span></span>
+<span id="cb15-272"><a href="#cb15-272" aria-hidden="true" tabindex="-1"></a>{{<span class="op">&lt;</span> include ..<span class="op">/</span>experiments<span class="op">/</span>gfds_downscaling_poc<span class="op">/</span><span class="dv">0</span><span class="er">2_build_prior</span>.py <span class="op">&gt;</span>}}</span>
+<span id="cb15-273"><a href="#cb15-273" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-274"><a href="#cb15-274" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-277"><a href="#cb15-277" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb15-278"><a href="#cb15-278" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
+<span id="cb15-279"><a href="#cb15-279" aria-hidden="true" tabindex="-1"></a><span class="co">#| code-summary: "experiments/gfds_downscaling_poc/04_downscale_validate.py"</span></span>
+<span id="cb15-280"><a href="#cb15-280" aria-hidden="true" tabindex="-1"></a>{{<span class="op">&lt;</span> include ..<span class="op">/</span>experiments<span class="op">/</span>gfds_downscaling_poc<span class="op">/</span><span class="dv">0</span><span class="er">4_downscale_validate</span>.py <span class="op">&gt;</span>}}</span>
+<span id="cb15-281"><a href="#cb15-281" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-282"><a href="#cb15-282" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-283"><a href="#cb15-283" aria-hidden="true" tabindex="-1"></a><span class="fu">### Head to head: downscaled GFDS vs downscaled FloodScan</span></span>
+<span id="cb15-284"><a href="#cb15-284" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-285"><a href="#cb15-285" aria-hidden="true" tabindex="-1"></a>Test 1 compared the two products at the calibration stage, on the 10 km</span>
+<span id="cb15-286"><a href="#cb15-286" aria-hidden="true" tabindex="-1"></a>grid. This figure is the next stage of the same story: the same two 10 km</span>
+<span id="cb15-287"><a href="#cb15-287" aria-hidden="true" tabindex="-1"></a>fractions, now pushed through the identical allocation, compared as 83 m</span>
+<span id="cb15-288"><a href="#cb15-288" aria-hidden="true" tabindex="-1"></a>maps over the confluence for the October peak.</span>
+<span id="cb15-289"><a href="#cb15-289" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-292"><a href="#cb15-292" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb15-293"><a href="#cb15-293" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "CALIBRATION + ALLOCATION, ~83 m. The same two 10 km fractions from Test 1 after downscaling, Niger-Benue confluence, 6-13 Oct 2022. Blue = both flag flooding, orange = only the FloodScan-based map, red = only the GFDS-based map."</span></span>
+<span id="cb15-294"><a href="#cb15-294" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-height: 8</span></span>
+<span id="cb15-295"><a href="#cb15-295" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> matplotlib.colors <span class="im">import</span> ListedColormap</span>
+<span id="cb15-296"><a href="#cb15-296" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> matplotlib.patches <span class="im">import</span> Patch</span>
+<span id="cb15-297"><a href="#cb15-297" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-298"><a href="#cb15-298" aria-hidden="true" tabindex="-1"></a>z <span class="op">=</span> np.load(POC <span class="op">/</span> <span class="st">"downscale_maps.npz"</span>)</span>
+<span id="cb15-299"><a href="#cb15-299" aria-hidden="true" tabindex="-1"></a>gfm_wet, ds_gfds, ds_sfed, ctrl, dom <span class="op">=</span> (z[k] <span class="cf">for</span> k <span class="kw">in</span></span>
+<span id="cb15-300"><a href="#cb15-300" aria-hidden="true" tabindex="-1"></a>                                        (<span class="st">"gfm_wet"</span>, <span class="st">"ds_gfds"</span>, <span class="st">"ds_sfed"</span>, <span class="st">"ctrl"</span>, <span class="st">"dom"</span>))</span>
+<span id="cb15-301"><a href="#cb15-301" aria-hidden="true" tabindex="-1"></a>ext <span class="op">=</span> [z[<span class="st">"x"</span>].<span class="bu">min</span>(), z[<span class="st">"x"</span>].<span class="bu">max</span>(), z[<span class="st">"y"</span>].<span class="bu">min</span>(), z[<span class="st">"y"</span>].<span class="bu">max</span>()]</span>
+<span id="cb15-302"><a href="#cb15-302" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-303"><a href="#cb15-303" aria-hidden="true" tabindex="-1"></a>cat <span class="op">=</span> np.zeros(ds_gfds.shape, dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb15-304"><a href="#cb15-304" aria-hidden="true" tabindex="-1"></a>cat[ds_sfed <span class="op">&amp;</span> ds_gfds] <span class="op">=</span> <span class="dv">1</span></span>
+<span id="cb15-305"><a href="#cb15-305" aria-hidden="true" tabindex="-1"></a>cat[ds_sfed <span class="op">&amp;</span> <span class="op">~</span>ds_gfds] <span class="op">=</span> <span class="dv">2</span></span>
+<span id="cb15-306"><a href="#cb15-306" aria-hidden="true" tabindex="-1"></a>cat[<span class="op">~</span>ds_sfed <span class="op">&amp;</span> ds_gfds] <span class="op">=</span> <span class="dv">3</span></span>
+<span id="cb15-307"><a href="#cb15-307" aria-hidden="true" tabindex="-1"></a>cmap <span class="op">=</span> ListedColormap([<span class="st">"#f7f7f7"</span>, <span class="st">"#2c7fb8"</span>, <span class="st">"#fdae61"</span>, <span class="st">"#d7191c"</span>])</span>
+<span id="cb15-308"><a href="#cb15-308" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="dv">8</span>, <span class="dv">8</span>))</span>
+<span id="cb15-309"><a href="#cb15-309" aria-hidden="true" tabindex="-1"></a>ax.imshow(np.where(dom, cat, np.nan), extent<span class="op">=</span>ext, cmap<span class="op">=</span>cmap,</span>
+<span id="cb15-310"><a href="#cb15-310" aria-hidden="true" tabindex="-1"></a>          vmin<span class="op">=-</span><span class="fl">0.5</span>, vmax<span class="op">=</span><span class="fl">3.5</span>, interpolation<span class="op">=</span><span class="st">"none"</span>)</span>
+<span id="cb15-311"><a href="#cb15-311" aria-hidden="true" tabindex="-1"></a>ax.set_aspect(<span class="st">"equal"</span>)</span>
+<span id="cb15-312"><a href="#cb15-312" aria-hidden="true" tabindex="-1"></a>ax.legend(handles<span class="op">=</span>[</span>
+<span id="cb15-313"><a href="#cb15-313" aria-hidden="true" tabindex="-1"></a>    Patch(color<span class="op">=</span><span class="st">"#2c7fb8"</span>, label<span class="op">=</span><span class="st">"both flag flooding"</span>),</span>
+<span id="cb15-314"><a href="#cb15-314" aria-hidden="true" tabindex="-1"></a>    Patch(color<span class="op">=</span><span class="st">"#fdae61"</span>, label<span class="op">=</span><span class="st">"FloodScan-based only"</span>),</span>
+<span id="cb15-315"><a href="#cb15-315" aria-hidden="true" tabindex="-1"></a>    Patch(color<span class="op">=</span><span class="st">"#d7191c"</span>, label<span class="op">=</span><span class="st">"GFDS-based only"</span>)],</span>
+<span id="cb15-316"><a href="#cb15-316" aria-hidden="true" tabindex="-1"></a>    loc<span class="op">=</span><span class="st">"lower left"</span>, fontsize<span class="op">=</span><span class="dv">9</span>, framealpha<span class="op">=</span><span class="fl">0.9</span>)</span>
+<span id="cb15-317"><a href="#cb15-317" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="cb15-318"><a href="#cb15-318" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-319"><a href="#cb15-319" aria-hidden="true" tabindex="-1"></a>both_n <span class="op">=</span> <span class="bu">int</span>((ds_gfds <span class="op">&amp;</span> ds_sfed <span class="op">&amp;</span> dom).<span class="bu">sum</span>())</span>
+<span id="cb15-320"><a href="#cb15-320" aria-hidden="true" tabindex="-1"></a>either_n <span class="op">=</span> <span class="bu">int</span>(((ds_gfds <span class="op">|</span> ds_sfed) <span class="op">&amp;</span> dom).<span class="bu">sum</span>())</span>
+<span id="cb15-321"><a href="#cb15-321" aria-hidden="true" tabindex="-1"></a>a_g <span class="op">=</span> <span class="bu">int</span>((ds_gfds <span class="op">&amp;</span> dom).<span class="bu">sum</span>()) <span class="op">*</span> <span class="fl">0.0835</span><span class="op">**</span><span class="dv">2</span></span>
+<span id="cb15-322"><a href="#cb15-322" aria-hidden="true" tabindex="-1"></a>a_s <span class="op">=</span> <span class="bu">int</span>((ds_sfed <span class="op">&amp;</span> dom).<span class="bu">sum</span>()) <span class="op">*</span> <span class="fl">0.0835</span><span class="op">**</span><span class="dv">2</span></span>
+<span id="cb15-323"><a href="#cb15-323" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"flooded area: GFDS-based </span><span class="sc">{</span>a_g<span class="sc">:,.0f}</span><span class="ss"> km2 | FloodScan-based </span><span class="sc">{</span>a_s<span class="sc">:,.0f}</span><span class="ss"> km2 "</span></span>
+<span id="cb15-324"><a href="#cb15-324" aria-hidden="true" tabindex="-1"></a>      <span class="ss">f"(ratio </span><span class="sc">{</span>a_g<span class="op">/</span>a_s<span class="sc">:.2f}</span><span class="ss">)"</span>)</span>
+<span id="cb15-325"><a href="#cb15-325" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"overlap: </span><span class="sc">{</span>both_n<span class="op">/</span>either_n<span class="sc">:.0%}</span><span class="ss"> of all cells flagged by either map "</span></span>
+<span id="cb15-326"><a href="#cb15-326" aria-hidden="true" tabindex="-1"></a>      <span class="st">"are flagged by both"</span>)</span>
+<span id="cb15-327"><a href="#cb15-327" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-328"><a href="#cb15-328" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-329"><a href="#cb15-329" aria-hidden="true" tabindex="-1"></a>The two maps flag nearly the same total area and mostly the same cells; the</span>
+<span id="cb15-330"><a href="#cb15-330" aria-hidden="true" tabindex="-1"></a>disagreements sit at pixel edges where the two 10 km inputs put slightly</span>
+<span id="cb15-331"><a href="#cb15-331" aria-hidden="true" tabindex="-1"></a>different amounts into neighbouring pixels. Through an identical recipe, the</span>
+<span id="cb15-332"><a href="#cb15-332" aria-hidden="true" tabindex="-1"></a>free input substitutes for the licensed one with little visible cost.</span>
+<span id="cb15-333"><a href="#cb15-333" aria-hidden="true" tabindex="-1"></a>Whether either map is *right* is a separate question, which needs a</span>
+<span id="cb15-334"><a href="#cb15-334" aria-hidden="true" tabindex="-1"></a>reference from outside the microwave family.</span>
 <span id="cb15-335"><a href="#cb15-335" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-338"><a href="#cb15-338" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
-<span id="cb15-339"><a href="#cb15-339" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "Niger-Benue confluence, 6-13 Oct 2022, ~83 m. Each panel compares one map against the radar: blue = both flag flooding, orange = radar flags flooding the map missed, red = the map flags flooding the radar did not see. Left: downscaled GFDS (R0 fraction). Right: the history-only control. GFDS converts orange to blue across the wide flooding south of the confluence, at the cost of red false alarms in rectangular blocks at pixel edges."</span></span>
-<span id="cb15-340"><a href="#cb15-340" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-height: 7</span></span>
-<span id="cb15-341"><a href="#cb15-341" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> agreement(pred):</span>
-<span id="cb15-342"><a href="#cb15-342" aria-hidden="true" tabindex="-1"></a>    cat <span class="op">=</span> np.zeros(pred.shape, dtype<span class="op">=</span><span class="bu">float</span>)          <span class="co"># 0: dry in both</span></span>
-<span id="cb15-343"><a href="#cb15-343" aria-hidden="true" tabindex="-1"></a>    cat[gfm_wet <span class="op">&amp;</span> pred] <span class="op">=</span> <span class="dv">1</span>                           <span class="co"># both wet</span></span>
-<span id="cb15-344"><a href="#cb15-344" aria-hidden="true" tabindex="-1"></a>    cat[gfm_wet <span class="op">&amp;</span> <span class="op">~</span>pred] <span class="op">=</span> <span class="dv">2</span>                          <span class="co"># radar only</span></span>
-<span id="cb15-345"><a href="#cb15-345" aria-hidden="true" tabindex="-1"></a>    cat[<span class="op">~</span>gfm_wet <span class="op">&amp;</span> pred] <span class="op">=</span> <span class="dv">3</span>                          <span class="co"># map only</span></span>
-<span id="cb15-346"><a href="#cb15-346" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> np.where(dom, cat, np.nan)</span>
+<span id="cb15-336"><a href="#cb15-336" aria-hidden="true" tabindex="-1"></a><span class="fu">### An outside check: radar, and a control with no satellite input</span></span>
+<span id="cb15-337"><a href="#cb15-337" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-338"><a href="#cb15-338" aria-hidden="true" tabindex="-1"></a>For that we borrow this project's GFM data: Sentinel-1 radar flood extent</span>
+<span id="cb15-339"><a href="#cb15-339" aria-hidden="true" tabindex="-1"></a>for the same dates. Radar is a different product with a different overpass</span>
+<span id="cb15-340"><a href="#cb15-340" aria-hidden="true" tabindex="-1"></a>cadence, so disagreement with the daily microwave products is expected and</span>
+<span id="cb15-341"><a href="#cb15-341" aria-hidden="true" tabindex="-1"></a>does not crown a winner; its job here is only to arbitrate one narrow</span>
+<span id="cb15-342"><a href="#cb15-342" aria-hidden="true" tabindex="-1"></a>question. Alongside the two downscaled maps we score a third: the</span>
+<span id="cb15-343"><a href="#cb15-343" aria-hidden="true" tabindex="-1"></a>**history-only control** defined in the methods section, same total flooded</span>
+<span id="cb15-344"><a href="#cb15-344" aria-hidden="true" tabindex="-1"></a>area, no 2022 satellite input. If the satellite-based maps cannot beat the</span>
+<span id="cb15-345"><a href="#cb15-345" aria-hidden="true" tabindex="-1"></a>control against the radar, the fine detail is coming from the historical</span>
+<span id="cb15-346"><a href="#cb15-346" aria-hidden="true" tabindex="-1"></a>map, not from either satellite product.</span>
 <span id="cb15-347"><a href="#cb15-347" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-348"><a href="#cb15-348" aria-hidden="true" tabindex="-1"></a>cmap <span class="op">=</span> ListedColormap([<span class="st">"#f7f7f7"</span>, <span class="st">"#2c7fb8"</span>, <span class="st">"#fdae61"</span>, <span class="st">"#d7191c"</span>])</span>
-<span id="cb15-349"><a href="#cb15-349" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">13</span>, <span class="dv">7</span>), sharex<span class="op">=</span><span class="va">True</span>, sharey<span class="op">=</span><span class="va">True</span>)</span>
-<span id="cb15-350"><a href="#cb15-350" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> ax, pred, title <span class="kw">in</span> [(axes[<span class="dv">0</span>], ds_gfds, <span class="st">"downscaled GFDS (R0) vs radar"</span>),</span>
-<span id="cb15-351"><a href="#cb15-351" aria-hidden="true" tabindex="-1"></a>                        (axes[<span class="dv">1</span>], ctrl, <span class="st">"history-only control vs radar"</span>)]:</span>
-<span id="cb15-352"><a href="#cb15-352" aria-hidden="true" tabindex="-1"></a>    ax.imshow(agreement(pred), extent<span class="op">=</span>ext, cmap<span class="op">=</span>cmap, vmin<span class="op">=-</span><span class="fl">0.5</span>, vmax<span class="op">=</span><span class="fl">3.5</span>,</span>
-<span id="cb15-353"><a href="#cb15-353" aria-hidden="true" tabindex="-1"></a>              interpolation<span class="op">=</span><span class="st">"none"</span>)</span>
-<span id="cb15-354"><a href="#cb15-354" aria-hidden="true" tabindex="-1"></a>    ax.set_title(title, fontsize<span class="op">=</span><span class="dv">11</span>)</span>
-<span id="cb15-355"><a href="#cb15-355" aria-hidden="true" tabindex="-1"></a>    ax.set_aspect(<span class="st">"equal"</span>)</span>
-<span id="cb15-356"><a href="#cb15-356" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].legend(handles<span class="op">=</span>[</span>
-<span id="cb15-357"><a href="#cb15-357" aria-hidden="true" tabindex="-1"></a>    Patch(color<span class="op">=</span><span class="st">"#2c7fb8"</span>, label<span class="op">=</span><span class="st">"both flooded (hit)"</span>),</span>
-<span id="cb15-358"><a href="#cb15-358" aria-hidden="true" tabindex="-1"></a>    Patch(color<span class="op">=</span><span class="st">"#fdae61"</span>, label<span class="op">=</span><span class="st">"radar flooded, this map dry (miss)"</span>),</span>
-<span id="cb15-359"><a href="#cb15-359" aria-hidden="true" tabindex="-1"></a>    Patch(color<span class="op">=</span><span class="st">"#d7191c"</span>, label<span class="op">=</span><span class="st">"this map flooded, radar dry (false alarm)"</span>)],</span>
-<span id="cb15-360"><a href="#cb15-360" aria-hidden="true" tabindex="-1"></a>    loc<span class="op">=</span><span class="st">"lower left"</span>, fontsize<span class="op">=</span><span class="dv">8</span>, framealpha<span class="op">=</span><span class="fl">0.9</span>)</span>
-<span id="cb15-361"><a href="#cb15-361" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
-<span id="cb15-362"><a href="#cb15-362" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
-<span id="cb15-363"><a href="#cb15-363" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb15-364"><a href="#cb15-364" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-367"><a href="#cb15-367" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
-<span id="cb15-368"><a href="#cb15-368" aria-hidden="true" tabindex="-1"></a><span class="co">#| code-summary: "scores at 83 m"</span></span>
-<span id="cb15-369"><a href="#cb15-369" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> score(pred):</span>
-<span id="cb15-370"><a href="#cb15-370" aria-hidden="true" tabindex="-1"></a>    h <span class="op">=</span> <span class="bu">int</span>((pred <span class="op">&amp;</span> gfm_wet <span class="op">&amp;</span> dom).<span class="bu">sum</span>())</span>
-<span id="cb15-371"><a href="#cb15-371" aria-hidden="true" tabindex="-1"></a>    f <span class="op">=</span> <span class="bu">int</span>((pred <span class="op">&amp;</span> <span class="op">~</span>gfm_wet <span class="op">&amp;</span> dom).<span class="bu">sum</span>())</span>
-<span id="cb15-372"><a href="#cb15-372" aria-hidden="true" tabindex="-1"></a>    m <span class="op">=</span> <span class="bu">int</span>((<span class="op">~</span>pred <span class="op">&amp;</span> gfm_wet <span class="op">&amp;</span> dom).<span class="bu">sum</span>())</span>
-<span id="cb15-373"><a href="#cb15-373" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> {<span class="st">"POD"</span>: <span class="bu">round</span>(h <span class="op">/</span> (h <span class="op">+</span> m), <span class="dv">3</span>), <span class="st">"FAR"</span>: <span class="bu">round</span>(f <span class="op">/</span> (h <span class="op">+</span> f), <span class="dv">3</span>),</span>
-<span id="cb15-374"><a href="#cb15-374" aria-hidden="true" tabindex="-1"></a>            <span class="st">"CSI"</span>: <span class="bu">round</span>(h <span class="op">/</span> (h <span class="op">+</span> m <span class="op">+</span> f), <span class="dv">3</span>)}</span>
-<span id="cb15-375"><a href="#cb15-375" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-376"><a href="#cb15-376" aria-hidden="true" tabindex="-1"></a>pd.DataFrame({<span class="st">"downscaled GFDS (R0)"</span>: score(ds_gfds),</span>
-<span id="cb15-377"><a href="#cb15-377" aria-hidden="true" tabindex="-1"></a>              <span class="st">"downscaled SFED (licensed)"</span>: score(ds_sfed),</span>
-<span id="cb15-378"><a href="#cb15-378" aria-hidden="true" tabindex="-1"></a>              <span class="st">"history-only control"</span>: score(ctrl)}).T</span>
-<span id="cb15-379"><a href="#cb15-379" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb15-380"><a href="#cb15-380" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-381"><a href="#cb15-381" aria-hidden="true" tabindex="-1"></a>Reading guide for the scores: POD is the share of radar-flooded cells the map</span>
-<span id="cb15-382"><a href="#cb15-382" aria-hidden="true" tabindex="-1"></a>caught, FAR is the share of the map's flooded cells the radar contradicts,</span>
-<span id="cb15-383"><a href="#cb15-383" aria-hidden="true" tabindex="-1"></a>and CSI folds both into one overlap number.</span>
-<span id="cb15-384"><a href="#cb15-384" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-385"><a href="#cb15-385" aria-hidden="true" tabindex="-1"></a>The result at full 83 m detail is uncomfortable and worth stating plainly:</span>
-<span id="cb15-386"><a href="#cb15-386" aria-hidden="true" tabindex="-1"></a>**the history-only control ties the maps that used satellite data**. The</span>
-<span id="cb15-387"><a href="#cb15-387" aria-hidden="true" tabindex="-1"></a>figure shows a visible difference, yet cell by cell the gains on the</span>
-<span id="cb15-388"><a href="#cb15-388" aria-hidden="true" tabindex="-1"></a>floodplain are cancelled by the block-edge false alarms. Also notable: the</span>
-<span id="cb15-389"><a href="#cb15-389" aria-hidden="true" tabindex="-1"></a>free GFDS input scores within a whisker of the licensed FloodScan input. One</span>
-<span id="cb15-390"><a href="#cb15-390" aria-hidden="true" tabindex="-1"></a>fairness note about the reference: radar under-detects water beneath</span>
-<span id="cb15-391"><a href="#cb15-391" aria-hidden="true" tabindex="-1"></a>vegetation, and we compare three radar snapshots against continuous microwave</span>
-<span id="cb15-392"><a href="#cb15-392" aria-hidden="true" tabindex="-1"></a>coverage, so part of every map's "red" reflects the reference's blind spots</span>
-<span id="cb15-393"><a href="#cb15-393" aria-hidden="true" tabindex="-1"></a>rather than the map's errors.</span>
-<span id="cb15-394"><a href="#cb15-394" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-395"><a href="#cb15-395" aria-hidden="true" tabindex="-1"></a><span class="fu">### Zooming out: where the satellite earns its keep</span></span>
+<span id="cb15-350"><a href="#cb15-350" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb15-351"><a href="#cb15-351" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "Niger-Benue confluence, 6-13 Oct 2022, ~83 m. Each panel compares one map against the radar: blue = both flag flooding, orange = radar flags flooding the map missed, red = the map flags flooding the radar did not see. Left: downscaled GFDS (R0 fraction). Right: the history-only control. GFDS converts orange to blue across the wide flooding south of the confluence, at the cost of red false alarms in rectangular blocks at pixel edges."</span></span>
+<span id="cb15-352"><a href="#cb15-352" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-height: 7</span></span>
+<span id="cb15-353"><a href="#cb15-353" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> agreement(pred):</span>
+<span id="cb15-354"><a href="#cb15-354" aria-hidden="true" tabindex="-1"></a>    cat <span class="op">=</span> np.zeros(pred.shape, dtype<span class="op">=</span><span class="bu">float</span>)          <span class="co"># 0: dry in both</span></span>
+<span id="cb15-355"><a href="#cb15-355" aria-hidden="true" tabindex="-1"></a>    cat[gfm_wet <span class="op">&amp;</span> pred] <span class="op">=</span> <span class="dv">1</span>                           <span class="co"># both wet</span></span>
+<span id="cb15-356"><a href="#cb15-356" aria-hidden="true" tabindex="-1"></a>    cat[gfm_wet <span class="op">&amp;</span> <span class="op">~</span>pred] <span class="op">=</span> <span class="dv">2</span>                          <span class="co"># radar only</span></span>
+<span id="cb15-357"><a href="#cb15-357" aria-hidden="true" tabindex="-1"></a>    cat[<span class="op">~</span>gfm_wet <span class="op">&amp;</span> pred] <span class="op">=</span> <span class="dv">3</span>                          <span class="co"># map only</span></span>
+<span id="cb15-358"><a href="#cb15-358" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> np.where(dom, cat, np.nan)</span>
+<span id="cb15-359"><a href="#cb15-359" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-360"><a href="#cb15-360" aria-hidden="true" tabindex="-1"></a>cmap <span class="op">=</span> ListedColormap([<span class="st">"#f7f7f7"</span>, <span class="st">"#2c7fb8"</span>, <span class="st">"#fdae61"</span>, <span class="st">"#d7191c"</span>])</span>
+<span id="cb15-361"><a href="#cb15-361" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">13</span>, <span class="dv">7</span>), sharex<span class="op">=</span><span class="va">True</span>, sharey<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb15-362"><a href="#cb15-362" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> ax, pred, title <span class="kw">in</span> [(axes[<span class="dv">0</span>], ds_gfds, <span class="st">"downscaled GFDS (R0) vs radar"</span>),</span>
+<span id="cb15-363"><a href="#cb15-363" aria-hidden="true" tabindex="-1"></a>                        (axes[<span class="dv">1</span>], ctrl, <span class="st">"history-only control vs radar"</span>)]:</span>
+<span id="cb15-364"><a href="#cb15-364" aria-hidden="true" tabindex="-1"></a>    ax.imshow(agreement(pred), extent<span class="op">=</span>ext, cmap<span class="op">=</span>cmap, vmin<span class="op">=-</span><span class="fl">0.5</span>, vmax<span class="op">=</span><span class="fl">3.5</span>,</span>
+<span id="cb15-365"><a href="#cb15-365" aria-hidden="true" tabindex="-1"></a>              interpolation<span class="op">=</span><span class="st">"none"</span>)</span>
+<span id="cb15-366"><a href="#cb15-366" aria-hidden="true" tabindex="-1"></a>    ax.set_title(title, fontsize<span class="op">=</span><span class="dv">11</span>)</span>
+<span id="cb15-367"><a href="#cb15-367" aria-hidden="true" tabindex="-1"></a>    ax.set_aspect(<span class="st">"equal"</span>)</span>
+<span id="cb15-368"><a href="#cb15-368" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].legend(handles<span class="op">=</span>[</span>
+<span id="cb15-369"><a href="#cb15-369" aria-hidden="true" tabindex="-1"></a>    Patch(color<span class="op">=</span><span class="st">"#2c7fb8"</span>, label<span class="op">=</span><span class="st">"both flooded (hit)"</span>),</span>
+<span id="cb15-370"><a href="#cb15-370" aria-hidden="true" tabindex="-1"></a>    Patch(color<span class="op">=</span><span class="st">"#fdae61"</span>, label<span class="op">=</span><span class="st">"radar flooded, this map dry (miss)"</span>),</span>
+<span id="cb15-371"><a href="#cb15-371" aria-hidden="true" tabindex="-1"></a>    Patch(color<span class="op">=</span><span class="st">"#d7191c"</span>, label<span class="op">=</span><span class="st">"this map flooded, radar dry (false alarm)"</span>)],</span>
+<span id="cb15-372"><a href="#cb15-372" aria-hidden="true" tabindex="-1"></a>    loc<span class="op">=</span><span class="st">"lower left"</span>, fontsize<span class="op">=</span><span class="dv">8</span>, framealpha<span class="op">=</span><span class="fl">0.9</span>)</span>
+<span id="cb15-373"><a href="#cb15-373" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb15-374"><a href="#cb15-374" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="cb15-375"><a href="#cb15-375" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-376"><a href="#cb15-376" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-379"><a href="#cb15-379" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb15-380"><a href="#cb15-380" aria-hidden="true" tabindex="-1"></a><span class="co">#| code-summary: "scores at 83 m"</span></span>
+<span id="cb15-381"><a href="#cb15-381" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> score(pred):</span>
+<span id="cb15-382"><a href="#cb15-382" aria-hidden="true" tabindex="-1"></a>    h <span class="op">=</span> <span class="bu">int</span>((pred <span class="op">&amp;</span> gfm_wet <span class="op">&amp;</span> dom).<span class="bu">sum</span>())</span>
+<span id="cb15-383"><a href="#cb15-383" aria-hidden="true" tabindex="-1"></a>    f <span class="op">=</span> <span class="bu">int</span>((pred <span class="op">&amp;</span> <span class="op">~</span>gfm_wet <span class="op">&amp;</span> dom).<span class="bu">sum</span>())</span>
+<span id="cb15-384"><a href="#cb15-384" aria-hidden="true" tabindex="-1"></a>    m <span class="op">=</span> <span class="bu">int</span>((<span class="op">~</span>pred <span class="op">&amp;</span> gfm_wet <span class="op">&amp;</span> dom).<span class="bu">sum</span>())</span>
+<span id="cb15-385"><a href="#cb15-385" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> {<span class="st">"POD"</span>: <span class="bu">round</span>(h <span class="op">/</span> (h <span class="op">+</span> m), <span class="dv">3</span>), <span class="st">"FAR"</span>: <span class="bu">round</span>(f <span class="op">/</span> (h <span class="op">+</span> f), <span class="dv">3</span>),</span>
+<span id="cb15-386"><a href="#cb15-386" aria-hidden="true" tabindex="-1"></a>            <span class="st">"CSI"</span>: <span class="bu">round</span>(h <span class="op">/</span> (h <span class="op">+</span> m <span class="op">+</span> f), <span class="dv">3</span>)}</span>
+<span id="cb15-387"><a href="#cb15-387" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-388"><a href="#cb15-388" aria-hidden="true" tabindex="-1"></a>pd.DataFrame({<span class="st">"downscaled GFDS (R0)"</span>: score(ds_gfds),</span>
+<span id="cb15-389"><a href="#cb15-389" aria-hidden="true" tabindex="-1"></a>              <span class="st">"downscaled SFED (licensed)"</span>: score(ds_sfed),</span>
+<span id="cb15-390"><a href="#cb15-390" aria-hidden="true" tabindex="-1"></a>              <span class="st">"history-only control"</span>: score(ctrl)}).T</span>
+<span id="cb15-391"><a href="#cb15-391" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-392"><a href="#cb15-392" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-393"><a href="#cb15-393" aria-hidden="true" tabindex="-1"></a>Reading guide for the scores: POD is the share of radar-flooded cells the map</span>
+<span id="cb15-394"><a href="#cb15-394" aria-hidden="true" tabindex="-1"></a>caught, FAR is the share of the map's flooded cells the radar contradicts,</span>
+<span id="cb15-395"><a href="#cb15-395" aria-hidden="true" tabindex="-1"></a>and CSI folds both into one overlap number.</span>
 <span id="cb15-396"><a href="#cb15-396" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-397"><a href="#cb15-397" aria-hidden="true" tabindex="-1"></a>If the fine detail is mostly the historical map, the satellite has to prove</span>
-<span id="cb15-398"><a href="#cb15-398" aria-hidden="true" tabindex="-1"></a>itself at coarser zoom. We blur all the maps to a series of coarser grids</span>
-<span id="cb15-399"><a href="#cb15-399" aria-hidden="true" tabindex="-1"></a>and check how well each tracks the radar:</span>
-<span id="cb15-400"><a href="#cb15-400" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-403"><a href="#cb15-403" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
-<span id="cb15-404"><a href="#cb15-404" aria-hidden="true" tabindex="-1"></a><span class="co">#| code-summary: "agreement with radar (correlation) at increasing blur"</span></span>
-<span id="cb15-405"><a href="#cb15-405" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> block_reduce(a, k, m):</span>
-<span id="cb15-406"><a href="#cb15-406" aria-hidden="true" tabindex="-1"></a>    ny, nx <span class="op">=</span> a.shape</span>
-<span id="cb15-407"><a href="#cb15-407" aria-hidden="true" tabindex="-1"></a>    ny2, nx2 <span class="op">=</span> ny <span class="op">//</span> k <span class="op">*</span> k, nx <span class="op">//</span> k <span class="op">*</span> k</span>
-<span id="cb15-408"><a href="#cb15-408" aria-hidden="true" tabindex="-1"></a>    aa <span class="op">=</span> np.where(m, a, np.nan)[:ny2, :nx2].reshape(ny2 <span class="op">//</span> k, k, nx2 <span class="op">//</span> k, k)</span>
-<span id="cb15-409"><a href="#cb15-409" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> np.errstate(invalid<span class="op">=</span><span class="st">"ignore"</span>):</span>
-<span id="cb15-410"><a href="#cb15-410" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> np.nanmean(np.nanmean(aa, axis<span class="op">=</span><span class="dv">3</span>), axis<span class="op">=</span><span class="dv">1</span>)</span>
-<span id="cb15-411"><a href="#cb15-411" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-412"><a href="#cb15-412" aria-hidden="true" tabindex="-1"></a>rows <span class="op">=</span> []</span>
-<span id="cb15-413"><a href="#cb15-413" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> k, label <span class="kw">in</span> [(<span class="dv">1</span>, <span class="st">"83 m"</span>), (<span class="dv">6</span>, <span class="st">"0.5 km"</span>), (<span class="dv">12</span>, <span class="st">"1 km"</span>), (<span class="dv">36</span>, <span class="st">"3 km"</span>), (<span class="dv">72</span>, <span class="st">"6 km"</span>)]:</span>
-<span id="cb15-414"><a href="#cb15-414" aria-hidden="true" tabindex="-1"></a>    g <span class="op">=</span> block_reduce(gfm_wet.astype(<span class="bu">float</span>), k, dom)</span>
-<span id="cb15-415"><a href="#cb15-415" aria-hidden="true" tabindex="-1"></a>    vs <span class="op">=</span> block_reduce(dom.astype(<span class="bu">float</span>), k, np.ones_like(dom, <span class="bu">bool</span>))</span>
-<span id="cb15-416"><a href="#cb15-416" aria-hidden="true" tabindex="-1"></a>    mm <span class="op">=</span> np.isfinite(g) <span class="op">&amp;</span> (vs <span class="op">&gt;</span> <span class="fl">0.5</span>)</span>
-<span id="cb15-417"><a href="#cb15-417" aria-hidden="true" tabindex="-1"></a>    row <span class="op">=</span> {<span class="st">"scale"</span>: label}</span>
-<span id="cb15-418"><a href="#cb15-418" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> name, pred <span class="kw">in</span> [(<span class="st">"GFDS (R0)"</span>, ds_gfds), (<span class="st">"SFED"</span>, ds_sfed),</span>
-<span id="cb15-419"><a href="#cb15-419" aria-hidden="true" tabindex="-1"></a>                       (<span class="st">"history-only control"</span>, ctrl)]:</span>
-<span id="cb15-420"><a href="#cb15-420" aria-hidden="true" tabindex="-1"></a>        p <span class="op">=</span> block_reduce(pred.astype(<span class="bu">float</span>), k, dom)</span>
-<span id="cb15-421"><a href="#cb15-421" aria-hidden="true" tabindex="-1"></a>        ok <span class="op">=</span> mm <span class="op">&amp;</span> np.isfinite(p)</span>
-<span id="cb15-422"><a href="#cb15-422" aria-hidden="true" tabindex="-1"></a>        row[name] <span class="op">=</span> <span class="bu">round</span>(<span class="bu">float</span>(np.corrcoef(p[ok], g[ok])[<span class="dv">0</span>, <span class="dv">1</span>]), <span class="dv">3</span>)</span>
-<span id="cb15-423"><a href="#cb15-423" aria-hidden="true" tabindex="-1"></a>    rows.append(row)</span>
-<span id="cb15-424"><a href="#cb15-424" aria-hidden="true" tabindex="-1"></a>pd.DataFrame(rows).set_index(<span class="st">"scale"</span>)</span>
-<span id="cb15-425"><a href="#cb15-425" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb15-426"><a href="#cb15-426" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-427"><a href="#cb15-427" aria-hidden="true" tabindex="-1"></a>Now the picture is clean. At 83 m all three maps agree with the radar equally</span>
-<span id="cb15-428"><a href="#cb15-428" aria-hidden="true" tabindex="-1"></a>(and equally poorly). At coarser evaluation grids, the two maps built from</span>
-<span id="cb15-429"><a href="#cb15-429" aria-hidden="true" tabindex="-1"></a>2022 satellite data pull ahead of the control by a clear margin from 3 km</span>
-<span id="cb15-430"><a href="#cb15-430" aria-hidden="true" tabindex="-1"></a>out. And at every level, free GFDS sits within a hair of licensed</span>
-<span id="cb15-431"><a href="#cb15-431" aria-hidden="true" tabindex="-1"></a>FloodScan.</span>
-<span id="cb15-432"><a href="#cb15-432" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-433"><a href="#cb15-433" aria-hidden="true" tabindex="-1"></a><span class="fu">## What this settles</span></span>
-<span id="cb15-434"><a href="#cb15-434" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-435"><a href="#cb15-435" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>**The useful product is the calibrated 10 km fraction, not the 83 m map.**</span>
-<span id="cb15-436"><a href="#cb15-436" aria-hidden="true" tabindex="-1"></a>   It gives GFDS physical units, comparable across pixels and summable into</span>
-<span id="cb15-437"><a href="#cb15-437" aria-hidden="true" tabindex="-1"></a>   areas and exposure estimates. That is what admin-level monitoring</span>
-<span id="cb15-438"><a href="#cb15-438" aria-hidden="true" tabindex="-1"></a>   consumes, and it costs nothing.</span>
-<span id="cb15-439"><a href="#cb15-439" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>**The 83 m map is an allocation of the coarse estimate, not an</span>
-<span id="cb15-440"><a href="#cb15-440" aria-hidden="true" tabindex="-1"></a>   observation.** It is a reasonable way to decide which communities inside a</span>
-<span id="cb15-441"><a href="#cb15-441" aria-hidden="true" tabindex="-1"></a>   pixel to count when overlaying population, but it must never be read as</span>
-<span id="cb15-442"><a href="#cb15-442" aria-hidden="true" tabindex="-1"></a>   observed flood extent.</span>
-<span id="cb15-443"><a href="#cb15-443" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>**Both open-source questions survive their first test.** Reproduction:</span>
-<span id="cb15-444"><a href="#cb15-444" aria-hidden="true" tabindex="-1"></a>   the R0 lookup matches the licensed product at 10 km, and through the</span>
-<span id="cb15-445"><a href="#cb15-445" aria-hidden="true" tabindex="-1"></a>   identical allocation the two 83 m maps overlap on 84% of flagged cells</span>
-<span id="cb15-446"><a href="#cb15-446" aria-hidden="true" tabindex="-1"></a>   with a 0.91 area ratio. Independence: the R1 physics calibration needs no</span>
-<span id="cb15-447"><a href="#cb15-447" aria-hidden="true" tabindex="-1"></a>   licensed data at all and reaches r = 0.84 and 99% of peak area against</span>
-<span id="cb15-448"><a href="#cb15-448" aria-hidden="true" tabindex="-1"></a>   the licensed product.</span>
-<span id="cb15-449"><a href="#cb15-449" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-450"><a href="#cb15-450" aria-hidden="true" tabindex="-1"></a>The path from "free copy" to "maybe better" now has concrete work items:</span>
-<span id="cb15-451"><a href="#cb15-451" aria-hidden="true" tabindex="-1"></a>refine R1 (per-pixel emissivity contrast, a seasonal dry reference instead</span>
-<span id="cb15-452"><a href="#cb15-452" aria-hidden="true" tabindex="-1"></a>of one quantile, a tuned minimum-detectable threshold), re-run the</span>
-<span id="cb15-453"><a href="#cb15-453" aria-hidden="true" tabindex="-1"></a>allocation stage on the R1 fraction, train on the 28-year free archive</span>
-<span id="cb15-454"><a href="#cb15-454" aria-hidden="true" tabindex="-1"></a>rather than one season, add terrain to the historical map, and replicate on</span>
-<span id="cb15-455"><a href="#cb15-455" aria-hidden="true" tabindex="-1"></a>a second basin. The free input's finer working resolution (~10 km vs ~22 km)</span>
-<span id="cb15-456"><a href="#cb15-456" aria-hidden="true" tabindex="-1"></a>is the standing structural advantage.</span>
+<span id="cb15-397"><a href="#cb15-397" aria-hidden="true" tabindex="-1"></a>The result at full 83 m detail is uncomfortable and worth stating plainly:</span>
+<span id="cb15-398"><a href="#cb15-398" aria-hidden="true" tabindex="-1"></a>**the history-only control ties the maps that used satellite data**. The</span>
+<span id="cb15-399"><a href="#cb15-399" aria-hidden="true" tabindex="-1"></a>figure shows a visible difference, yet cell by cell the gains on the</span>
+<span id="cb15-400"><a href="#cb15-400" aria-hidden="true" tabindex="-1"></a>floodplain are cancelled by the block-edge false alarms. Also notable: the</span>
+<span id="cb15-401"><a href="#cb15-401" aria-hidden="true" tabindex="-1"></a>free GFDS input scores within a whisker of the licensed FloodScan input. One</span>
+<span id="cb15-402"><a href="#cb15-402" aria-hidden="true" tabindex="-1"></a>fairness note about the reference: radar under-detects water beneath</span>
+<span id="cb15-403"><a href="#cb15-403" aria-hidden="true" tabindex="-1"></a>vegetation, and we compare three radar snapshots against continuous microwave</span>
+<span id="cb15-404"><a href="#cb15-404" aria-hidden="true" tabindex="-1"></a>coverage, so part of every map's "red" reflects the reference's blind spots</span>
+<span id="cb15-405"><a href="#cb15-405" aria-hidden="true" tabindex="-1"></a>rather than the map's errors.</span>
+<span id="cb15-406"><a href="#cb15-406" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-407"><a href="#cb15-407" aria-hidden="true" tabindex="-1"></a><span class="fu">### Zooming out: where the satellite earns its keep</span></span>
+<span id="cb15-408"><a href="#cb15-408" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-409"><a href="#cb15-409" aria-hidden="true" tabindex="-1"></a>If the fine detail is mostly the historical map, the satellite has to prove</span>
+<span id="cb15-410"><a href="#cb15-410" aria-hidden="true" tabindex="-1"></a>itself at coarser zoom. We blur all the maps to a series of coarser grids</span>
+<span id="cb15-411"><a href="#cb15-411" aria-hidden="true" tabindex="-1"></a>and check how well each tracks the radar:</span>
+<span id="cb15-412"><a href="#cb15-412" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-415"><a href="#cb15-415" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb15-416"><a href="#cb15-416" aria-hidden="true" tabindex="-1"></a><span class="co">#| code-summary: "agreement with radar (correlation) at increasing blur"</span></span>
+<span id="cb15-417"><a href="#cb15-417" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> block_reduce(a, k, m):</span>
+<span id="cb15-418"><a href="#cb15-418" aria-hidden="true" tabindex="-1"></a>    ny, nx <span class="op">=</span> a.shape</span>
+<span id="cb15-419"><a href="#cb15-419" aria-hidden="true" tabindex="-1"></a>    ny2, nx2 <span class="op">=</span> ny <span class="op">//</span> k <span class="op">*</span> k, nx <span class="op">//</span> k <span class="op">*</span> k</span>
+<span id="cb15-420"><a href="#cb15-420" aria-hidden="true" tabindex="-1"></a>    aa <span class="op">=</span> np.where(m, a, np.nan)[:ny2, :nx2].reshape(ny2 <span class="op">//</span> k, k, nx2 <span class="op">//</span> k, k)</span>
+<span id="cb15-421"><a href="#cb15-421" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> np.errstate(invalid<span class="op">=</span><span class="st">"ignore"</span>):</span>
+<span id="cb15-422"><a href="#cb15-422" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> np.nanmean(np.nanmean(aa, axis<span class="op">=</span><span class="dv">3</span>), axis<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb15-423"><a href="#cb15-423" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-424"><a href="#cb15-424" aria-hidden="true" tabindex="-1"></a>rows <span class="op">=</span> []</span>
+<span id="cb15-425"><a href="#cb15-425" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> k, label <span class="kw">in</span> [(<span class="dv">1</span>, <span class="st">"83 m"</span>), (<span class="dv">6</span>, <span class="st">"0.5 km"</span>), (<span class="dv">12</span>, <span class="st">"1 km"</span>), (<span class="dv">36</span>, <span class="st">"3 km"</span>), (<span class="dv">72</span>, <span class="st">"6 km"</span>)]:</span>
+<span id="cb15-426"><a href="#cb15-426" aria-hidden="true" tabindex="-1"></a>    g <span class="op">=</span> block_reduce(gfm_wet.astype(<span class="bu">float</span>), k, dom)</span>
+<span id="cb15-427"><a href="#cb15-427" aria-hidden="true" tabindex="-1"></a>    vs <span class="op">=</span> block_reduce(dom.astype(<span class="bu">float</span>), k, np.ones_like(dom, <span class="bu">bool</span>))</span>
+<span id="cb15-428"><a href="#cb15-428" aria-hidden="true" tabindex="-1"></a>    mm <span class="op">=</span> np.isfinite(g) <span class="op">&amp;</span> (vs <span class="op">&gt;</span> <span class="fl">0.5</span>)</span>
+<span id="cb15-429"><a href="#cb15-429" aria-hidden="true" tabindex="-1"></a>    row <span class="op">=</span> {<span class="st">"scale"</span>: label}</span>
+<span id="cb15-430"><a href="#cb15-430" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> name, pred <span class="kw">in</span> [(<span class="st">"GFDS (R0)"</span>, ds_gfds), (<span class="st">"SFED"</span>, ds_sfed),</span>
+<span id="cb15-431"><a href="#cb15-431" aria-hidden="true" tabindex="-1"></a>                       (<span class="st">"history-only control"</span>, ctrl)]:</span>
+<span id="cb15-432"><a href="#cb15-432" aria-hidden="true" tabindex="-1"></a>        p <span class="op">=</span> block_reduce(pred.astype(<span class="bu">float</span>), k, dom)</span>
+<span id="cb15-433"><a href="#cb15-433" aria-hidden="true" tabindex="-1"></a>        ok <span class="op">=</span> mm <span class="op">&amp;</span> np.isfinite(p)</span>
+<span id="cb15-434"><a href="#cb15-434" aria-hidden="true" tabindex="-1"></a>        row[name] <span class="op">=</span> <span class="bu">round</span>(<span class="bu">float</span>(np.corrcoef(p[ok], g[ok])[<span class="dv">0</span>, <span class="dv">1</span>]), <span class="dv">3</span>)</span>
+<span id="cb15-435"><a href="#cb15-435" aria-hidden="true" tabindex="-1"></a>    rows.append(row)</span>
+<span id="cb15-436"><a href="#cb15-436" aria-hidden="true" tabindex="-1"></a>pd.DataFrame(rows).set_index(<span class="st">"scale"</span>)</span>
+<span id="cb15-437"><a href="#cb15-437" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-438"><a href="#cb15-438" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-439"><a href="#cb15-439" aria-hidden="true" tabindex="-1"></a>Now the picture is clean. At 83 m all three maps agree with the radar equally</span>
+<span id="cb15-440"><a href="#cb15-440" aria-hidden="true" tabindex="-1"></a>(and equally poorly). At coarser evaluation grids, the two maps built from</span>
+<span id="cb15-441"><a href="#cb15-441" aria-hidden="true" tabindex="-1"></a>2022 satellite data pull ahead of the control by a clear margin from 3 km</span>
+<span id="cb15-442"><a href="#cb15-442" aria-hidden="true" tabindex="-1"></a>out. And at every level, free GFDS sits within a hair of licensed</span>
+<span id="cb15-443"><a href="#cb15-443" aria-hidden="true" tabindex="-1"></a>FloodScan.</span>
+<span id="cb15-444"><a href="#cb15-444" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-445"><a href="#cb15-445" aria-hidden="true" tabindex="-1"></a><span class="fu">## What this settles</span></span>
+<span id="cb15-446"><a href="#cb15-446" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-447"><a href="#cb15-447" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>**The useful product is the calibrated 10 km fraction, not the 83 m map.**</span>
+<span id="cb15-448"><a href="#cb15-448" aria-hidden="true" tabindex="-1"></a>   It gives GFDS physical units, comparable across pixels and summable into</span>
+<span id="cb15-449"><a href="#cb15-449" aria-hidden="true" tabindex="-1"></a>   areas and exposure estimates. That is what admin-level monitoring</span>
+<span id="cb15-450"><a href="#cb15-450" aria-hidden="true" tabindex="-1"></a>   consumes, and it costs nothing.</span>
+<span id="cb15-451"><a href="#cb15-451" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>**The 83 m map is an allocation of the coarse estimate, not an</span>
+<span id="cb15-452"><a href="#cb15-452" aria-hidden="true" tabindex="-1"></a>   observation.** It is a reasonable way to decide which communities inside a</span>
+<span id="cb15-453"><a href="#cb15-453" aria-hidden="true" tabindex="-1"></a>   pixel to count when overlaying population, but it must never be read as</span>
+<span id="cb15-454"><a href="#cb15-454" aria-hidden="true" tabindex="-1"></a>   observed flood extent.</span>
+<span id="cb15-455"><a href="#cb15-455" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>**Both open-source questions survive their first test.** Reproduction:</span>
+<span id="cb15-456"><a href="#cb15-456" aria-hidden="true" tabindex="-1"></a>   the R0 lookup matches the licensed product at 10 km, and through the</span>
+<span id="cb15-457"><a href="#cb15-457" aria-hidden="true" tabindex="-1"></a>   identical allocation the two 83 m maps overlap on 84% of flagged cells</span>
+<span id="cb15-458"><a href="#cb15-458" aria-hidden="true" tabindex="-1"></a>   with a 0.91 area ratio. Independence: the R1 physics calibration needs no</span>
+<span id="cb15-459"><a href="#cb15-459" aria-hidden="true" tabindex="-1"></a>   licensed data at all and reaches r = 0.84 and 99% of peak area against</span>
+<span id="cb15-460"><a href="#cb15-460" aria-hidden="true" tabindex="-1"></a>   the licensed product.</span>
+<span id="cb15-461"><a href="#cb15-461" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-462"><a href="#cb15-462" aria-hidden="true" tabindex="-1"></a>The path from "free copy" to "maybe better" now has concrete work items:</span>
+<span id="cb15-463"><a href="#cb15-463" aria-hidden="true" tabindex="-1"></a>refine R1 (per-pixel emissivity contrast, a seasonal dry reference instead</span>
+<span id="cb15-464"><a href="#cb15-464" aria-hidden="true" tabindex="-1"></a>of one quantile, a tuned minimum-detectable threshold), re-run the</span>
+<span id="cb15-465"><a href="#cb15-465" aria-hidden="true" tabindex="-1"></a>allocation stage on the R1 fraction, train on the 28-year free archive</span>
+<span id="cb15-466"><a href="#cb15-466" aria-hidden="true" tabindex="-1"></a>rather than one season, add terrain to the historical map, and replicate on</span>
+<span id="cb15-467"><a href="#cb15-467" aria-hidden="true" tabindex="-1"></a>a second basin. The free input's finer working resolution (~10 km vs ~22 km)</span>
+<span id="cb15-468"><a href="#cb15-468" aria-hidden="true" tabindex="-1"></a>is the standing structural advantage.</span>
 </code></pre></div><button title="Copy to Clipboard" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
 </div></div></div></div></div>
 </div> <!-- /content -->
