@@ -342,7 +342,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="step-1-from-how-unusual-to-how-much" class="level2" data-number="3.1">
 <h2 data-number="3.1" class="anchored" data-anchor-id="step-1-from-how-unusual-to-how-much"><span class="header-section-number">3.1</span> Step 1: from “how unusual” to “how much”</h2>
 <p>The conversion is a per-pixel lookup table. For each 10 km pixel we line up its history of GFDS readings against its history of FloodScan readings: a middling GFDS day maps to that pixel’s typical FloodScan value, an extreme day to an extreme value. To keep ourselves honest, the table is built from half the days (alternating) and every score below comes from the other half, days the table never saw.</p>
-<div id="faca1b40" class="cell" data-execution_count="1">
+<div id="0156fbb4" class="cell" data-execution_count="1">
 <details class="code-fold">
 <summary>experiments/gfds_downscaling_poc/01_calibrate_fraction.py</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">"""POC step 1: calibrate GFDS anomaly -&gt; flooded fraction at 10 km.</span></span>
@@ -487,7 +487,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-140"><a href="#cb1-140" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"wrote"</span>, OUT <span class="op">/</span> <span class="st">"gfds_calibrated_fraction.nc"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
-<div id="75efe9ca" class="cell" data-execution_count="2">
+<div id="30745abc" class="cell" data-execution_count="2">
 <details class="code-fold">
 <summary>load POC results (fails loudly if the scripts haven’t been run)</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
@@ -552,7 +552,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <p>On the unseen days, the lookup table predicts FloodScan’s value with a typical error of 0.040 (in flooded-share units, over pixels that actually flooded), versus 0.048 for the lazy strategy of always guessing each pixel’s average. A modest margin, honestly earned. The more tangible payoff is that GFDS can now express something it never could before: how many square kilometres are under water.</p>
-<div id="8718bc2e" class="cell" data-execution_count="3">
+<div id="580275c7" class="cell" data-execution_count="3">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>px_km2 <span class="op">=</span> (<span class="fl">0.09</span> <span class="op">*</span> <span class="fl">111.32</span>) <span class="op">**</span> <span class="dv">2</span></span>
@@ -580,7 +580,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="step-2-allocating-the-detail" class="level2" data-number="3.2">
 <h2 data-number="3.2" class="anchored" data-anchor-id="step-2-allocating-the-detail"><span class="header-section-number">3.2</span> Step 2: allocating the detail</h2>
 <p>The historical water map is the JRC Global Surface Water dataset (free, ~30 m, fetched here by reading just the needed window over HTTP). This is the same dataset AER names as an ingredient of FloodScan’s downscaling database; their version also folds in topography and hydrology layers, so our single-ingredient version is a floor on what the technique can do, not a replica. Inside each 10 km pixel we sort the small cells from most to least water-prone, exclude cells that are water year-round (lakes, the river channel itself), and mark cells as flooded from the top of the list until the pixel’s estimated share is reached. The scripts:</p>
-<div id="42aa5ba8" class="cell" data-execution_count="4">
+<div id="71ba3cab" class="cell" data-execution_count="4">
 <details class="code-fold">
 <summary>experiments/gfds_downscaling_poc/02_build_prior.py</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">"""POC step 2: build the downscaling prior for the confluence AOI.</span></span>
@@ -628,7 +628,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb4-43"><a href="#cb4-43" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"wrote"</span>, OUT <span class="op">/</span> <span class="st">"gsw_prior_aoi.npz"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
-<div id="241f64d5" class="cell" data-execution_count="5">
+<div id="b5e97dce" class="cell" data-execution_count="5">
 <details class="code-fold">
 <summary>experiments/gfds_downscaling_poc/04_downscale_validate.py</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co">"""POC step 4: downscale the calibrated GFDS fraction to ~83 m and validate</span></span>
@@ -796,7 +796,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 data-number="3.3" class="anchored" data-anchor-id="validation-against-radar"><span class="header-section-number">3.3</span> Validation against radar</h2>
 <p>To evaluate the downscaled maps we need a reference that is independent of the microwave products. We use this project’s own GFM data: Sentinel-1 radar flood extent, a different kind of measurement entirely, for the October 2022 peak at the Niger-Benue confluence.</p>
 <p>Three maps get scored against the radar extent. The downscaled GFDS map. The same procedure fed with licensed FloodScan instead, to measure what the free input costs. And a <strong>control map built with no 2022 satellite input at all</strong>: it has the same total flooded area, allocated purely by the historical ranking. If downscaled GFDS cannot beat the control, the skill comes from the historical map, not from the satellite.</p>
-<div id="642ce2d0" class="cell" data-fig-height="7" data-execution_count="6">
+<div id="165e0eea" class="cell" data-fig-height="7" data-execution_count="6">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> matplotlib.colors <span class="im">import</span> ListedColormap</span>
@@ -823,9 +823,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>    ax.set_title(title, fontsize<span class="op">=</span><span class="dv">11</span>)</span>
 <span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>    ax.set_aspect(<span class="st">"equal"</span>)</span>
 <span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].legend(handles<span class="op">=</span>[</span>
-<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>    Patch(color<span class="op">=</span><span class="st">"#2c7fb8"</span>, label<span class="op">=</span><span class="st">"agree: flooded"</span>),</span>
-<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>    Patch(color<span class="op">=</span><span class="st">"#fdae61"</span>, label<span class="op">=</span><span class="st">"radar only (map missed it)"</span>),</span>
-<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>    Patch(color<span class="op">=</span><span class="st">"#d7191c"</span>, label<span class="op">=</span><span class="st">"map only (radar saw nothing)"</span>)],</span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>    Patch(color<span class="op">=</span><span class="st">"#2c7fb8"</span>, label<span class="op">=</span><span class="st">"both flooded (hit)"</span>),</span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>    Patch(color<span class="op">=</span><span class="st">"#fdae61"</span>, label<span class="op">=</span><span class="st">"radar flooded, this map dry (miss)"</span>),</span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>    Patch(color<span class="op">=</span><span class="st">"#d7191c"</span>, label<span class="op">=</span><span class="st">"this map flooded, radar dry (false alarm)"</span>)],</span>
 <span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>    loc<span class="op">=</span><span class="st">"lower left"</span>, fontsize<span class="op">=</span><span class="dv">8</span>, framealpha<span class="op">=</span><span class="fl">0.9</span>)</span>
 <span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
 <span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -839,7 +839,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
-<div id="f408f8ee" class="cell" data-execution_count="7">
+<div id="75d3a1a7" class="cell" data-execution_count="7">
 <details class="code-fold">
 <summary>scores at 83 m</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> score(pred):</span>
@@ -897,7 +897,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="zooming-out-where-the-satellite-earns-its-keep" class="level2" data-number="3.4">
 <h2 data-number="3.4" class="anchored" data-anchor-id="zooming-out-where-the-satellite-earns-its-keep"><span class="header-section-number">3.4</span> Zooming out: where the satellite earns its keep</h2>
 <p>If the fine detail is mostly the old map, the satellite has to prove itself at coarser zoom. We blur all the maps to a series of coarser grids and check how well each tracks the radar:</p>
-<div id="9ec093b1" class="cell" data-execution_count="8">
+<div id="004eeccc" class="cell" data-execution_count="8">
 <details class="code-fold">
 <summary>agreement with radar (correlation) at increasing blur</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> block_reduce(a, k, m):</span>
@@ -1626,9 +1626,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb9-179"><a href="#cb9-179" aria-hidden="true" tabindex="-1"></a>    ax.set_title(title, fontsize<span class="op">=</span><span class="dv">11</span>)</span>
 <span id="cb9-180"><a href="#cb9-180" aria-hidden="true" tabindex="-1"></a>    ax.set_aspect(<span class="st">"equal"</span>)</span>
 <span id="cb9-181"><a href="#cb9-181" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].legend(handles<span class="op">=</span>[</span>
-<span id="cb9-182"><a href="#cb9-182" aria-hidden="true" tabindex="-1"></a>    Patch(color<span class="op">=</span><span class="st">"#2c7fb8"</span>, label<span class="op">=</span><span class="st">"agree: flooded"</span>),</span>
-<span id="cb9-183"><a href="#cb9-183" aria-hidden="true" tabindex="-1"></a>    Patch(color<span class="op">=</span><span class="st">"#fdae61"</span>, label<span class="op">=</span><span class="st">"radar only (map missed it)"</span>),</span>
-<span id="cb9-184"><a href="#cb9-184" aria-hidden="true" tabindex="-1"></a>    Patch(color<span class="op">=</span><span class="st">"#d7191c"</span>, label<span class="op">=</span><span class="st">"map only (radar saw nothing)"</span>)],</span>
+<span id="cb9-182"><a href="#cb9-182" aria-hidden="true" tabindex="-1"></a>    Patch(color<span class="op">=</span><span class="st">"#2c7fb8"</span>, label<span class="op">=</span><span class="st">"both flooded (hit)"</span>),</span>
+<span id="cb9-183"><a href="#cb9-183" aria-hidden="true" tabindex="-1"></a>    Patch(color<span class="op">=</span><span class="st">"#fdae61"</span>, label<span class="op">=</span><span class="st">"radar flooded, this map dry (miss)"</span>),</span>
+<span id="cb9-184"><a href="#cb9-184" aria-hidden="true" tabindex="-1"></a>    Patch(color<span class="op">=</span><span class="st">"#d7191c"</span>, label<span class="op">=</span><span class="st">"this map flooded, radar dry (false alarm)"</span>)],</span>
 <span id="cb9-185"><a href="#cb9-185" aria-hidden="true" tabindex="-1"></a>    loc<span class="op">=</span><span class="st">"lower left"</span>, fontsize<span class="op">=</span><span class="dv">8</span>, framealpha<span class="op">=</span><span class="fl">0.9</span>)</span>
 <span id="cb9-186"><a href="#cb9-186" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
 <span id="cb9-187"><a href="#cb9-187" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
