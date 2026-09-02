@@ -20,54 +20,69 @@ than ~22 km), and JRC Global Surface Water supplies the water-history
 database. So this chapter takes an angle worth stating explicitly: **can we
 build an open-source FloodScan?** And with a finer-resolution microwave
 input and a 1998-to-present free archive, could it eventually be better?
-This is the first proof of concept along that path.
 
-Two steps are needed, because GFDS does not measure an amount of water. It
-measures how *unusual* a pixel looks compared to its own history, and you
-cannot draw "unusual" on a map at 90 m. So:
+The pipeline has two stages, because GFDS does not measure an amount of
+water. It measures how *unusual* a pixel looks compared to its own history,
+and you cannot draw "unusual" on a map at 90 m:
 
-1. **Turn "how unusual" into "how much"**: convert the GFDS reading into an
-   estimated share of each 10 km pixel that is under water.
-2. **Allocate the detail**: split that share among the small (~83 m) cells
-   inside each pixel, marking the most flood-prone cells as flooded first.
-   This follows AER's published description of FloodScan in principle, not
-   their exact algorithm, which is proprietary; rank-and-fill allocation like
-   ours is the standard open-literature version of the operation (e.g.
-   [Fluet-Chouinard et al. 2015](https://cgspace.cgiar.org/items/778c0aed-768d-41f5-8a21-3db0a9943a6c),
-   [Li et al. 2015](https://www.mdpi.com/2072-4292/7/12/15813)).
+1. **Calibrate**: convert the GFDS reading into an estimated share of each
+   10 km pixel that is under water (a flooded fraction).
+2. **Allocate**: split that share among the small (~83 m) cells inside each
+   pixel, marking the most flood-prone cells as flooded first.
 
-Step 2 depends on what statisticians call a **prior**: information that
+Stage 2 depends on what statisticians call a **prior**: information that
 existed before today's satellite reading. Ours is a historical water map
 built from every Landsat image since 1984: for each ~30 m cell, the share of
 observations in which it was wet. River channels score near 100%, floodplains
 somewhere in the tens, dry land zero. The division of labour is strict:
 today's GFDS reading sets *how much* of each pixel is flooded, and the
-historical map decides *which cells* get marked. Today's flood has no
-influence on the placement, only on the amount.
+historical map decides *which cells* get marked.
 
-The test throughout is FloodScan-vs-GFDS: **if the free input goes through
-the published recipe, does it reproduce the licensed product?** Step 1
-compares the two as 10 km flooded fractions; the head-to-head section
-compares the downscaled maps directly. At the end, GFM radar makes a
-deliberately limited appearance as an independent cross-check. Downscaling
-adds no new observation, since all placement information is historical, so
-some outside measurement has to tell us how much of the final map comes from
-the satellite at all. Full technical write-up:
+Full technical write-up:
 [`docs/gfds-downscaling-poc.md`](https://github.com/OCHA-DAP/ds-flood-gfm/blob/main/docs/gfds-downscaling-poc.md);
 code in `experiments/gfds_downscaling_poc/`.
 
-## Step 1: from "how unusual" to "how much"
+## The methods, up front
 
-The conversion is a per-pixel lookup table. For each 10 km pixel we line up
-its history of GFDS readings against its history of FloodScan readings: a
-middling GFDS day maps to that pixel's typical FloodScan value, an extreme
-day to an extreme value. To keep ourselves honest, the table is built from
-half the days (alternating) and every score below comes from the other half,
-days the table never saw.
+Four different calibration methods appear in this chapter, and it matters
+which figure uses which. Declared once, here:
+
+| Label | Calibration method | Uses licensed data? | Role in this chapter |
+|---|---|---|---|
+| **R0** | Per-pixel lookup table trained on FloodScan SFED (rank matching between each pixel's GFDS and SFED histories) | **Yes**, trained on SFED | The *reproduction* test: how well can free input copy the licensed product? Also the ceiling for the independent methods. **Every downscaled-GFDS map in this chapter uses the R0 fraction as its input.** |
+| **R1** | Physics: invert the wet/dry mixing equation with a literature emissivity contrast (K ≈ 0.35 at 36 GHz) and each pixel's own dry-season signal level | No | The *independence* test's lead candidate |
+| **R2** | Per-pixel linear map anchored to the driest and wettest fractions Landsat ever observed (Global Surface Water) | No | Independence test, optical anchor |
+| **R3** | Like R2 but the wet anchor is Sentinel-1 extent aggregated to the pixel for the October peak window | No | Independence test, radar anchor |
+
+Equally important, the things that are **never calibration inputs, only
+comparison points**:
+
+- **FloodScan SFED**: the benchmark throughout. For R1, R2, R3 it is fully
+  external (they never see it), so agreement with it is evidence. For R0 it
+  is the training target, so agreement is partly by construction; R0's honest
+  scores come from held-out days its lookup tables never saw.
+- **GFM Sentinel-1 radar**: a different product with a different overpass
+  cadence. It appears once, late, to arbitrate one narrow question about the
+  allocation stage. It calibrates nothing.
+- **The history-only control**: an allocation map built with no 2022
+  satellite input at all, used to measure how much of the fine-scale map
+  comes from the historical prior rather than from any satellite.
+
+The chapter now runs three tests in order: reproduction (R0 vs SFED),
+independence (R1-R3 vs SFED), and allocation (the 83 m maps).
+
+## Test 1: reproduction — the R0 lookup vs FloodScan
+
+R0 is a per-pixel lookup table. For each 10 km pixel we line up its history
+of GFDS readings against its history of FloodScan readings: a middling GFDS
+day maps to that pixel's typical FloodScan value, an extreme day to an
+extreme value. To keep ourselves honest, the table is built from half the
+days (alternating) and every score below comes from the other half, days the
+table never saw.
 
 ```{python}
 #| eval: false
-#| code-summary: "experiments/gfds_downscaling_poc/01_calibrate_fraction.py"
+#| code-summary: "experiments/gfds_downscaling_poc/01_calibrate_fraction.py (method R0)"
 {{< include ../experiments/gfds_downscaling_poc/01_calibrate_fraction.py >}}
 ```
 
@@ -85,29 +100,29 @@ POC = next((p for p in (Path("outputs/gfds_downscaling_poc"),
 if POC is None or not (POC / "downscale_maps.npz").exists():
     raise FileNotFoundError(
         "POC outputs not found. Run experiments/gfds_downscaling_poc/ scripts "
-        "01-04 from the repo root first (inputs are cached or range-read)."
+        "01-04 and 06 from the repo root first (inputs are cached or range-read)."
     )
 skill_cal = pd.read_csv(POC / "calibration_skill.csv", index_col=0)
-frac = xr.open_dataarray(POC / "gfds_calibrated_fraction.nc")
+frac = xr.open_dataarray(POC / "gfds_calibrated_fraction.nc")  # R0 fraction
 sfed = xr.open_dataarray(POC / "sfed_on_gfds.nc")
 skill_cal
 ```
 
-On the unseen days, the lookup table predicts FloodScan's value with a
-typical error of 0.040 (in flooded-share units, over pixels that actually
-flooded), versus 0.048 for the lazy strategy of always guessing each pixel's
-average. A modest margin, honestly earned. The more tangible payoff is that
-GFDS can now express something it never could before: how many square
-kilometres are under water.
+On the unseen days, R0 predicts FloodScan's value with a typical error of
+0.040 (in flooded-share units, over pixels that actually flooded), versus
+0.048 for the lazy strategy of always guessing each pixel's average. A
+modest margin, honestly earned. The more tangible payoff is that GFDS can
+now express something it never could before: how many square kilometres are
+under water.
 
 ```{python}
-#| fig-cap: "How much of Nigeria is under water each day, according to the free GFDS estimate (red) and the licensed FloodScan product (blue). At FloodScan's peak, the free estimate reaches 84% of its area."
+#| fig-cap: "Flooded area per day over Nigeria. Red: fraction from the R0 lookup (free input, SFED-trained). Blue: licensed FloodScan SFED. At FloodScan's peak, the R0 estimate reaches 84% of its area."
 px_km2 = (0.09 * 111.32) ** 2
 both = np.isfinite(frac.values) & np.isfinite(sfed.values)
 a_gfds = np.where(both, frac.values, 0).sum(axis=(1, 2)) * px_km2
 a_sfed = np.where(both, sfed.values, 0).sum(axis=(1, 2)) * px_km2
 fig, ax = plt.subplots(figsize=(10, 4))
-ax.plot(frac.time, a_gfds, color="tab:red", label="GFDS estimate (free)")
+ax.plot(frac.time, a_gfds, color="tab:red", label="GFDS via R0 lookup (free input)")
 ax.plot(sfed.time, a_sfed, color="tab:blue", label="FloodScan SFED (licensed)")
 ax.set_ylabel("flooded area (km²)")
 ax.legend()
@@ -115,25 +130,15 @@ ax.set_title("Nigeria, Jun–Nov 2022")
 plt.show()
 ```
 
-### The 10 km fraction, side by side
-
-The area curve compares totals; the spatial view is more demanding. Here is
-the flooded fraction itself at the October peak, free estimate against
-licensed product, on the same grid and color scale. One caution when reading
-the agreement numbers: the conversion tables were trained on alternating
-days from this same season, so part of this agreement is by construction.
-The fair skill test is the held-out-day scores above; this figure shows what
-the resulting product looks like next to the licensed one.
-
 ```{python}
-#| fig-cap: "Mean flooded fraction, 6-13 Oct 2022, on the 10 km GFDS grid. Left: the free GFDS-derived estimate. Right: licensed FloodScan SFED. Printed below: pixel-level agreement between the two fields."
+#| fig-cap: "CALIBRATION STAGE ONLY, 10 km grid, no downscaling. Mean flooded fraction 6-13 Oct 2022. Left: the R0 (SFED-trained) fraction from the free GFDS input. Right: licensed FloodScan SFED. Because R0 is trained on SFED (alternating days from this same season), close agreement here is partly by construction; the held-out-day scores above are the fair skill test."
 #| fig-height: 5.5
 peak = slice("2022-10-06", "2022-10-13")
 wg = frac.sel(time=peak).mean("time")
 ws = sfed.sel(time=peak).mean("time")
 fig, axes = plt.subplots(1, 2, figsize=(13, 5.5), sharex=True, sharey=True)
 wg.plot(ax=axes[0], vmin=0, vmax=0.5, cmap="Blues", add_colorbar=False)
-axes[0].set_title("GFDS-derived fraction (free)")
+axes[0].set_title("GFDS fraction via R0 lookup (free input)")
 im = ws.plot(ax=axes[1], vmin=0, vmax=0.5, cmap="Blues", add_colorbar=False)
 axes[1].set_title("FloodScan SFED (licensed)")
 fig.colorbar(im, ax=axes, shrink=0.8, label="flooded fraction")
@@ -145,21 +150,95 @@ wet = ok & ((g > 0.02) | (s > 0.02))
 print(f"pixel correlation, all valid pixels: {np.corrcoef(g[ok], s[ok])[0,1]:.2f}")
 print(f"pixel correlation, pixels either product calls wet (>2%): "
       f"{np.corrcoef(g[wet], s[wet])[0,1]:.2f} (n={int(wet.sum())})")
-print(f"mean fraction over wet pixels: GFDS {g[wet].mean():.3f} "
+print(f"mean fraction over wet pixels: GFDS-R0 {g[wet].mean():.3f} "
       f"| FloodScan {s[wet].mean():.3f}")
 ```
 
-## Step 2: allocating the detail
+## Test 2: independence — can we calibrate without FloodScan?
 
-The historical water map is the JRC Global Surface Water dataset (free,
-~30 m, fetched here by reading just the needed window over HTTP). This is
-the same dataset AER names as an ingredient of FloodScan's downscaling
-database; their version also folds in topography and hydrology layers, so
-our single-ingredient version is a floor on what the technique can do, not a
-replica. Inside each 10 km pixel we sort the small cells from most to least
-water-prone, exclude cells that are water year-round (lakes, the river
-channel itself), and mark cells as flooded from the top of the list until the
-pixel's estimated share is reached. The scripts:
+R0 proves the free input can copy the licensed product, but a copy is not an
+independent product. AER did not have a reference product when they built
+FloodScan; they got flooded fraction from brightness temperature with
+physics: a partly flooded pixel's signal is a mix of a wet and a dry
+component, and the mixing equation can be inverted. R1, R2, and R3 are three
+ways to do that without touching FloodScan, which makes SFED a fully fair
+external benchmark for them.
+
+```{python}
+#| eval: false
+#| code-summary: "experiments/gfds_downscaling_poc/06_independent_fractions.py (methods R1, R2, R3)"
+{{< include ../experiments/gfds_downscaling_poc/06_independent_fractions.py >}}
+```
+
+```{python}
+#| fig-cap: "Flooded area over the confluence AOI: the three FloodScan-free calibrations (R1-R3), the SFED-trained ceiling (R0), and FloodScan itself. R1 (green) reproduces the flood wave and its peak with no FloodScan input; both anchor routes flatline because their anchors never saw a 2022-sized flood."
+z2 = np.load(POC / "independent_fractions.npz")
+R1, R2, R3, R0, W = (z2[k] for k in ("R1", "R2", "R3", "R0", "W"))
+tt = pd.to_datetime(z2["time"])
+pxa = (0.09 * 111.32) ** 2
+okW = np.isfinite(W)
+fig, ax = plt.subplots(figsize=(11, 4.5))
+for P, lab, col in [(R1, "R1 physics", "tab:green"),
+                    (R2, "R2 optical anchor", "tab:red"),
+                    (R3, "R3 radar anchor", "tab:orange"),
+                    (R0, "R0 SFED-trained (ceiling)", "tab:grey")]:
+    okp = np.isfinite(P) & okW
+    ax.plot(tt, np.nansum(np.where(okp, P, 0), axis=1) * pxa, label=lab,
+            color=col, lw=1.2)
+ax.plot(tt, np.nansum(np.where(okW, W, 0), axis=1) * pxa,
+        label="FloodScan SFED (benchmark)", color="tab:blue", lw=2)
+ax.set_ylabel("flooded area (km²)")
+ax.legend(fontsize=8)
+plt.show()
+
+wet_cells = z2["wet_cells"]
+def rscore(P):
+    m = np.isfinite(P) & np.isfinite(W) & wet_cells[None, :]
+    a_p = np.nansum(np.where(np.isfinite(P) & okW, P, 0), axis=1)
+    a_w = np.nansum(np.where(okW, W, 0), axis=1)
+    pk = int(np.nanargmax(a_w))
+    return {"r vs SFED (wet cells)": round(float(np.corrcoef(P[m], W[m])[0, 1]), 2),
+            "area ratio at peak": round(float(a_p[pk] / a_w[pk]), 2)}
+r1m = np.where(R1 >= 0.10, R1, 0.0)
+pd.DataFrame({"R1 physics": rscore(R1),
+              "R1 physics + minimum-detectable threshold": rscore(r1m),
+              "R2 optical anchor": rscore(R2),
+              "R3 radar anchor": rscore(R3),
+              "R0 SFED-trained (ceiling)": rscore(R0)}).T
+```
+
+The physics route wins, and not narrowly: r = 0.84 against SFED and 99% of
+its peak area, from a literature constant and the pixel's own history. The
+anchor routes fail for a structural reason worth remembering: 2022 flooded
+beyond anything in their anchors' experience, so amplitudes calibrated to
+Landsat history or three radar snapshots cap out far too low. You cannot
+anchor an extreme to a record that never contained one.
+
+R1's one visible flaw is a dry-season floor: a few hundred km² of low-level
+"flood" in June-August where SFED reports almost none, from soil moisture
+and seasonal wetness leaking into the signal. FloodScan's Users Guide
+documents the identical problem and its fix, a "minimum detectable flooded
+fraction (MDFF) threshold" applied to filter "low level flooded fraction
+noise" (v05R01, §1.2). Applying the same idea (zero out fractions below
+0.10) cuts our June floor to SFED's level while keeping r = 0.83 and 86% of
+peak area. Independently rediscovering the need for their threshold is about
+as strong a confirmation of the shared physics as one event can give.
+
+## Test 3: allocation — the 83 m maps
+
+The remaining stage is spatial. The historical water map is the JRC Global
+Surface Water dataset (free, ~30 m, fetched here by reading just the needed
+window over HTTP). This is the same dataset AER names as an ingredient of
+FloodScan's downscaling database; their version also folds in topography and
+hydrology layers, so our single-ingredient version is a floor on what the
+technique can do, not a replica. Inside each 10 km pixel we sort the small
+cells from most to least water-prone, exclude cells that are water
+year-round (lakes, the river channel itself), and mark cells as flooded from
+the top of the list until the pixel's estimated share is reached.
+
+One method note before the maps: the allocation experiments below were run
+with the **R0 fraction as the GFDS-side input** (they predate the R1
+results; re-running them on R1 is listed in the next steps). The scripts:
 
 ```{python}
 #| eval: false
@@ -173,14 +252,15 @@ pixel's estimated share is reached. The scripts:
 {{< include ../experiments/gfds_downscaling_poc/04_downscale_validate.py >}}
 ```
 
-## Head to head: downscaled GFDS vs downscaled FloodScan
+### Head to head: downscaled GFDS vs downscaled FloodScan
 
-The core comparison. Both inputs go through the identical Step 2 procedure
-over the Niger-Benue confluence for the October 2022 peak; the question is
-how much of the licensed product's map the free input reproduces.
+Test 1 compared the two products at the calibration stage, on the 10 km
+grid. This figure is the next stage of the same story: the same two 10 km
+fractions, now pushed through the identical allocation, compared as 83 m
+maps over the confluence for the October peak.
 
 ```{python}
-#| fig-cap: "Downscaled GFDS vs downscaled FloodScan, Niger-Benue confluence, 6-13 Oct 2022, ~83 m. Blue = both flag flooding, orange = only the FloodScan-based map, red = only the GFDS-based map."
+#| fig-cap: "CALIBRATION + ALLOCATION, ~83 m. The same two 10 km fractions from Test 1 after downscaling, Niger-Benue confluence, 6-13 Oct 2022. Blue = both flag flooding, orange = only the FloodScan-based map, red = only the GFDS-based map."
 #| fig-height: 8
 from matplotlib.colors import ListedColormap
 from matplotlib.patches import Patch
@@ -219,25 +299,24 @@ print(f"overlap: {both_n/either_n:.0%} of all cells flagged by either map "
 The two maps flag nearly the same total area and mostly the same cells; the
 disagreements sit at pixel edges where the two 10 km inputs put slightly
 different amounts into neighbouring pixels. Through an identical recipe, the
-free input substitutes for the licensed one with little visible cost. Whether
-either map is *right* is a separate question, which needs a reference from
-outside the microwave family.
+free input substitutes for the licensed one with little visible cost.
+Whether either map is *right* is a separate question, which needs a
+reference from outside the microwave family.
 
-## An outside check: radar, and a control with no satellite input
+### An outside check: radar, and a control with no satellite input
 
 For that we borrow this project's GFM data: Sentinel-1 radar flood extent
 for the same dates. Radar is a different product with a different overpass
 cadence, so disagreement with the daily microwave products is expected and
 does not crown a winner; its job here is only to arbitrate one narrow
-question. Alongside the two downscaled maps we score a third: a
-**control built with no 2022 satellite input at all**, holding the same total
-flooded area but allocated purely by the historical ranking. If the
-satellite-based maps cannot beat the control against the radar, the fine
-detail is coming from the historical map, not from either satellite
-product.
+question. Alongside the two downscaled maps we score a third: the
+**history-only control** defined in the methods section, same total flooded
+area, no 2022 satellite input. If the satellite-based maps cannot beat the
+control against the radar, the fine detail is coming from the historical
+map, not from either satellite product.
 
 ```{python}
-#| fig-cap: "Niger-Benue confluence, 6-13 Oct 2022, ~83 m. Each panel compares one map against the radar: blue = both flag flooding, orange = radar flags flooding the map missed, red = the map flags flooding the radar did not see. Left: downscaled GFDS. Right: the history-only control. GFDS converts orange to blue across the wide flooding south of the confluence, at the cost of red false alarms in rectangular blocks at pixel edges."
+#| fig-cap: "Niger-Benue confluence, 6-13 Oct 2022, ~83 m. Each panel compares one map against the radar: blue = both flag flooding, orange = radar flags flooding the map missed, red = the map flags flooding the radar did not see. Left: downscaled GFDS (R0 fraction). Right: the history-only control. GFDS converts orange to blue across the wide flooding south of the confluence, at the cost of red false alarms in rectangular blocks at pixel edges."
 #| fig-height: 7
 def agreement(pred):
     cat = np.zeros(pred.shape, dtype=float)          # 0: dry in both
@@ -248,7 +327,7 @@ def agreement(pred):
 
 cmap = ListedColormap(["#f7f7f7", "#2c7fb8", "#fdae61", "#d7191c"])
 fig, axes = plt.subplots(1, 2, figsize=(13, 7), sharex=True, sharey=True)
-for ax, pred, title in [(axes[0], ds_gfds, "downscaled GFDS vs radar"),
+for ax, pred, title in [(axes[0], ds_gfds, "downscaled GFDS (R0) vs radar"),
                         (axes[1], ctrl, "history-only control vs radar")]:
     ax.imshow(agreement(pred), extent=ext, cmap=cmap, vmin=-0.5, vmax=3.5,
               interpolation="none")
@@ -272,7 +351,7 @@ def score(pred):
     return {"POD": round(h / (h + m), 3), "FAR": round(f / (h + f), 3),
             "CSI": round(h / (h + m + f), 3)}
 
-pd.DataFrame({"downscaled GFDS": score(ds_gfds),
+pd.DataFrame({"downscaled GFDS (R0)": score(ds_gfds),
               "downscaled SFED (licensed)": score(ds_sfed),
               "history-only control": score(ctrl)}).T
 ```
@@ -291,11 +370,11 @@ vegetation, and we compare three radar snapshots against continuous microwave
 coverage, so part of every map's "red" reflects the reference's blind spots
 rather than the map's errors.
 
-## Zooming out: where the satellite earns its keep
+### Zooming out: where the satellite earns its keep
 
-If the fine detail is mostly the old map, the satellite has to prove itself
-at coarser zoom. We blur all the maps to a series of coarser grids and check
-how well each tracks the radar:
+If the fine detail is mostly the historical map, the satellite has to prove
+itself at coarser zoom. We blur all the maps to a series of coarser grids
+and check how well each tracks the radar:
 
 ```{python}
 #| code-summary: "agreement with radar (correlation) at increasing blur"
@@ -312,7 +391,7 @@ for k, label in [(1, "83 m"), (6, "0.5 km"), (12, "1 km"), (36, "3 km"), (72, "6
     vs = block_reduce(dom.astype(float), k, np.ones_like(dom, bool))
     mm = np.isfinite(g) & (vs > 0.5)
     row = {"scale": label}
-    for name, pred in [("GFDS", ds_gfds), ("SFED", ds_sfed),
+    for name, pred in [("GFDS (R0)", ds_gfds), ("SFED", ds_sfed),
                        ("history-only control", ctrl)]:
         p = block_reduce(pred.astype(float), k, dom)
         ok = mm & np.isfinite(p)
@@ -327,104 +406,27 @@ Now the picture is clean. At 83 m all three maps agree with the radar equally
 out. And at every level, free GFDS sits within a hair of licensed
 FloodScan.
 
-## Cutting the cord: three FloodScan-free calibrations
-
-Everything above still calibrates against FloodScan, which makes the free
-product a reproduction rather than an independent one. AER did not have that
-luxury when they built FloodScan, so how did they get flooded fraction from
-brightness temperature alone? Physics: a partly flooded pixel's signal is a
-mix of a wet and a dry component, and the mixing equation can be inverted.
-We tested three ways to do the inversion without touching FloodScan, scoring
-each against SFED, which is now a fair external benchmark because none of
-the routes sees it during calibration:
-
-- **R1, physics**: invert the mixing equation directly, using a literature
-  value for the wet/dry emissivity contrast at 36 GHz (K ≈ 0.35) and each
-  pixel's own dry-season signal level.
-- **R2, optical anchor**: pin each pixel's signal range to the driest and
-  wettest fractions Landsat ever observed there (Global Surface Water).
-- **R3, radar anchor**: like R2, but the wet anchor comes from Sentinel-1
-  extent aggregated to the pixel for the October peak window.
-
-```{python}
-#| fig-cap: "Flooded area over the confluence AOI: the three FloodScan-free routes, the SFED-trained ceiling, and FloodScan itself. The physics route (green) reproduces the flood wave and its peak with no FloodScan input; both anchor routes flatline because their anchors never saw a 2022-sized flood."
-z2 = np.load(POC / "independent_fractions.npz")
-R1, R2, R3, R0, W = (z2[k] for k in ("R1", "R2", "R3", "R0", "W"))
-tt = pd.to_datetime(z2["time"])
-pxa = (0.09 * 111.32) ** 2
-ok = np.isfinite(W)
-fig, ax = plt.subplots(figsize=(11, 4.5))
-for P, lab, col in [(R1, "R1 physics", "tab:green"),
-                    (R2, "R2 optical anchor", "tab:red"),
-                    (R3, "R3 radar anchor", "tab:orange"),
-                    (R0, "R0 SFED-trained (ceiling)", "tab:grey")]:
-    okp = np.isfinite(P) & ok
-    ax.plot(tt, np.nansum(np.where(okp, P, 0), axis=1) * pxa, label=lab,
-            color=col, lw=1.2)
-ax.plot(tt, np.nansum(np.where(ok, W, 0), axis=1) * pxa,
-        label="FloodScan SFED (benchmark)", color="tab:blue", lw=2)
-ax.set_ylabel("flooded area (km²)")
-ax.legend(fontsize=8)
-plt.show()
-
-wet_cells = z2["wet_cells"]
-def rscore(P):
-    m = np.isfinite(P) & np.isfinite(W) & wet_cells[None, :]
-    a_p = np.nansum(np.where(np.isfinite(P) & ok, P, 0), axis=1)
-    a_w = np.nansum(np.where(ok, W, 0), axis=1)
-    pk = int(np.nanargmax(a_w))
-    return {"r vs SFED (wet cells)": round(float(np.corrcoef(P[m], W[m])[0, 1]), 2),
-            "area ratio at peak": round(float(a_p[pk] / a_w[pk]), 2)}
-r1m = np.where(R1 >= 0.10, R1, 0.0)
-pd.DataFrame({"R1 physics": rscore(R1),
-              "R1 physics + minimum-detectable threshold": rscore(r1m),
-              "R2 optical anchor": rscore(R2),
-              "R3 radar anchor": rscore(R3),
-              "R0 SFED-trained (ceiling)": rscore(R0)}).T
-```
-
-The physics route wins, and not narrowly: r = 0.84 against SFED and 99% of
-its peak area, from a literature constant and the pixel's own history. The
-anchor routes fail for a structural reason worth remembering: 2022 flooded
-beyond anything in their anchors' experience, so amplitudes calibrated to
-Landsat history or three radar snapshots cap out far too low. You cannot
-anchor an extreme to a record that never contained one.
-
-The physics route's one visible flaw is a dry-season floor: a few hundred
-km² of low-level "flood" in June-August where SFED reports almost none,
-from soil moisture and seasonal wetness leaking into the signal. FloodScan's
-Users Guide documents the identical problem and its fix, a "minimum
-detectable flooded fraction (MDFF) threshold" applied to filter "low level
-flooded fraction noise" (v05R01, §1.2). Applying the same idea (zero out
-fractions below 0.10) cuts our June floor to SFED's level while keeping
-r = 0.83 and 86% of peak area. Independently rediscovering the need for
-their threshold is about as strong a confirmation of the shared physics as
-one event can give.
-
 ## What this settles
 
-1. **The useful product is Step 1, not Step 2.** A calibrated "share of this
-   10 km pixel is flooded" layer gives GFDS physical units, comparable across
-   pixels and summable into areas and exposure estimates. That is what
-   admin-level monitoring consumes, and it costs nothing.
-2. **The 90 m map is an allocation of the coarse estimate, not an
+1. **The useful product is the calibrated 10 km fraction, not the 83 m map.**
+   It gives GFDS physical units, comparable across pixels and summable into
+   areas and exposure estimates. That is what admin-level monitoring
+   consumes, and it costs nothing.
+2. **The 83 m map is an allocation of the coarse estimate, not an
    observation.** It is a reasonable way to decide which communities inside a
    pixel to count when overlaying population, but it must never be read as
    observed flood extent.
-3. **The open-source FloodScan question survives its first test.** The free
-   reproduction matches the licensed product at 10 km (this chapter's
-   fraction maps), and through the identical downscaling recipe the two maps
-   overlap on 84% of flagged cells with a 0.91 area ratio. Together with the
-   admin-level findings of @sec-alternative-sources, the case keeps firming
-   up.
+3. **Both open-source questions survive their first test.** Reproduction:
+   the R0 lookup matches the licensed product at 10 km, and through the
+   identical allocation the two 83 m maps overlap on 84% of flagged cells
+   with a 0.91 area ratio. Independence: the R1 physics calibration needs no
+   licensed data at all and reaches r = 0.84 and 99% of peak area against
+   the licensed product.
 
-The FloodScan-free calibration section moves the "open-source" label from
-aspiration to plausible: the physics route needs no licensed data at all and
-already reaches r = 0.84 / 99% of peak area against the licensed product on
-this event. The path from "free copy" to "maybe better" now has concrete
-work items: refine the physics route (per-pixel emissivity contrast, a
-seasonal dry reference instead of one quantile, a tuned minimum-detectable
-threshold), train on the 28-year free archive rather than one season, add
-terrain to the historical map, and replicate on a second basin. The free
-input's finer working resolution (~10 km vs ~22 km) is the standing
-structural advantage.
+The path from "free copy" to "maybe better" now has concrete work items:
+refine R1 (per-pixel emissivity contrast, a seasonal dry reference instead
+of one quantile, a tuned minimum-detectable threshold), re-run the
+allocation stage on the R1 fraction, train on the 28-year free archive
+rather than one season, add terrain to the historical map, and replicate on
+a second basin. The free input's finer working resolution (~10 km vs ~22 km)
+is the standing structural advantage.
