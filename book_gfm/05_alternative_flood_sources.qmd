@@ -58,6 +58,17 @@ confirmation. The operational GFDS mitigates all this with manually curated
 sites; the gridded rasters we use below share the same physics but none of
 that site-level curation, which is why we validate before trusting them.
 
+A status note obtained directly from the JRC team (September 2026): the
+project was completed around 2015 and has run without further updates since;
+the visualization interface has been decommissioned, while the data services
+we use remain online, and a transfer of the system to the Dartmouth Flood
+Observatory group at the University of Colorado has been under discussion
+for years. In plain terms, the feed works but nobody maintains it. That
+explains the frozen 2009 baseline and argues for archiving the data while
+the service lasts; the deeper mitigation is that GFDS is a processing chain
+over public AMSR2/GPM brightness temperatures, so the signal could be
+recomputed from source if the feed stops.
+
 ## Sensors and methods, side by side
 
 Before comparing outputs, it is worth being precise about what each system

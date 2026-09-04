@@ -26,6 +26,28 @@ standard deviations of `s` above that pixel's long-term mean.
   **AMSR2 (2013–ongoing)**, **GPM-GMI (2015–ongoing)**
 - Latency: ~3 h (AMSR2) to ~24 h (GPM); site updates every 3 hours
 
+## Status update (2026-09-04): end-of-life confirmed by JRC
+
+Direct correspondence from the JRC team (S. Paris, via a colleague) confirms
+what the frozen baselines and 2015-era documentation implied: the project
+was "completed about ten years ago" and operations were maintained "without
+further updates until the web interface was eventually decommissioned". The
+data services (raster downloads and the virtual-gauge API) remain running
+and are the supported access path. A transfer of the project to the
+Dartmouth Flood Observatory group at the University of Colorado
+(R. Brakenridge, A. Kettner) has been under discussion for years and is
+"still ongoing". Implications:
+
+1. **No SLA, no maintenance, ownership in limbo.** The daily feed runs on
+   inertia. Any ingest should assume it can stop without notice, and the
+   archive backfill should happen sooner rather than later.
+2. **The resilience path is the physics route.** GFDS is a processing chain
+   over public AMSR2/GPM brightness temperatures (JAXA/NASA); if the feed
+   dies, the M/C signal can be recomputed from source. The downscaling POC's
+   independent physics calibration is a first step in that direction.
+3. Watch the Colorado transfer: if DFO adopts the system, hosting and
+   endpoints may change.
+
 ## Products and access (verified)
 
 ### 1. Daily global rasters
