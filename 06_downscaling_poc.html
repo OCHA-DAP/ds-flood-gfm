@@ -402,7 +402,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="test-1-reproduction-the-r0-lookup-vs-floodscan" class="level2" data-number="3.2">
 <h2 data-number="3.2" class="anchored" data-anchor-id="test-1-reproduction-the-r0-lookup-vs-floodscan"><span class="header-section-number">3.2</span> Test 1: reproduction — the R0 lookup vs FloodScan</h2>
 <p>R0 is a per-pixel lookup table. For each 10 km pixel we line up its history of GFDS readings against its history of FloodScan readings: a middling GFDS day maps to that pixel’s typical FloodScan value, an extreme day to an extreme value. To keep ourselves honest, the table is built from half the days (alternating) and every score below comes from the other half, days the table never saw.</p>
-<div id="01564319" class="cell" data-execution_count="1">
+<div id="924373ad" class="cell" data-execution_count="1">
 <details class="code-fold">
 <summary>experiments/gfds_downscaling_poc/01_calibrate_fraction.py (method R0)</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">"""POC step 1: calibrate GFDS anomaly -&gt; flooded fraction at 10 km.</span></span>
@@ -547,7 +547,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-140"><a href="#cb1-140" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"wrote"</span>, OUT <span class="op">/</span> <span class="st">"gfds_calibrated_fraction.nc"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
-<div id="0c38ee12" class="cell" data-execution_count="2">
+<div id="933891fd" class="cell" data-execution_count="2">
 <details class="code-fold">
 <summary>load POC results (fails loudly if the scripts haven’t been run)</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
@@ -612,7 +612,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <p>On the unseen days, R0 predicts FloodScan’s value with a typical error of 0.040 (in flooded-share units, over pixels that actually flooded), versus 0.048 for the lazy strategy of always guessing each pixel’s average. A modest margin, honestly earned. The more tangible payoff is that GFDS can now express something it never could before: how many square kilometres are under water.</p>
-<div id="3ba43687" class="cell" data-execution_count="3">
+<div id="19fa0503" class="cell" data-execution_count="3">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>px_km2 <span class="op">=</span> (<span class="fl">0.09</span> <span class="op">*</span> <span class="fl">111.32</span>) <span class="op">**</span> <span class="dv">2</span></span>
@@ -636,7 +636,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
-<div id="92d9168e" class="cell" data-fig-height="5.5" data-execution_count="4">
+<div id="86974897" class="cell" data-fig-height="5.5" data-execution_count="4">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>peak <span class="op">=</span> <span class="bu">slice</span>(<span class="st">"2022-10-06"</span>, <span class="st">"2022-10-13"</span>)</span>
@@ -678,7 +678,7 @@ mean fraction over wet pixels: GFDS-R0 0.114 | FloodScan 0.110</code></pre>
 <section id="test-2-independence-can-we-calibrate-without-floodscan" class="level2" data-number="3.3">
 <h2 data-number="3.3" class="anchored" data-anchor-id="test-2-independence-can-we-calibrate-without-floodscan"><span class="header-section-number">3.3</span> Test 2: independence — can we calibrate without FloodScan?</h2>
 <p>R0 proves the free input can copy the licensed product, but a copy is not an independent product. AER did not have a reference product when they built FloodScan; they got flooded fraction from brightness temperature with physics: a partly flooded pixel’s signal is a mix of a wet and a dry component, and the mixing equation can be inverted. R1, R2, and R3 are three ways to do that without touching FloodScan, which makes SFED a fully fair external benchmark for them.</p>
-<div id="9f1dbdb0" class="cell" data-execution_count="5">
+<div id="fbdb7e44" class="cell" data-execution_count="5">
 <details class="code-fold">
 <summary>experiments/gfds_downscaling_poc/06_independent_fractions.py (methods R1, R2, R3)</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co">"""POC step 6: three FloodScan-independent routes from GFDS signal to flooded</span></span>
@@ -833,7 +833,7 @@ mean fraction over wet pixels: GFDS-R0 0.114 | FloodScan 0.110</code></pre>
 <span id="cb6-150"><a href="#cb6-150" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"wrote independent_fraction_areas.png + independent_fractions.npz"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
-<div id="5f08a529" class="cell" data-execution_count="6">
+<div id="b5f43ef8" class="cell" data-execution_count="6">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>z2 <span class="op">=</span> np.load(POC <span class="op">/</span> <span class="st">"independent_fractions.npz"</span>)</span>
@@ -929,7 +929,7 @@ mean fraction over wet pixels: GFDS-R0 0.114 | FloodScan 0.110</code></pre>
 <h2 data-number="3.4" class="anchored" data-anchor-id="test-3-allocation-the-83-m-maps"><span class="header-section-number">3.4</span> Test 3: allocation — the 83 m maps</h2>
 <p>The remaining stage is spatial. The historical water map is the JRC Global Surface Water dataset (free, ~30 m, fetched here by reading just the needed window over HTTP). This is the same dataset AER names as an ingredient of FloodScan’s downscaling database; their version also folds in topography and hydrology layers, so our single-ingredient version is a floor on what the technique can do, not a replica. Inside each 10 km pixel we sort the small cells from most to least water-prone, exclude cells that are water year-round (lakes, the river channel itself), and mark cells as flooded from the top of the list until the pixel’s estimated share is reached.</p>
 <p>One method note before the maps: the allocation experiments below were run with the <strong>R0 fraction as the GFDS-side input</strong> (they predate the R1 results; re-running them on R1 is listed in the next steps). The scripts:</p>
-<div id="34bce0a4" class="cell" data-execution_count="7">
+<div id="78849acb" class="cell" data-execution_count="7">
 <details class="code-fold">
 <summary>experiments/gfds_downscaling_poc/02_build_prior.py</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co">"""POC step 2: build the downscaling prior for the confluence AOI.</span></span>
@@ -977,7 +977,7 @@ mean fraction over wet pixels: GFDS-R0 0.114 | FloodScan 0.110</code></pre>
 <span id="cb8-43"><a href="#cb8-43" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"wrote"</span>, OUT <span class="op">/</span> <span class="st">"gsw_prior_aoi.npz"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
-<div id="337bdde1" class="cell" data-execution_count="8">
+<div id="a4f95f71" class="cell" data-execution_count="8">
 <details class="code-fold">
 <summary>experiments/gfds_downscaling_poc/04_downscale_validate.py</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co">"""POC step 4: downscale the calibrated GFDS fraction to ~83 m and validate</span></span>
@@ -1143,7 +1143,7 @@ mean fraction over wet pixels: GFDS-R0 0.114 | FloodScan 0.110</code></pre>
 <section id="head-to-head-downscaled-gfds-vs-downscaled-floodscan" class="level3" data-number="3.4.1">
 <h3 data-number="3.4.1" class="anchored" data-anchor-id="head-to-head-downscaled-gfds-vs-downscaled-floodscan"><span class="header-section-number">3.4.1</span> Head to head: downscaled GFDS vs downscaled FloodScan</h3>
 <p>Test 1 compared the two products at the calibration stage, on the 10 km grid. This figure is the next stage of the same story: the same two 10 km fractions, now pushed through the identical allocation, compared as 83 m maps over the confluence for the October peak.</p>
-<div id="39ddc558" class="cell" data-fig-height="8" data-execution_count="9">
+<div id="79ef6b81" class="cell" data-fig-height="8" data-execution_count="9">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> matplotlib.colors <span class="im">import</span> ListedColormap</span>
@@ -1197,7 +1197,7 @@ overlap: 84% of all cells flagged by either map are flagged by both</code></pre>
 <section id="an-outside-check-radar-and-a-control-with-no-satellite-input" class="level3" data-number="3.4.2">
 <h3 data-number="3.4.2" class="anchored" data-anchor-id="an-outside-check-radar-and-a-control-with-no-satellite-input"><span class="header-section-number">3.4.2</span> An outside check: radar, and a control with no satellite input</h3>
 <p>For that we borrow this project’s GFM data: Sentinel-1 radar flood extent for the same dates. Radar is a different product with a different overpass cadence, so disagreement with the daily microwave products is expected and does not crown a winner; its job here is only to arbitrate one narrow question. Alongside the two downscaled maps we score a third: the <strong>history-only control</strong> defined in the methods section, same total flooded area, no 2022 satellite input. If the satellite-based maps cannot beat the control against the radar, the fine detail is coming from the historical map, not from either satellite product.</p>
-<div id="15a2591c" class="cell" data-fig-height="7" data-execution_count="10">
+<div id="fb202e81" class="cell" data-fig-height="7" data-execution_count="10">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> agreement(pred):</span>
@@ -1232,7 +1232,7 @@ overlap: 84% of all cells flagged by either map are flagged by both</code></pre>
 </div>
 </div>
 </div>
-<div id="a1da68b5" class="cell" data-execution_count="11">
+<div id="663a53ba" class="cell" data-execution_count="11">
 <details class="code-fold">
 <summary>scores at 83 m</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> score(pred):</span>
@@ -1306,7 +1306,7 @@ overlap: 84% of all cells flagged by either map are flagged by both</code></pre>
 <section id="where-it-really-flooded-beyond-the-historical-envelope" class="level3" data-number="3.4.3">
 <h3 data-number="3.4.3" class="anchored" data-anchor-id="where-it-really-flooded-beyond-the-historical-envelope"><span class="header-section-number">3.4.3</span> Where it really flooded: beyond the historical envelope</h3>
 <p>A fair objection to everything above: cells with Landsat water history are easy, the fill paints them first, so scores there flatter every map. The telling stratum is the cells <em>outside</em> the historical envelope, where water appeared in places the 1984-2021 record never saw it. Detection there cannot come from water history.</p>
-<div id="8c642903" class="cell" data-execution_count="12">
+<div id="e1535880" class="cell" data-execution_count="12">
 <details class="code-fold">
 <summary>stratify the radar comparison by the historical water envelope</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>prior <span class="op">=</span> np.load(POC <span class="op">/</span> <span class="st">"gsw_prior_aoi.npz"</span>)</span>
@@ -1389,7 +1389,7 @@ overlap: 84% of all cells flagged by either map are flagged by both</code></pre>
 <section id="zooming-out-where-the-satellite-earns-its-keep" class="level3" data-number="3.4.4">
 <h3 data-number="3.4.4" class="anchored" data-anchor-id="zooming-out-where-the-satellite-earns-its-keep"><span class="header-section-number">3.4.4</span> Zooming out: where the satellite earns its keep</h3>
 <p>If the fine detail is mostly the historical map, the satellite has to prove itself at coarser zoom. We blur all the maps to a series of coarser grids and check how well each tracks the radar:</p>
-<div id="9aebbd59" class="cell" data-execution_count="13">
+<div id="8fe76431" class="cell" data-execution_count="13">
 <details class="code-fold">
 <summary>agreement with radar (correlation) at increasing blur</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> block_reduce(a, k, m):</span>
@@ -1480,6 +1480,7 @@ overlap: 84% of all cells flagged by either map are flagged by both</code></pre>
 <li><strong>Both open-source questions survive their first test.</strong> Reproduction: the R0 lookup matches the licensed product at 10 km, and through the identical allocation the two 83 m maps overlap on 84% of flagged cells with a 0.91 area ratio. Independence: the R1 physics calibration needs no licensed data at all and reaches r = 0.84 and 99% of peak area against the licensed product.</li>
 </ol>
 <p>The path from “free copy” to “maybe better” now has concrete work items: refine R1 (per-pixel emissivity contrast, a seasonal dry reference instead of one quantile, a tuned minimum-detectable threshold — the allocation test above shows its amplitude runs hot at the peak, so this tuning is what stands between “independent at 10 km” and “independent end to end”), train on the 28-year free archive rather than one season, add terrain to the historical map, and replicate on a second basin. The free input’s finer working resolution (~10 km vs ~22 km) is the standing structural advantage.</p>
+<p>One late addition to the risk picture (details in <a href="05_alternative_flood_sources.html" class="quarto-xref"><span>Chapter 2</span></a>): JRC has confirmed GFDS is unmaintained — its data pipeline still runs and writes new rasters daily, but development ended around 2015 and a handover to the Dartmouth Flood Observatory group remains unresolved. Two consequences for this work: archive the GFDS record while the service lasts, and treat the physics calibration as more than a convenience, because it is the route that survives the feed. The underlying AMSR2/GPM brightness temperatures are public, so the whole signal chain can be rebuilt from source if GDACS goes dark.</p>
 
 
 <!-- -->
@@ -2459,6 +2460,16 @@ overlap: 84% of all cells flagged by either map are flagged by both</code></pre>
 <span id="cb17-533"><a href="#cb17-533" aria-hidden="true" tabindex="-1"></a>on the 28-year free archive rather than one season, add terrain to the</span>
 <span id="cb17-534"><a href="#cb17-534" aria-hidden="true" tabindex="-1"></a>historical map, and replicate on a second basin. The free input's finer working resolution (~10 km vs ~22 km)</span>
 <span id="cb17-535"><a href="#cb17-535" aria-hidden="true" tabindex="-1"></a>is the standing structural advantage.</span>
+<span id="cb17-536"><a href="#cb17-536" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-537"><a href="#cb17-537" aria-hidden="true" tabindex="-1"></a>One late addition to the risk picture (details in</span>
+<span id="cb17-538"><a href="#cb17-538" aria-hidden="true" tabindex="-1"></a>@sec-alternative-sources): JRC has confirmed GFDS is unmaintained — its</span>
+<span id="cb17-539"><a href="#cb17-539" aria-hidden="true" tabindex="-1"></a>data pipeline still runs and writes new rasters daily, but development</span>
+<span id="cb17-540"><a href="#cb17-540" aria-hidden="true" tabindex="-1"></a>ended around 2015 and a handover to the Dartmouth Flood Observatory group</span>
+<span id="cb17-541"><a href="#cb17-541" aria-hidden="true" tabindex="-1"></a>remains unresolved. Two consequences for this work: archive the GFDS record</span>
+<span id="cb17-542"><a href="#cb17-542" aria-hidden="true" tabindex="-1"></a>while the service lasts, and treat the physics calibration as more than a</span>
+<span id="cb17-543"><a href="#cb17-543" aria-hidden="true" tabindex="-1"></a>convenience, because it is the route that survives the feed. The underlying</span>
+<span id="cb17-544"><a href="#cb17-544" aria-hidden="true" tabindex="-1"></a>AMSR2/GPM brightness temperatures are public, so the whole signal chain can</span>
+<span id="cb17-545"><a href="#cb17-545" aria-hidden="true" tabindex="-1"></a>be rebuilt from source if GDACS goes dark.</span>
 </code></pre></div><button title="Copy to Clipboard" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
 </div></div></div></div></div>
 </div> <!-- /content -->
