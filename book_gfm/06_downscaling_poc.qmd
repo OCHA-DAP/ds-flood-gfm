@@ -507,3 +507,13 @@ stands between "independent at 10 km" and "independent end to end"), train
 on the 28-year free archive rather than one season, add terrain to the
 historical map, and replicate on a second basin. The free input's finer working resolution (~10 km vs ~22 km)
 is the standing structural advantage.
+
+One late addition to the risk picture (details in
+@sec-alternative-sources): JRC has confirmed GFDS is unmaintained — its
+data pipeline still runs and writes new rasters daily, but development
+ended around 2015 and a handover to the Dartmouth Flood Observatory group
+remains unresolved. Two consequences for this work: archive the GFDS record
+while the service lasts, and treat the physics calibration as more than a
+convenience, because it is the route that survives the feed. The underlying
+AMSR2/GPM brightness temperatures are public, so the whole signal chain can
+be rebuilt from source if GDACS goes dark.
