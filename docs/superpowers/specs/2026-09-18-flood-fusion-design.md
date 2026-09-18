@@ -30,10 +30,14 @@ column. The first model is deliberately simple; the substrate is the product.
   seasonal-aware). The label table keeps `flood_frac` so a flood-target model
   can be trained for comparison; which is better on the flood metric is an
   experiment, not a decision made here.
-- **Label tiers.** Tier A: analyst-made dated extents (CEMS gold, UNOSAT gold,
-  Sen1Floods11) train the model. Tier B: automated fine-resolution water (GFM
-  `ensemble_water_extent`; later Dynamic World, GSW monthly history) calibrates
-  the coarse layers only — GFM is never scored against itself. Tier C: event
+- **Label tiers, assigned by sensor class, not by source.** Tier A: analyst-made
+  dated extents from SAR or optical imagery of tens of metres or better (CEMS
+  gold, UNOSAT gold with `sensor_class` ∈ {sar, optical_vhr, optical_hr},
+  Sen1Floods11) train the model. Tier B: automated or coarse water products
+  (GFM `ensemble_water_extent`; UNOSAT layers derived from VIIRS/MODIS at
+  375 m+, which are 1,829 of its label layers; later Dynamic World, GSW
+  monthly history) calibrate the coarse layers only — GFM is never scored
+  against itself. Tier C: event
   footprints (groundsource, Global Flood Database, DFO) evaluate at event
   level only. Sources that repackage CEMS (WorldFloods, Kuro Siwo, MMFlood,
   SEN12-FLOOD) are excluded as duplicates.
@@ -59,15 +63,15 @@ column. The first model is deliberately simple; the substrate is the product.
 
 | input layer | resolution / archive | permanent water | holdings |
 |---|---|---|---|
-| GFM (Copernicus, Sentinel-1) | 20 m, 2015 → | ships `ensemble_water_extent`, `ensemble_flood_extent`, `reference_water_mask`, `exclusion_mask`, `advisory_flags`, three member extents and likelihoods | STAC `stac.eodc.eu`, collection `GFM` |
+| GFM (Copernicus, Sentinel-1) | 20 m, 2015 → | `ensemble_water_extent` = flood ∪ reference water (verified: on a Lake Victoria scene 21,560 of 21,733 water pixels were reference water); `ensemble_flood_extent` excludes it; `exclusion_mask` = 1 marks terrain GFM does not evaluate (HAND-based non-floodable plus unreliable areas; 86 % of that hilly scene), and excluded pixels read water = 0, so they are *unevaluated*, not dry; `ensemble_likelihood` is a flood likelihood 0–100 (255 nodata), zero over reference water; `advisory_flags`, three member extents and likelihoods | STAC `stac.eodc.eu`, collection `GFM`; all assets uint8, nodata 255 |
 | FloodScan (AER) | 300 arcsec, 1998 → 2026-09-15 | lakes 0.000 (Victoria, Tanganyika); seasonal water 0.04–0.35 (Chad, Mopti) | prod blob `raster/floodscan/daily/v5/processed/`, 10,474 daily 2-band COGs (SFED, MFED), **Africa grid only** |
 | GFDS (JRC/DFO) | 0.09°, 1997 → | anomaly vs 2009 annual mean | HTTP, no auth, end-of-life feed; fetch code only in `experiments/` |
 
 | label source | sets | dated to the day | notes |
 |---|---|---|---|
 | CEMS gold (`global/copernicus_ems/flood/gold`) | 2,715 | 2,495 | 71 % Europe; Africa 172 / Americas 190 / Asia-Oceania 376 precise 2015+; 55 % SAR, 22 % Sentinel-1; flood-only today, valid mask included |
-| UNOSAT (HDX, own spec in impact-estimates) | 226 flood/cyclone event codes | date or window | South Sudan, Somalia, Madagascar, Sudan, Mozambique, Chad, Bangladesh, Pakistan; water and flood separable via `Water_Class` |
-| Sen1Floods11 | 446 hand-labelled 10 m chips, 11 events | yes | public GCS bucket; Ghana 53, Somalia 26, Nigeria 18, Pakistan 28; water labels; Sentinel-1 chips → GFM hold-out only |
+| UNOSAT (HDX catalogue, files on UNOSAT/CERN hosts; own spec in impact-estimates) | 226 flood/cyclone event codes; 11,842 shapefile layers of which ~2,000 flood, ~1,050 water, ~1,400 pre-flood/permanent water, ~1,440 cumulative | date or window; 94 % filename/attribute agreement | South Sudan, Somalia, Madagascar, Sudan, Mozambique, Chad, Bangladesh, Pakistan; VIIRS is the most common label sensor (Tier B), then Sentinel-2, Sentinel-1, Pléiades, WorldView-3 |
+| Sen1Floods11 | 446 hand-labelled 10 m chips, 11 events | one S1 date per event (12-feature metadata GeoJSON, verified) | public GCS bucket; Ghana 53, Somalia 26, Nigeria 18, Pakistan 28; water labels; Sentinel-1 chips → GFM hold-out only |
 | groundsource_2026 (`global/vector/raw`) | 2.6 M polygons | start/end | median 5 vertices, 376 M km² summed: event footprints, Tier C |
 
 ## Out of scope (hooks left in place)
@@ -95,8 +99,9 @@ Interface: `LabelSource.iter_sets(region, date_range) → LabelSet`, where a
 (`geom_water`, `geom_flood`, `geom_possible`) plus `geom_valid` with
 `valid_basis`. Adapters:
 
-- `cems_gold` — reads the CEMS gold on blob; accepts v1 (flood-only) and v2
-  and records which it got. `geom_water` is null on v1.
+- `cems_gold` — reads the CEMS gold on blob; accepts v1 (columns `geometry`,
+  `valid_geometry`, `valid_basis`, flood-only; verified 283 partitions) and
+  v2, and records which it got. `geom_water` is null on v1.
 - `unosat_gold` — reads the UNOSAT gold v2 once it exists.
 - `sen1floods11` — reads the hand-labelled chips and their metadata GeoJSON;
   label is water at 10 m, valid = chip footprint minus no-data; tier A but
@@ -106,8 +111,8 @@ Interface: `LabelSource.iter_sets(region, date_range) → LabelSet`, where a
   and GFDS.
 
 **Rasteriser** (`fusion/labels/rasterize.py`): area-weighted coverage of each
-geometry onto the grid window (exactextract coverage fractions, already a
-dependency) → `water_frac`, `flood_frac`, `possible_frac`, `valid_frac` per
+geometry onto the grid window (exactextract `cell_id` + `coverage` ops over a
+cell-id raster, already a dependency; verified to return exact fractions) → `water_frac`, `flood_frac`, `possible_frac`, `valid_frac` per
 cell, with the fraction defined over the *valid* area of the cell. Cells with
 `valid_frac < min_valid` (default 0.5, recorded in the manifest) are dropped.
 Label sets whose acquisition is a window wider than `max_window_days` (default
@@ -122,9 +127,15 @@ logged as such. Three adapters:
 
 - **GFM** (`layers/gfm.py`, built on the existing STAC query in
   `datasources/gfm.py`): nearest scene(s) within `±gfm_window_days` (default
-  2); `gfm_dt_days`; `gfm_water_frac` and `gfm_flood_frac` by averaging the
-  20 m masks to the grid; `gfm_likelihood_mean`; `gfm_refwater_frac`;
-  `gfm_observed_frac` from the exclusion mask (observed = fraction ≥ 0.5).
+  2); `gfm_dt_days`; `gfm_water_frac` (from `ensemble_water_extent`, which
+  already includes reference water) and `gfm_flood_frac`, both averaged over
+  *evaluated* 20 m pixels only; `gfm_likelihood_mean` (a flood likelihood,
+  zero over reference water, so it is combined with `gfm_refwater_frac`, not
+  read as a water likelihood); `gfm_evaluated_frac` = share of the cell with
+  `exclusion_mask == 0` inside the swath. `observed` = evaluated fraction ≥
+  0.5. Because the exclusion mask carries HAND-based non-floodable terrain,
+  GFM's observed fraction will be low in hilly areas; that is a property of
+  the product and is reported per label set, not patched.
 - **FloodScan** (`layers/floodscan.py`): `fs_sfed`, `fs_mfed` at the day
   (exact block value thanks to nesting), `fs_sfed_3d_max`. Reads the prod
   COGs via ocha-stratus; a missing day raises (the archive is complete, a
@@ -135,9 +146,10 @@ logged as such. Three adapters:
   resumable cache): `gfds_signal`, `gfds_anom_sigma` against the static
   baseline, `gfds_anom_4d` trailing mean; 404 → `observed = false` recorded
   with the date.
-- **Static context** (`layers/gsw.py`): JRC Global Surface Water occurrence
-  and seasonality, block-averaged to the grid from the public 10° tiles
-  (no Earth Engine needed): `gsw_occurrence_mean`, `gsw_seasonality_mean`,
+- **Static context** (`layers/gsw.py`): JRC Global Surface Water v1.4
+  occurrence and seasonality, block-averaged to the grid from the public 10°
+  tiles on `storage.googleapis.com/global-surface-water/downloads2021/`
+  (verified reachable; no Earth Engine needed): `gsw_occurrence_mean`, `gsw_seasonality_mean`,
   `gsw_permanent_frac` (occurrence ≥ 90 %). Used as features and as the
   stratification key for evaluation.
 
@@ -250,6 +262,12 @@ never leak a code.
   coarse layers only, Sentinel-1 hold-out; excluded CEMS-derived datasets.
 
 ## Open questions
+
+- The GHSL 3 arcsec population COG named in `country_config.py`
+  (`ghsl/pop/GHS_POP_E2025_GLOBE_R2023A_4326_3ss_V1_0.tif`) returned 404 on
+  the prod `raster` container on 2026-09-18. Not needed for the PoC, but the
+  nesting claim is asserted by a grid unit test against the GHSL product
+  definition, and the exposure pipeline that reads it may be broken.
 
 - `min_valid` and `gfm_window_days` defaults are guesses; phase 1–2 report
   their sensitivity.
