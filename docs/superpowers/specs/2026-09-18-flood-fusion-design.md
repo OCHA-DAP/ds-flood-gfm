@@ -275,3 +275,42 @@ never leak a code.
   per label set (stratified) or weight, decided on phase-1 counts.
 - FloodScan Africa grid edge: label sets straddling the grid boundary get
   `fs_observed = false` for the outside cells; confirm no PoC set straddles.
+- **Who rasterises, and to what.** §2 above rasterises *vector* gold with
+  exactextract area fractions per cell (`water_frac` etc.). ADR-0037 in
+  ds-geospatial-impact-estimates (proposed, PR #132) would instead have gold
+  v3 burn binary 0/1 cells onto this grid inside the archive, centre-sampled.
+  Those are different labels: at 30 arcsec a 375 m VIIRS pixel is a fraction of
+  a cell. Must be settled before phase 1; the leaning on 2026-09-24 was that
+  v3 should store a coverage fraction (burn at 3 arcsec, block-sum 10×10 to a
+  0–100 uint8), which keeps gold tiny and honours §2.
+- **CEMS has no `sensor_class`.** Tiers are assigned by sensor class, but CEMS
+  gold v1 carries only the raw `sensor` string and `sensor_gsd`; the class must
+  be derived somewhere (gold, per ADR-0034's intent) before CEMS sets can be
+  tiered. Deferred by decision on 2026-09-24.
+
+## Label corpora: state as of 2026-10-01
+
+No fusion code exists yet; this spec is the only artefact in this repo. The
+label sources it names stand as follows (all in ds-geospatial-impact-estimates,
+blob container `global`, **dev** account `imb0chd0dev`):
+
+- **CEMS gold v1** (`copernicus_ems/flood/gold/`, on `v1`): 283 codes, 2,715
+  label sets, flood geometry + valid mask only. ADR-0034's promised v2 rebuild
+  (adding `geom_water`, `label_source`, `sensor_class`) has not been written.
+  Its geometries are 3-D and include line fragments from `make_valid`.
+- **UNOSAT gold v2** (`unosat/gold/`, PR #132 unmerged): 181 of 186 events,
+  867 label sets; the 5 unbuilt are polygonised-raster giants (FL20220808PAK,
+  FL20240825BGD, FL20250630PAK, TC20201013VNM, TC20240502BGD) that the vector
+  dissolve could not finish, which is what motivated ADR-0037. Known defects:
+  FL20190827TCD built with 0 label sets (grammar does not split `L8` from its
+  date); 6 label sets carry acquisition starts in 1476/1900 (one bad
+  per-polygon date attribute each; silver's S3 audit checks layer dates, not
+  polygon attributes) — FL20190815SDN ×4, FL20190905LAO, FL20231105SOM.
+- **Combined display platinum** (`flood_labels/platinum/`, builder on PR #137,
+  page live at ocha-dap.github.io/ds-geospatial-impact-estimates/flood-labels/):
+  simplified, z10-capped, thin index. It is for cataloguing and sense-checking
+  events; the `cems_gold` / `unosat_gold` adapters in §2 must read gold, never
+  this.
+- ADR numbers 0033–0038 on those branches collide with `v1`'s 0033/0034 and
+  will be renumbered at merge; cite them by title.
+
