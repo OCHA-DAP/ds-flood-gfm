@@ -1,0 +1,18 @@
+# Assumptions (flood fusion v1)
+
+These are the things v1 takes as true but has not proven. For each: what is assumed, why, what would break if it is false, and where that would show up. The design decisions themselves are in `docs/decisions.md`.
+
+| # | assumption | why it is needed | if false | where it shows |
+|---|---|---|---|---|
+| A-01 | Gold flood polygons are correct inside their valid mask on the label day, and the valid mask marks where the analyst could see. | Gold is the only truth. | Sensitivity and specificity are biased in the gold maps' direction. Rapid-mapping products under-map urban and vegetated floods (UNOSAT's own caveat). | GFM "false alarms" clustered at gold edges; urban stratum hit rates. |
+| A-02 | Footprint cells are dry in the dry windows, [start − 30, start − 1] and [end + 1, end + 60]. | Fixed decision 5. Specificity needs dry truth. | Recession water after the last gold day and pre-event rises count as false alarms, so specificity is biased low. | `results/phase3_post_window_pofd.csv`: false-alarm rate on days 1–30 vs 31–60 after the event. |
+| A-03 | SAR, microwave and optical errors are independent given truth and stratum. | Naive Bayes and Dawid–Skene EM. | Over-confident probabilities (\|log-odds\| too large) and a reliability slope below 1. | Reliability slope per stratum (Phase 5). |
+| A-04 | Sensitivity and specificity depend on stratum only, not on year, region, event size or flood duration. | One table for the globe. | Per-continent skill differs from the pooled table. | Per-continent tables (Phase 5); per-event spread in the bootstrap intervals. |
+| A-05 | FloodScan's processed SFED has no unobserved state inside its regions (no NaN, no mask). | Treated as always observed. | A cell AER could not observe reads as 0 (dry). AER's own masking is invisible to us. | FloodScan specificity near 1 is expected. A hidden mask would look like low sensitivity. |
+| A-06 | Equi7 is close enough to equal-area at 1 km that cell area divided by (80 m)² gives the expected GFM pixel count. | GFM's "observed ≥ 50%" rule. | Cells near zone edges are mislabelled observed or unobserved, an error of up to about 10%. | Small effect at a 0.5 threshold; not measured. |
+| A-07 | ERA5-Land monthly snow cover is an adequate stand-in for a MODIS snow climatology. | MOD10CM cannot be reached (D-05). | The snow-season boundary moves by weeks in transition months. | Snow strata sizes. |
+| A-08 | Gold "label_day" and a source's UTC acquisition date match. Same-day matching is exact. | Day-level product. | An optical gold map dated in local time could mismatch a SAR pass across midnight UTC. | Small; not measured. |
+| A-09 | GFDS's static 2009 baseline mean is a usable dry reference for the R1 fraction. | No FloodScan-free alternative exists for a daily call (D-07). | Seasonally wet cells sit below the mean all season, giving persistent false alarms or misses. | GFDS false-alarm rate by stratum; the FloodScan-only vs OR ablation. |
+| A-10 | Cells whose gold flood fraction is below 0.30 of the valid area are dry. | Fixed decision 1 applied to gold. | Small floods inside a cell are "dry" truth, so sources that catch them score false alarms. | Inherent to binarising at 1 km. Stated in the README. |
+| A-11 | The 187 v1 events represent the 353 usable events. | The selection is cost-capped and biased toward smaller events (D-14). | Big-river floods are under-represented, and skill for them is unknown. | Stated as an open issue. |
+| A-12 | The stratified sample (Phase 2) over 2023–2025 represents "normal" conditions for the base flood rate. | Prior v1. | The prior is biased when those years were unusually wet or dry. | Prior per stratum vs the share of gold-window days that are flood. |

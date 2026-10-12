@@ -151,3 +151,9 @@ outputs/
 
 /.quarto/
 **/*.quarto_ipynb
+
+# flood fusion v1 deliverables (docs/decisions.md D-02): small result tables and
+# figures under results/, and the repo's CLAUDE.md, are committed on purpose
+!/CLAUDE.md
+!results/
+!results/**
