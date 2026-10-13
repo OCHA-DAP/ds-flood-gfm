@@ -131,13 +131,14 @@ It fuses three independent sensor families:
 
 The fusion is per-stratum naive Bayes in log-odds, with sensitivity and specificity learned from Copernicus EMS and UNOSAT flood maps. Yesterday's log-odds carry over to today with a 0.9 decay toward the prior.
 
-> **Resolution.** v1 is deliberately coarser than GFM's 20 m. A cell counts as "flooded" only when at least 30% of its area is flooded, so small or narrow floods are not represented. Use GFM directly when you need detail; use this product when you need a daily, gap-filled, calibrated estimate.
+> **Resolution.** v1 is deliberately coarser than GFM's 20 m. A cell counts as "flooded" only when at least 30% of its area is flooded, so small or narrow floods are not represented. Use GFM directly when you need detail; use this product when you need a daily, gap-filled estimate. v1's probabilities are not calibrated: read them as a ranking score.
 >
 > **Licence.** FloodScan is a commercial input, and outputs derived from it may not be shared outside OCHA without AER approval.
 
 **v1 status:**
 - **Validation (49 held-out gold events):** the product is built and tested end to end, but as specified it does **not** beat the best single source in any stratum. Its probabilities are strongly over-confident: reliability slope about 0.01 against a target of 0.8–1.2.
-- **Fixable where the data are good.** A per-stratum recalibration fitted on training events fixes calibration in open, snow-free land, where fusion then beats every single source (CSI 0.37 vs 0.33). It is the top-ranked next improvement.
+- **Where a single product observed, it beats fusion.** On GFM-observed cells: GFM 0.440 vs fusion 0.283. On VIIRS-observed cells: VIIRS 0.495 vs fusion 0.341.
+- **One lead, not yet established.** In open, snow-free land, a decision threshold learned on training events (P ≥ 0.02) gave held-out CSI 0.372 vs VIIRS 0.333. That rests on one run, with no confidence interval. A per-stratum recalibration improved calibration there but did not reach the 0.8–1.2 target.
 - **Inputs are ending.** GFDS stopped on 2026-09-14, and FloodScan outside Africa ends on 2026-03-31 on our blob.
 
 Where fusion is better than single products, and where it is not, is written up in **[docs/final_report.md](docs/final_report.md)**.

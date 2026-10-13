@@ -23,11 +23,15 @@ Each day it writes three layers: P(flooded), uncertainty (|log-odds| and the num
 
 **Overall it is mid-pack.** Held-out CSI over all strata is **0.285**. That beats GFM (0.184), FloodScan (0.248), GFDS (0.198) and, narrowly, the microwave vote (0.280), but loses to VIIRS (0.319).
 
-**One measured fix closes most of the gap.** I fitted a per-stratum recalibration of the fused log-odds on the training events only, with a decision threshold also learned on training, then applied both to the held-out events:
-- **Open/no-snow** (most of the data): calibration slope **0.87**, and held-out CSI **0.37** vs VIIRS **0.33**, the best single product there.
-- **Vegetated and urban strata:** this did not close the gap.
+**Where a single product actually observed, it beats fusion.** On cells GFM observed, GFM scores CSI 0.440 and fusion 0.283. On cells VIIRS observed, VIIRS scores 0.495 and fusion 0.341. Fusion's headline lead over GFM comes from counting GFM's unobserved cells as misses (§4).
 
-This is an experiment, not the product. It is ranked first among the next improvements.
+**One experiment points to a gain in open land; it is not established.** On training events only, I fitted a per-stratum recalibration of the fused log-odds and, separately, picked the decision threshold that maximised CSI. Both were then applied unchanged to the held-out events (§4):
+- **Calibration improves but still fails criterion (c).** In open/no-snow the reliability slope rises from 0.01 to 0.68 (logistic calibration slope 0.15 → 0.87). The target is 0.8–1.2.
+- **The CSI gain comes from the threshold, not the recalibration.** Calling a cell flooded when the v1 P ≥ 0.02 (instead of 0.5) gives held-out CSI **0.372** in open/no-snow, against VIIRS **0.333**. The recalibrated probabilities never reach 0.5, so at the spec's threshold they flag nothing.
+- **Caveats.** 0.02 is the lowest threshold searched. The same threshold scored only 0.252 on training events. There is no confidence interval on the difference.
+- **Vegetated and urban strata** did not improve.
+
+This is a single exploratory run, not part of the product.
 
 **Scope limits that matter as much as the scores:**
 - **No global run.** The engine and daily job are tiled and global-capable. But the one-off global build of the static layers (HAND, permanent water, land cover over about 15,000 land tiles) was too heavy for a laptop and was **not run**.
@@ -98,7 +102,14 @@ The planned estimator was the prevalence MLE with the gold sensitivity and speci
 
 The daily outputs (COG: P, |L|, number of sources observed, days since observation) exist for **every day of all 85 held-out event windows**: 8,277 files in `data/fusion/out/daily/`.
 
-**Blob status at the end of the session (2026-10-12 19:50).** The mirror to dev `projects/ds-flood-gfm/processed/flood_fusion_v1/` was well along but **not complete**. Already on blob: `MANIFEST.json`, all results tables and figures, all 490 static COGs, and about 6,400 of the 8,277 held-out daily COGs. Still to go: the rest of the daily COGs, the cubes and the raw archives. The upload had been slowed for a while by Google Drive sync holding the uplink to about 30 KB/s. The uploader is resumable (it skips files whose size already matches) and works in priority order: snow input, `MANIFEST.json`, results, static, daily COGs, cubes, then raw archives. Finish with `uv run python scripts/fusion/phase6_package.py --skip-gfds-bands`, then `--only-gfds-bands` for the 5.5 GB GFDS row-band archive.
+**Blob status (complete 2026-10-12 19:55).** The mirror to dev `projects/ds-flood-gfm/` holds:
+- `MANIFEST.json`, all results tables and figures, and all 490 static COGs;
+- all 8,277 held-out daily COGs, plus the 7-day Lokoja demo;
+- the cubes and the raw inputs.
+
+Only the optional GFDS row-band archive (5.5 GB) is not uploaded: `uv run python scripts/fusion/phase6_package.py --only-gfds-bands`.
+
+For a while the upload ran at about 30 KB/s. The cause was not measured: Google Drive sync was busy on the same machine at the time.
 
 ### Skill by stratum (gold days; a source's NoData counts as "not detected")
 
@@ -113,7 +124,20 @@ The daily outputs (COG: P, |L|, number of sources observed, days since observati
 | vegetated, snow (332) | 0.033 | **0.053** | 0 | 0 | 0 | 0 |
 | urban, snow (0) | no held-out gold | | | | | |
 
-Skill on each source's own observed cells, with fusion scored on the same cells, is in `results/phase5_skill_by_stratum.csv` (`mode = conditional`).
+Skill on each source's own observed cells, with fusion scored on the same cells, is in `results/phase5_skill_by_stratum.csv` and `results/phase5_skill_overall.csv` (`mode = conditional`).
+
+**On the cells a single product actually observed, that product beats fusion** (all strata):
+
+| cells scored | that product | fusion |
+|---|---|---|
+| where GFM observed | 0.440 | 0.283 |
+| where VIIRS observed | 0.495 | 0.341 |
+
+So fusion's lead over GFM in the table above comes from scoring GFM's unobserved cells as misses. Where a good observation exists, mixing in the other sources makes the answer worse:
+- the microwave vote's false-alarm ratio is 0.59;
+- evidence is added as if the sources were independent (A-03).
+
+**These skill scores are point estimates.** Phase 5 has no bootstrap intervals (only the accuracy table does). The direction is consistent: fusion is below the best single product in every stratum and in 5 of 6 continents. The size of each gap is not established.
 
 ### By continent (all strata)
 
@@ -132,7 +156,11 @@ Skill on each source's own observed cells, with fusion scored on the same cells,
 
 Observed flood frequency stays near 0.01 at every predicted probability. The fused P is over-confident in every stratum (plots: `results/reliability_*.png`).
 
-**The cause is the independence assumption (A-03).** Errors that recur at the same cell day after day accumulate under the 0.9 carry-over to (L − prior)∞ = w/(1 − 0.9) = 10·w. Errors that are spatially correlated within an event add up in the same way. Two "evidence only on change" ablations (D-33) did not repair the slope (logistic 0.22 and 0.27), so day-to-day persistence is not the main cause.
+**The likely cause is the independence assumption (A-03), but which dependence matters is not settled.**
+- **Repetition at the same cell.** Errors that recur at a cell day after day accumulate under the 0.9 carry-over to (L − prior)∞ = w/(1 − 0.9) = 10·w. But two "evidence only on change" ablations (D-33) did not repair the slope (logistic 0.22 and 0.27). So day-to-day repetition is not the main part.
+- **Sources wrong together.** The other candidate is that the sources' errors are correlated with each other at the same cell. For example, seasonal wetlands that both microwave and VIIRS call flooded. The per-source accuracy table cannot see this. It has not been measured.
+
+(An earlier version of this report also blamed spatially correlated errors. That was wrong: spatial correlation between cells widens the uncertainty of the calibration estimate, but it does not bias a per-cell probability.)
 
 **The same accumulation also makes the product slow to react.** In North America, VIIRS says flood on 299 of the 544 held-out gold flood cells. On none of them does the fused P reach 0.5, and its median there is about 0, even though the microwave vote agrees on 152 of those cells. The reason: in the weeks before a flood, daily "dry" evidence accumulates too. VIIRS dry adds −1.0 a day and microwave dry −0.25. Measured the day before the first gold map, those cells sit a median **8.3 log-odds below the prior** (10th percentile −10.0, 90th −4.0), and a few days of flood evidence cannot climb out of that.
 
@@ -174,32 +202,50 @@ Observed flood frequency stays near 0.01 at every predicted probability. The fus
 
 ### Recalibration experiment (`results/experiment_recalibration.csv`; not the product)
 
-**Method:** a per-stratum logistic recalibration of the fused log-odds, fitted on training events, plus a CSI-maximising threshold chosen on training gold days. Both were applied unchanged to the held-out events.
+**Method** (`scripts/fusion/experiment_recalibration.py`, run once). On training events only:
+1. **Recalibration.** Fit, per stratum, a logistic correction logit P = a + b·L to the fused log-odds L. In open/no-snow b = 0.084: the fused log-odds are about 12 times too extreme.
+2. **Threshold.** Separately, try thresholds 0.02, 0.04, … 0.98 on the v1 P and keep the one with the best training CSI.
 
-| stratum | v1 calibration slope | recalibrated slope | v1 CSI at P ≥ 0.5 | CSI at trained threshold | best single |
-|---|---|---|---|---|---|
-| open, no snow | 0.15 | **0.87** | 0.300 | **0.372** (P ≥ 0.02) | VIIRS 0.333 |
-| vegetated, no snow | 0.28 | 1.55 | 0.183 | 0.187 | VIIRS 0.232 |
-| urban, no snow | 0.18 | 1.12 | 0.099 | 0.092 | GFM 0.164 |
+Both were applied unchanged to the held-out events.
+
+Reliability here uses 10 quantile bins, because recalibrated probabilities all fall in the lowest equal-width bin. So the v1 slopes differ slightly from §4. "WLS" is the reliability slope that criterion (c) uses.
+
+| stratum | WLS slope, v1 → recalibrated | logistic slope, v1 → recalibrated | CSI v1, P ≥ 0.5 | CSI recalibrated, P ≥ 0.5 | CSI v1 at trained threshold (training CSI) | best single |
+|---|---|---|---|---|---|---|
+| open, no snow | 0.01 → 0.68 | 0.15 → 0.87 | 0.300 | 0 | **0.372** at P ≥ 0.02 (0.252) | VIIRS 0.333 |
+| vegetated, no snow | 0.02 → 2.97 | 0.28 → 1.55 | 0.183 | 0 | 0.187 at P ≥ 0.16 (0.147) | VIIRS 0.232 |
+| urban, no snow | 0.01 → 1.66 | 0.18 → 1.12 | 0.099 | 0 | 0.092 at P ≥ 0.02 (0.068) | GFM 0.164 |
+
+The snow strata have too few held-out gold flood cells to read (24 and 332).
+
+**What it shows:**
+- **Calibration.** Much better in open/no-snow, but still outside 0.8–1.2 on the WLS slope. It overshoots in vegetated and urban land.
+- **CSI.** The gain comes entirely from the lower threshold. Recalibration is monotone, so on its own it cannot change the map, and at 0.5 the recalibrated P flags nothing.
+
+**What it does not establish:**
+- 0.02 is the lowest threshold searched, so the optimum may lie below it.
+- Held-out CSI (0.372) is well above training CSI (0.252) at the same threshold, which points to event-mix noise.
+- There is no confidence interval on 0.372 vs 0.333.
 
 ## 5. Where fusion beats single sources, and where it does not
 
 **Where it wins:**
 - **Daily coverage.** Every floodable cell has a value every day, and every gap is filled. Its value depends entirely on the microwave vote.
-- **Overall skill over GFM, FloodScan and GFDS.** Fusion beats all three.
+- **Overall skill over GFM, FloodScan and GFDS, when unobserved cells count as misses.** Fusion beats all three on that scoring. On the cells GFM actually observed, GFM alone is far better (§4).
 - **South America.** Fusion is the best product there.
-- **Large open, unvegetated floodplains, once recalibrated.** With a threshold learned from training events, fusion beats every single product, VIIRS included, in the stratum with the most gold data.
+- **Possibly, large open floodplains with a lower threshold.** With a threshold learned on training events (P ≥ 0.02), fusion scored 0.372 vs VIIRS 0.333 in open/no-snow. That rests on one run, with no interval and the threshold at the edge of the search (§4).
 
 **Where it loses:**
 - **Vegetated and urban land.** GFM or VIIRS alone is better.
 - **Oceania and North America.** VIIRS alone is better.
 - **Europe.** GFM alone is better. Europe has no FloodScan, GFDS has ended, and CEMS maps there are small.
+- **Wherever a good single observation exists.** On cells GFM observed, GFM wins 0.440 to 0.283. On cells VIIRS observed, VIIRS wins 0.495 to 0.341.
 - **Snow season.** There are too few gold floods to say.
-- **The probabilities themselves.** Without recalibration they should not be read as probabilities. They work as a ranking score only.
+- **The probabilities themselves.** They should not be read as probabilities, even after the experimental recalibration (§4). They work as a ranking score only.
 
 ## 6. Open issues
 
-1. **Calibration fails (criterion c).** The cause is correlated errors across days and neighbouring cells. Fix: next improvement 1.
+1. **Calibration fails (criterion c).** The likely cause is dependence between sources' errors that the model treats as independent (§4). Recalibration improves calibration but does not reach the target.
 2. **Inputs are disappearing.**
    - GFDS ended on 2026-09-14.
    - FloodScan outside Africa ends on our blob on 2026-03-31. The AER 90-day zips on the dev blob after that are not integrated, and the prod `processed/global/` folder is empty.
@@ -217,10 +263,13 @@ Observed flood frequency stays near 0.01 at every predicted probability. The fus
    - FloodScan licence: outputs are internal only.
    - The days-since-observation layer is uninformative while microwave is daily.
    - The KB page for the dataset is a draft PR.
+11. **No confidence intervals on the Phase 5 skill scores.** Every comparison with a single product is a point estimate. An event-cluster bootstrap (as used for the accuracy table) is needed before any margin is quoted as real.
 
 ## 7. Next three improvements, ranked
 
-1. **Recalibrate the fused output per stratum, and learn the map threshold from training events.** One logistic layer on the log-odds per stratum, plus a CSI-optimal threshold. Low effort (the code is in `scripts/fusion/experiment_recalibration.py`). Measured gain in open/no-snow: calibration slope 0.15 → 0.87, held-out CSI 0.300 → 0.372, beating every single product there. It fixes criterion (c) where data are adequate. It does not fix vegetated or urban land.
+1. **Test the learned threshold and the recalibration properly.** The code is in `scripts/fusion/experiment_recalibration.py`, so this is low effort. One run gave held-out CSI 0.300 → 0.372 in open/no-snow at P ≥ 0.02, above VIIRS's 0.333. Calibration improved but did not reach criterion (c): WLS slope 0.68, logistic 0.87.
+   - Before relying on it: extend the threshold search below 0.02, and put event-cluster bootstrap intervals on the held-out gain.
+   - It does not help vegetated or urban land.
 2. **Restore the inputs the daily product depends on, then build the static layers globally.**
    - Ingest FloodScan for all regions after 2026-03-31: the AER API or the 90-day zips, which also fills the prod `global/` path the KB expects.
    - Configure an Earthdata login for MODIS MCDWD.
@@ -228,10 +277,10 @@ Observed flood frequency stays near 0.01 at every predicted probability. The fus
 
    Without this the operational product outside Africa is GFM plus VIIRS only. It comes second only because the first item is nearly free.
 3. **Model correlated errors instead of assuming independence.** Measured evidence for each step:
-   - **Drop GFDS where FloodScan exists.** The ablation shows the OR adds false alarms and almost no hits.
-   - **Discount repeated identical evidence within an event footprint** (a spatial analogue of D-33). For example, learn an effective-sample-size factor per source and stratum from the training events.
+   - **Drop GFDS where FloodScan exists.** On held-out gold days, adding GFDS to the microwave vote adds 6,656 hits but 17,246 false alarms. In the fused product the OR is worth only 0.004 CSI.
+   - **Measure dependence between sources at the same cell.** Compare the joint flood/dry patterns of the three sources, given the gold label, with what independence predicts. This tests the remaining explanation for the over-confidence (§4).
    - **Learn the source weights jointly.** Stacked logistic regression on the same cube, which is what the 2026-09-18 spec proposed, instead of fixing them from single-source confusion matrices.
-   - **Bound the accumulated state.** Cap |L − prior|, or decay dry evidence faster, so that weeks of "dry" cannot bury a new flood. That would fix the North America failure mode in §4. It changes fixed decision 6, so it needs your sign-off.
+   - **Bound the accumulated state.** Cap |L − prior|, or decay dry evidence faster, so that weeks of "dry" cannot bury a new flood. That targets the North America failure mode in §4 (not tested). It changes fixed decision 6, so it needs your sign-off.
 
 ## 8. Deliverables and how to reproduce
 
@@ -240,7 +289,7 @@ Observed flood frequency stays near 0.01 at every predicted probability. The fus
 | code, one entry point per phase | `Makefile` (`make phase0` … `make phase6`, `make test`, `make daily`), `scripts/fusion/`, `src/ds_flood_gfm/fusion/` |
 | tests (37, synthetic) | `tests/` |
 | accuracy table with sample sizes and 95% intervals | `results/accuracy_table.csv` |
-| daily outputs for every held-out window | complete locally (`data/fusion/out/daily/`, 8,277 COGs). The mirror to dev blob `projects/ds-flood-gfm/processed/flood_fusion_v1/daily/` was in progress at session end (§4). |
+| daily outputs for every held-out window | 8,277 COGs, locally (`data/fusion/out/daily/`) and on dev blob `projects/ds-flood-gfm/processed/flood_fusion_v1/daily/` (§4) |
 | dataset card | `…/flood_fusion_v1/MANIFEST.json`, written by `phase6_package.py` as the second upload step; registration page is KB draft PR #757 |
 | scheduled job | `databricks.yml`; dev jobs "[dev] Flood Fusion Daily" (718536903707906, schedule paused) and "Static Build" (186374068781759). **Executed once on Job Compute**: run 876940144771744 succeeded for 2026-10-10. It covered 24 tiles over both AOIs from a cold start and wrote daily COGs, state, static cache and a run manifest that records GFDS as absent. Prod deploy comes after merge. |
 | docs | `docs/repo_audit.md`, `docs/inventory.md`, `docs/feasibility.md`, `docs/decisions.md` (D-01–D-35), `docs/assumptions.md`, ADR 0001 |

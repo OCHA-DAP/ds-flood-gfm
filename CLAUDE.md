@@ -46,11 +46,11 @@ This repo has two parts.
 - **Killing a job with a process pool:** kill the whole process tree. Pool workers survive their parent (they reparent to PID 1); check for orphans with `ps -axo pid,ppid,command | grep multiprocessing`.
 - **`pgrep -f "<pattern>"` inside a wait loop matches the loop's own shell.** Wait on a PID or a file instead.
 - **DAB development mode does not pause an explicit schedule.** Keep `pause_status: PAUSED` in the base definition (D-27).
-- **Uploads:** the uplink can drop to about 30 KB/s when other sync software runs. `phase6_package.py` is resumable (it skips files whose size already matches) and uploads in priority order.
+- **Uploads:** the upload rate fell to about 30 KB/s for part of the v1 session (cause not measured). `phase6_package.py` is resumable (it skips files whose size already matches) and uploads in priority order.
 
 ## v1 result in one line
 
-Fusion as specified is mid-pack and over-confident. Recalibration is the measured fix (docs/final_report.md §7).
+Fusion as specified is mid-pack and over-confident. Where a single product observed, it beats fusion. A threshold learned on training events is a lead in open land, not an established fix (docs/final_report.md §4, §7).
 
 ## Not done in v1 (see docs/final_report.md "Open issues")
 
