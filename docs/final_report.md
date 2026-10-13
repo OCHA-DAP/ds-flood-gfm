@@ -19,7 +19,9 @@ Each day it writes three layers: P(flooded), uncertainty (|log-odds| and the num
 |---|---|
 | (a) daily coverage of the floodable domain above any single product | **met, trivially.** 100% vs 99.9% for the microwave vote, which by itself covers nearly everything. GFM covers 10%, VIIRS 55%. |
 | (b) CSI per stratum ≥ the best single product in that stratum | **not met in any stratum.** Open/no-snow: 0.30 vs VIIRS 0.33 (recall · precision 0.38 · 0.58 vs 0.42 · 0.62). Vegetated: 0.18 vs VIIRS 0.23. Urban: 0.10 vs GFM 0.16. The snow strata are too thin to judge. |
-| (c) reliability slope 0.8–1.2 | **not met.** The slope is about 0.01 (logistic 0.16–0.36) in every stratum. The probabilities are strongly over-confident: mean P 0.11 against an observed flood frequency of 0.003 in open/no-snow. |
+| (c) reliability slope 0.8–1.2 | **not met.** As specified (gold days plus dry windows), the slope is about 0.01. Most of that is a labelling artefact (D-39): the dry windows label still-flooded cells dry. **On gold days only, the slope is 0.47 in open land, 0.34 vegetated, 0.27 urban**: still too extreme, but far less, and the mean P there is at or below the real flood rate. |
+
+> **Update 2026-10-13 (D-39).** The dry windows label every footprint cell dry, including cells still flooded after the last gold map. Only 2% of the high-probability cell-days fall on gold days, so this produced most of the measured over-confidence. It also roughly doubled the false-alarm rates the model learned. A corrected variant (formerly flooded cells left unlabelled in the dry windows) raises held-out recall from 0.37 to 0.44 at unchanged precision 0.55 (CSI 0.285 → 0.322). In open land it reaches 0.46 · 0.58 (CSI 0.341), above VIIRS's 0.333. That change touches fixed decision 5 and is proposed, not adopted. Details: §4 Reliability, D-39.
 
 **Overall it is mid-pack.** Across all strata, fusion flags 37% of the gold-flooded cells (**recall 0.37**), and 55% of its flood calls are right (**precision 0.55**).
 - **VIIRS:** recall 0.41 and precision 0.60.
@@ -190,15 +192,21 @@ So fusion's lead over GFM in the tables above comes from scoring GFM's unobserve
 
 ![reliability, open no snow](../results/reliability_open_nosnow.png)
 
-Observed flood frequency stays near 0.01 at every predicted probability. The fused P is over-confident in every stratum (plots: `results/reliability_*.png`).
+Measured over gold days plus dry windows (the plots above), the observed flood frequency stays near 0.01 at every predicted probability.
 
-**The cause is the independence assumption (A-03).** Two kinds of dependence were checked:
+**Most of that is a labelling artefact** (D-39; `scripts/fusion/diagnostic_dry_windows.py`, `results/diagnostic_dry_windows_*.csv`):
+- **The labels.** The dry windows label every footprint cell dry for 30 days before and 60 days after the gold days, including cells flooded on them.
+- **Where the high P is.** Only 2% of cell-days with P ≥ 0.5 fall on gold days. In open land, cells flooded on a gold day sit at P ≥ 0.5 on 48% of the 30 days after the event: that is receding water, scored as false alarm.
+- **On gold days only** the slope is 0.47 (open), 0.34 (vegetated) and 0.27 (urban). The mean P is at or below the observed frequency (open land: 0.15 vs 0.22). Cells at P ≥ 0.5 flood 58% of the time.
+
+**What remains on gold days** is a probability that is still too extreme: about 4 times too extreme on the log-odds scale (logistic slope 0.21–0.27). Two kinds of dependence were checked:
 - **Repetition at the same cell.** Errors that recur at a cell day after day accumulate under the 0.9 carry-over to (L − prior)∞ = w/(1 − 0.9) = 10·w. But two "evidence only on change" ablations (D-33) did not repair the slope (logistic 0.22 and 0.27). So day-to-day repetition is not the main part.
 - **Sources wrong together: measured, and large** (2026-10-13, `results/phase3_gold_error_dependence.csv`).
   - On gold-dry training cells, two sources' false alarms coincide 4–18 times more often than independence predicts. In open land without snow, microwave and VIIRS made 141,077 joint false alarms, 5.2 times the independent expectation.
+  - Most of those joint false alarms fall in the dry windows (54% in the 30 days after the event; D-39). The lift is about the same on gold days alone (4.3; 2.2 within the same event), so the dependence is real even though its volume was inflated.
   - Within the same event the excess is still 2–9 times, so it is the same cells, not just some events being wetter.
   - Misses on flooded cells barely coincide (1.0–1.5 times).
-  - Naive Bayes counts two coinciding false alarms as two independent votes for flood. This is the measured cause of the over-confidence.
+  - Naive Bayes counts two coinciding false alarms as two independent votes for flood. That is the measured cause of what remains of the over-confidence once the labelling artefact is set aside.
 
 (An earlier version of this report also blamed spatially correlated errors. That was wrong: spatial correlation between cells widens the uncertainty of the calibration estimate, but it does not bias a per-cell probability.)
 
@@ -243,7 +251,7 @@ Observed flood frequency stays near 0.01 at every predicted probability. The fus
 ### Recalibration experiment (`results/experiment_recalibration.csv`; not the product)
 
 **Method** (`scripts/fusion/experiment_recalibration.py`, run once). On training events only:
-1. **Recalibration.** Fit, per stratum, a logistic correction logit P = a + b·L to the fused log-odds L. In open/no-snow b = 0.084: the fused log-odds are about 12 times too extreme.
+1. **Recalibration.** Fit, per stratum, a logistic correction logit P = a + b·L to the fused log-odds L. In open/no-snow b = 0.084: the fused log-odds look about 12 times too extreme. The fit pooled the literal dry windows, so most of that factor is the labelling artefact (D-39). On gold days alone the logistic slope is 0.21, about 4 times.
 2. **Threshold.** Separately, try thresholds 0.02, 0.04, … 0.98 on the v1 P and keep the one with the best training CSI.
 
 Both were applied unchanged to the held-out events.
@@ -298,7 +306,7 @@ The snow strata have too few held-out gold flood cells to read (24 and 332).
 
 ## 6. Open issues
 
-1. **Calibration fails (criterion c).** The measured cause is that the sources' false alarms coincide 4–18 times more often than the model assumes (§4). Recalibration improves calibration but does not reach the target.
+1. **Calibration fails (criterion c).** Most of the reported failure (slope 0.01) is the dry-window labelling (D-39). On gold days the slope is 0.27–0.47, still failing; the remaining cause is that the sources' false alarms coincide about 4 times more often than the model assumes (§4). With the current labels criterion (c) cannot be measured cleanly: never-flooded footprint cells still reach P ≥ 0.5 on 2–7% of dry-window days, and those are either false alarms or water the analysts did not map.
 2. **Inputs are disappearing.**
    - GFDS ended on 2026-09-14.
    - FloodScan outside Africa ends on our blob on 2026-03-31. The AER 90-day zips on the dev blob after that are not integrated, and the prod `processed/global/` folder is empty.
@@ -307,7 +315,7 @@ The snow strata have too few held-out gold flood cells to read (24 and 332).
 3. **No global static build, so no global daily product yet.** The `flood_fusion_static` job exists and the global build has not been run (about 15,000 tiles).
 4. **The prod schedule is not deployed.** The dev job (Databricks 718536903707906) is deployed with its schedule paused, and it ran once successfully on Job Compute. Prod needs this branch merged to `main` (D-27).
 5. **The snow and urban strata are thin.** Urban/snow has no gold flood cells at all; its parameters are EM and partly copied from the donor stratum, flagged as such.
-6. **Dry-window recession** inflates measured false alarms (A-02). The post-event window should start later.
+6. **Dry-window labels** (A-02, D-39). Measured: they inflated false-alarm rates (open-land VIIRS 5.5% vs 2.6% when formerly flooded cells are excluded) and produced most of the measured over-confidence. Corrected variant: held-out CSI 0.285 → 0.322. Proposed; adopting it changes fixed decision 5.
 7. **Event selection is biased toward smaller events** by the cost caps; Pakistan 2022 and Bangladesh 2020 are excluded. The 141 events beyond the quotas and the 5 unbuilt UNOSAT giants are unused.
 8. **Slow reaction to a new flood.** Accumulated dry evidence keeps P near 0 for new floods. North America is the clearest case: fusion recall 0.01 vs VIIRS 0.55 (§4).
 9. **A day missing from the FloodScan Africa archive** (archive lag) is now recorded in the daily run manifest (`floodscan_africa_absent`), as GFDS absence is. Before this fix it was silent NoData.
@@ -318,9 +326,10 @@ The snow strata have too few held-out gold flood cells to read (24 and 332).
    - The KB page for the dataset is a draft PR.
 11. **No confidence intervals on the Phase 5 skill scores.** Every comparison with a single product is a point estimate. An event-cluster bootstrap (as used for the accuracy table) is needed before any margin is quoted as real.
 
-## 7. Next improvements, ranked (revised 2026-10-13 after the agreement table)
+## 7. Next improvements, ranked (revised 2026-10-13 after the dry-window diagnostic)
 
-1. **Model the dependence between sources.** It is the measured cause of the over-confidence (§4, D-36).
+0. **Adopt the corrected dry windows** (D-39). It's measured, cheap, and changes no code path except the labels: held-out recall 0.37 → 0.44 at unchanged precision 0.55 (CSI 0.285 → 0.322; open land 0.341 vs VIIRS 0.333). It changes fixed decision 5, so it needs your sign-off. Then rebuild the accuracy table with intervals and re-run Phase 5.
+1. **Model the dependence between sources.** It is the measured cause of what remains of the over-confidence on gold days (§4, D-36).
    - Learn the evidence for each *combination* of the day's reports from gold: per stratum, the 27 flood/dry/no-data patterns of the three sources. Where gold is thin, shrink towards naive Bayes.
    - The 2026-09-18 spec's stacked logistic regression with interaction terms is the alternative.
    - Either can be scored on the held-out cubes already on disk.

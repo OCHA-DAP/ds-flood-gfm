@@ -25,9 +25,9 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from ds_flood_gfm.fusion import cube, engine, gold, job, validate
+from ds_flood_gfm.fusion import cube, engine, gold, validate
 from ds_flood_gfm.fusion.config import load_config
-from ds_flood_gfm.fusion.metrics import MODEL_SOURCES, add_scores
+from ds_flood_gfm.fusion.metrics import MODEL_SOURCES
 from ds_flood_gfm.fusion.sources import NODATA
 from ds_flood_gfm.fusion.static import STRATUM_NAMES
 
@@ -117,11 +117,12 @@ def main() -> None:
         if n % 20 == 0:
             log.info("held-out window %d done", n)
 
-    sk = add_scores(pd.DataFrame(skill).groupby(["model", "stratum"], as_index=False).sum())
-    sk["recall"], sk["precision"] = sk.tp / (sk.tp + sk.fn), sk.tp / (sk.tp + sk.fp)
-    allst = add_scores(pd.DataFrame(skill).groupby("model", as_index=False)[["tp", "fp", "fn", "tn"]].sum().assign(stratum="all"))
-    allst["recall"], allst["precision"] = allst.tp / (allst.tp + allst.fn), allst.tp / (allst.tp + allst.fp)
+    sk = pd.DataFrame(skill).groupby(["model", "stratum"], as_index=False)[["tp", "fp", "fn", "tn"]].sum()
+    allst = pd.DataFrame(skill).groupby("model", as_index=False)[["tp", "fp", "fn", "tn"]].sum().assign(stratum="all")
     sk = pd.concat([sk, allst], ignore_index=True)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        sk["recall"], sk["precision"] = sk.tp / (sk.tp + sk.fn), sk.tp / (sk.tp + sk.fp)
+        sk["csi"] = sk.tp / (sk.tp + sk.fn + sk.fp)
     sk.to_csv(cfg.results_dir / "experiment_dry_window_fix_skill.csv", index=False)
     rows = []
     for (name, labels, st_name), a in rel.items():

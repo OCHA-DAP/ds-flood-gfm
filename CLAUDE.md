@@ -64,7 +64,7 @@ Update this at every commit that changes a phase's state.
 
 ## v1 result in one line
 
-Fusion as specified is mid-pack and over-confident. Where a single product observed, it beats fusion. A threshold learned on training events is a lead in open land, not an established fix (docs/final_report.md §4, §7).
+Fusion as specified is mid-pack. Where a single product observed, it beats fusion. Most of the measured over-confidence was the dry-window labels (D-39). Fixing them is the top proposed step (recall 0.37 → 0.44 at the same precision); see docs/final_report.md §4, §7.
 
 ## Not done in v1 (see docs/final_report.md "Open issues")
 

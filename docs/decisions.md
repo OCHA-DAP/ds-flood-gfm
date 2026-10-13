@@ -276,3 +276,21 @@ Moving to v1.5 is an open issue.
   - the coinciding-false-alarm lift before vs after.
 
   Nothing is fitted. If the baseline helps, the next step (rebuilding the accuracy table and rerunning fusion) needs a decision, since it changes what each source counts as evidence.
+
+**D-39 Dry-window labels: measured, and a corrected variant (proposed, not adopted).**
+- **What the literal reading does.** Fixed decision 5, read literally (D-12), labels every gold-footprint cell dry for 30 days before and 60 days after the gold days. That includes cells flooded on the gold days, so rising and receding floodwater is scored as a false alarm. `scripts/fusion/diagnostic_dry_windows.py` measured it on held-out events:
+  - only **2%** of cell-days with P ≥ 0.5 fall on gold days; the rest are dry-window days labelled dry;
+  - in open land, cells flooded on a gold day sit at P ≥ 0.5 on 48% of days 1–30 after the event, 25% of days 31–60 and 14% of the days before;
+  - never-flooded cells do so on 5%, 4% and 2% of those days.
+- **Consequences for v1's results:**
+  - **Criterion (c).** The reported slope (about 0.01) was measured over gold days plus literal dry windows. On gold days only it is 0.47 in open land, 0.34 vegetated and 0.27 urban: still failing 0.8–1.2, but by much less. On gold days the mean P is at or below the observed flood frequency (open land: 0.15 vs 0.22).
+  - **Accuracy table.** False-alarm rates were inflated. With formerly flooded cells excluded from the dry windows (training events), open-land 1 − specificity falls: VIIRS 5.5% → 2.6%, GFM 1.3% → 0.44%, microwave 5.1% → 3.9%. Flood reports were therefore given too little weight.
+  - **Recalibration** (D-34, experiment). Its fit pooled the same dry windows, so its "about 12 times too extreme" was largely fitting label noise.
+  - **Dependence** (D-36). Most joint false alarms are dry-window days (54% are days 1–30 after the event). But the lift is about the same on gold days (microwave + VIIRS 4.3, within-event 2.2), so the dependence itself is real.
+- **Corrected variant.** `scripts/fusion/experiment_dry_window_fix.py`: a cell flooded on any gold day of its window is NOTRUTH, not dry, in the dry windows. Specificity is re-estimated on training events (sensitivity cannot change) and held-out events are re-run in memory. Held-out gold days at P ≥ 0.5:
+  - **all strata:** recall 0.37 → 0.44, precision 0.55 → 0.55, CSI 0.285 → 0.322;
+  - **open land:** recall 0.38 → 0.46, precision 0.58 → 0.58, CSI 0.300 → 0.341, above VIIRS's 0.333;
+  - **vegetated and urban:** about unchanged.
+
+  Reliability with corrected labels is still about 0.03. Never-flooded footprint cells reach P ≥ 0.5 on 2–7% of dry-window days and outnumber gold-day cells about 50 to 1. Whether those are false alarms or water the analysts did not map cannot be told with these labels, so criterion (c) cannot be measured cleanly with them.
+- **Status.** Proposed. It changes fixed decision 5, so adoption is the user's call. No intervals yet.

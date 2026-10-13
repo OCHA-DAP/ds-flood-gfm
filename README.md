@@ -136,10 +136,12 @@ The fusion is per-stratum naive Bayes in log-odds, with sensitivity and specific
 > **Licence.** FloodScan is a commercial input, and outputs derived from it may not be shared outside OCHA without AER approval.
 
 **v1 status:**
-- **Validation (49 held-out gold events):** the product is built and tested end to end, but as specified it does **not** beat the best single source in any stratum. Its probabilities are strongly over-confident: reliability slope about 0.01 against a target of 0.8–1.2.
+- **Validation (49 held-out gold events):** the product is built and tested end to end, but as specified it does **not** beat the best single source in any stratum. Measured as specified, its reliability slope is about 0.01 (target 0.8–1.2). Most of that comes from the dry-window labels (D-39); on gold days alone the slope is 0.27–0.47, still too extreme.
 - **Where a single product observed, it beats fusion.** Recall · precision on GFM-observed cells: GFM 0.45 · 0.94 vs fusion 0.34 · 0.63. On VIIRS-observed cells: VIIRS 0.75 · 0.60 vs fusion 0.46 · 0.57.
 - **One lead, not yet established.** In open, snow-free land, a decision threshold learned on training events (P ≥ 0.02) raised held-out recall from 0.38 to 0.53 at precision 0.56 (VIIRS: 0.42 and 0.62). That rests on one run, with no confidence interval. A per-stratum recalibration improved calibration there but did not reach the 0.8–1.2 target.
-- **Why it is over-confident (measured 2026-10-13).** On cells the gold maps call dry, the sources' false alarms coincide 4–18 times more often than the model's independence assumption allows. An agreement-based accuracy table (plan v2, ADR 0002) fails for the same reason, so the model keeps the gold table.
+- **What drives the over-confidence (measured 2026-10-13).**
+  - Mostly labels. The dry windows label still-flooded cells dry; a corrected variant raises held-out recall 0.37 → 0.44 at unchanged precision (D-39, proposed).
+  - What remains is the sources' false alarms coinciding about 4 times more often than the independence assumption allows. An agreement-based accuracy table (plan v2, ADR 0002) fails for the same reason, so the model keeps the gold table.
 - **Inputs are ending.** GFDS stopped on 2026-09-14, and FloodScan outside Africa ends on 2026-03-31 on our blob.
 
 Where fusion is better than single products, and where it is not, is written up in **[docs/final_report.md](docs/final_report.md)**.
