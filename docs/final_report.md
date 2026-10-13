@@ -286,6 +286,18 @@ The snow strata have too few held-out gold flood cells to read (24 and 332).
 - **Comparison with gold:** per row, 1 agree, 2 diverge, 6 unstable, 9 with no gold to check. A stratum switches only if all its sources agree, and none do.
 - **Why:** the sources' false alarms coincide 4–18 times more often than independence predicts (§4, Reliability). That breaks the agreement method's core assumption, and it is the same cause as the product's over-confidence.
 
+### Seasonal "normally wet" baseline (D-38): rejected
+
+**Masking flood calls on cells that are normally wet in that calendar month makes every source worse.** The baseline is JRC GSW monthly recurrence (1984–2021, 30 m); its thresholds were fixed before the test (`scripts/fusion/experiment_seasonal_baseline.py`).
+
+| events | gold flood on normally-wet cells | VIIRS recall · precision, before → after | microwave recall · precision, before → after |
+|---|---|---|---|
+| held-out | 22% | 0.41 · 0.60 → 0.35 · 0.59 | 0.47 · 0.41 → 0.39 · 0.38 |
+| training | 26% | 0.17 · 0.45 → 0.14 · 0.42 | 0.26 · 0.27 → 0.20 · 0.23 |
+
+- **Why recall falls.** The gold maps count seasonal water as flood, so masking it removes true hits.
+- **The coinciding false alarms are not seasonal water.** In held-out open land, the lift rises from 4.1 to 5.3 after masking.
+
 ## 5. Where fusion beats single sources, and where it does not
 
 **Where it wins:**
