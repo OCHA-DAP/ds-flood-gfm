@@ -75,3 +75,17 @@ This audit covers what the repo held before any fusion code was written. It reco
   - `ocha-stratus` for all blob access.
 - **New package:** `src/ds_flood_gfm/fusion/`. Existing modules are untouched. The only shared-file edits are `pyproject.toml` (dependencies), `.gitignore` (negations), `README.md` (a fusion section) and the new `CLAUDE.md`.
 - **Left alone:** the exposure scripts, the experiments and the book. The dead compositor modules are listed here for a later cleanup; deleting them is outside the scope of this work.
+
+## 5. Phase status against the plan (`docs/flood_fusion_plan.md`, updated 2026-10-13)
+
+Reconstructed from git history and the outputs on disk. The short version lives in CLAUDE.md.
+
+| phase | status | evidence |
+|---|---|---|
+| 0 Inventory | done | commit 07651c2; `docs/repo_audit.md`, `docs/inventory.md` |
+| 1 Feasibility | done; gate said continue (coverage gain +93 pp; oracle gain +1.6 CSI points, below its 3-point bar) | commit 785103d; `docs/feasibility.md`, `results/phase1_*` |
+| 2 Data cube | done: gold cubes for 198 events, 53-block random sample | commit d5ca42e; `data/fusion/cube/`, `results/phase2_*` |
+| 3 Accuracy tables | **gold table** done. **Agreement table and comparison** in progress | gold: commit 0e6a7a3, `results/accuracy_table.csv`. Agreement: ADR 0002 |
+| 4 Fusion engine | done; 37 synthetic tests | commit bde6192; `src/ds_flood_gfm/fusion/engine.py`, `tests/` |
+| 5 Validation | **held-out gold** done. **Gauge-exceedance test** not started: no observed-gauge source in holdings or the KB, choice pending. **v2-table comparison** not started | commit 5ceab0b; `results/phase5_*`, `docs/final_report.md` §4 |
+| 6 Packaging | done for v1 on dev: blob mirror, MANIFEST, paused dev job (one successful run), KB draft PR #757. Prod deploy waits for merge | commits fd0c8d6, 12601a9 |

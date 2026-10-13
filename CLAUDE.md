@@ -48,6 +48,20 @@ This repo has two parts.
 - **DAB development mode does not pause an explicit schedule.** Keep `pause_status: PAUSED` in the base definition (D-27).
 - **Uploads:** the upload rate fell to about 30 KB/s for part of the v1 session (cause not measured). `phase6_package.py` is resumable (it skips files whose size already matches) and uploads in priority order.
 
+## Phase status (plan: `docs/flood_fusion_plan.md`; evidence in `docs/repo_audit.md` §5)
+
+Update this at every commit that changes a phase's state.
+
+| phase | status |
+|---|---|
+| 0 Inventory | done |
+| 1 Feasibility | done (gate: continue) |
+| 2 Data cube | done |
+| 3 Accuracy tables | gold table done; agreement table + comparison in progress (ADR 0002) |
+| 4 Fusion engine | done |
+| 5 Validation | held-out gold done; gauge test not started (no source chosen); v2-table comparison not started |
+| 6 Packaging | done for v1 on dev; prod deploy waits for merge |
+
 ## v1 result in one line
 
 Fusion as specified is mid-pack and over-confident. Where a single product observed, it beats fusion. A threshold learned on training events is a lead in open land, not an established fix (docs/final_report.md §4, §7).
