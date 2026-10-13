@@ -35,16 +35,6 @@ log = logging.getLogger("dry_window_fix")
 CODE_OF = {v: k for k, v in STRATUM_NAMES.items()}
 
 
-def corrected_truth(ds: xr.Dataset) -> tuple[np.ndarray, np.ndarray]:
-    """(truth with ever-flooded cells NOTRUTH outside gold days, gold-day mask per day)."""
-    days = pd.to_datetime(ds.day.values)
-    gd = (days >= pd.Timestamp(ds.attrs["event_start"])) & (days <= pd.Timestamp(ds.attrs["event_end"]))
-    t = ds.truth.values.copy()
-    ever = (t[gd] == gold.FLOOD).any(axis=0)
-    t[~gd] = np.where(ever[None, :, :], gold.NOTRUTH, t[~gd])
-    return t, gd
-
-
 def main() -> None:
     cfg = load_config()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s",
@@ -61,7 +51,7 @@ def main() -> None:
     for _, r in sel[sel.code.map(split) == "train"].iterrows():
         for ew in gold.event_windows(r):
             ds = xr.load_dataset(cube.cube_path(cfg, ew.key), engine="netcdf4")
-            t, _ = corrected_truth(ds)
+            t, _ = gold.corrected_dry_windows(ds)
             dom, st = ds.domain.values.astype(bool)[None], ds.stratum.values
             for s in MODEL_SOURCES:
                 v = ds[s].values
@@ -92,7 +82,7 @@ def main() -> None:
     for n, (r, ew) in enumerate(validate.holdout_keys(cfg, sel), 1):
         ds = xr.load_dataset(cube.cube_path(cfg, ew.key), engine="netcdf4")
         t_lit = ds.truth.values
-        t_cor, gd = corrected_truth(ds)
+        t_cor, gd = gold.corrected_dry_windows(ds)
         dom, st = ds.domain.values.astype(bool), ds.stratum.values
         obs = {s: ds[s].values for s in MODEL_SOURCES}
         for name, model in models.items():

@@ -320,3 +320,14 @@ def truth_for_window(cfg: Config, ew: EventWindow, label_rows: pd.DataFrame, kep
             t[is_dry & (t != FLOOD)] = DRY
             footprint |= vmask
     return days, truth, footprint
+
+
+def corrected_dry_windows(ds) -> tuple[np.ndarray, np.ndarray]:
+    """D-39 variant of an event cube's truth: a cell flooded on any gold day is NOTRUTH (not dry) in the
+    dry windows; gold days and every other footprint cell are unchanged. Returns (truth, gold-day mask)."""
+    days = pd.to_datetime(ds.day.values)
+    gd = (days >= pd.Timestamp(ds.attrs["event_start"])) & (days <= pd.Timestamp(ds.attrs["event_end"]))
+    t = ds.truth.values.copy()
+    ever = (t[gd] == FLOOD).any(axis=0)
+    t[~gd] = np.where(ever[None, :, :], NOTRUTH, t[~gd])
+    return t, np.asarray(gd)

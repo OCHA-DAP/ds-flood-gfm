@@ -144,7 +144,7 @@ The fusion is per-stratum naive Bayes in log-odds, with sensitivity and specific
   - What remains is the sources' false alarms coinciding about 4 times more often than the independence assumption allows. An agreement-based accuracy table (plan v2, ADR 0002) fails for the same reason, so the model keeps the gold table.
 - **Inputs are ending.** GFDS stopped on 2026-09-14, and FloodScan outside Africa ends on 2026-03-31 on our blob.
 
-Where fusion is better than single products, and where it is not, is written up in **[docs/final_report.md](docs/final_report.md)**.
+Where fusion is better than single products, and where it is not, is written up in **[docs/final_report.md](docs/final_report.md)**. How every score is computed (grid, gold labels, product values, hits, misses and false alarms) is in **[docs/methods.md](docs/methods.md)**.
 
 ### Running it (a junior's walk-through)
 
