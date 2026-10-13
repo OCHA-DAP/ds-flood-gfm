@@ -105,136 +105,160 @@ Coverage of the floodable domain per window-day (training events): gfm 6.4%, mic
 | 5 | urban_snow | 0.00054 | 0.00004 | 0.00083 | 64,655 | 35 | 2,122,657 | 8 | 0.00167 | gfm_sample_rate |
 
 
+## Phase 5: held-out skill, all strata (recall, precision; CSI for criterion b)
+
+`all` = every gold cell, a source's NoData counts as a miss; `conditional` = only the cells that source observed (fusion|x = fusion scored on x's observed cells).
+
+| product | mode | truth_flood | tp | fp | fn | recall | precision | csi |
+|---|---|---|---|---|---|---|---|---|
+| floodscan | all | 44,609 | 14,212 | 12,744 | 30,397 | 0.319 | 0.527 | 0.248 |
+| fusion | all | 44,609 | 16,536 | 13,345 | 28,073 | 0.371 | 0.553 | 0.285 |
+| gfds | all | 44,609 | 13,201 | 21,921 | 31,408 | 0.296 | 0.376 | 0.198 |
+| gfm | all | 44,609 | 8,304 | 567 | 36,305 | 0.186 | 0.936 | 0.184 |
+| microwave | all | 44,609 | 20,868 | 29,990 | 23,741 | 0.468 | 0.410 | 0.280 |
+| viirs | all | 44,609 | 18,164 | 12,317 | 26,445 | 0.407 | 0.596 | 0.319 |
+| floodscan | conditional | 43,982 | 14,212 | 12,744 | 29,770 | 0.323 | 0.527 | 0.251 |
+| fusion\|floodscan | conditional | 43,982 | 16,469 | 13,011 | 27,513 | 0.374 | 0.559 | 0.289 |
+| fusion\|gfds | conditional | 38,024 | 14,482 | 12,511 | 23,542 | 0.381 | 0.537 | 0.287 |
+| fusion\|gfm | conditional | 18,315 | 6,256 | 3,758 | 12,059 | 0.342 | 0.625 | 0.283 |
+| fusion\|microwave | conditional | 44,598 | 16,533 | 13,345 | 28,065 | 0.371 | 0.553 | 0.285 |
+| fusion\|viirs | conditional | 24,366 | 11,272 | 8,670 | 13,094 | 0.463 | 0.565 | 0.341 |
+| gfds | conditional | 38,024 | 13,201 | 21,921 | 24,823 | 0.347 | 0.376 | 0.220 |
+| gfm | conditional | 18,315 | 8,304 | 567 | 10,011 | 0.453 | 0.936 | 0.440 |
+| microwave | conditional | 44,598 | 20,868 | 29,990 | 23,730 | 0.468 | 0.410 | 0.280 |
+| viirs | conditional | 24,366 | 18,164 | 12,317 | 6,202 | 0.745 | 0.596 | 0.495 |
+
+
 ## Phase 5: held-out skill by stratum (all cells; a source's NoData = not detected)
 
-| stratum | product | truth_flood | tp | fp | fn | sens | far | csi |
+| stratum | product | truth_flood | tp | fp | fn | recall | precision | csi |
 |---|---|---|---|---|---|---|---|---|
-| open_nosnow | floodscan | 40,256 | 13,093 | 10,223 | 27,163 | 0.325 | 0.438 | 0.259 |
-| open_nosnow | fusion | 40,256 | 15,417 | 11,073 | 24,839 | 0.383 | 0.418 | 0.300 |
-| open_nosnow | gfds | 40,256 | 12,563 | 17,533 | 27,693 | 0.312 | 0.583 | 0.217 |
-| open_nosnow | gfm | 40,256 | 7,368 | 401 | 32,888 | 0.183 | 0.052 | 0.181 |
-| open_nosnow | microwave | 40,256 | 19,466 | 24,045 | 20,790 | 0.484 | 0.553 | 0.303 |
-| open_nosnow | viirs | 40,256 | 16,841 | 10,332 | 23,415 | 0.418 | 0.380 | 0.333 |
+| open_nosnow | floodscan | 40,256 | 13,093 | 10,223 | 27,163 | 0.325 | 0.562 | 0.259 |
+| open_nosnow | fusion | 40,256 | 15,417 | 11,073 | 24,839 | 0.383 | 0.582 | 0.300 |
+| open_nosnow | gfds | 40,256 | 12,563 | 17,533 | 27,693 | 0.312 | 0.417 | 0.217 |
+| open_nosnow | gfm | 40,256 | 7,368 | 401 | 32,888 | 0.183 | 0.948 | 0.181 |
+| open_nosnow | microwave | 40,256 | 19,466 | 24,045 | 20,790 | 0.484 | 0.447 | 0.303 |
+| open_nosnow | viirs | 40,256 | 16,841 | 10,332 | 23,415 | 0.418 | 0.620 | 0.333 |
 | open_snow | floodscan | 24 | 0 | 0 | 24 | 0.000 |  | 0.000 |
-| open_snow | fusion | 24 | 3 | 0 | 21 | 0.125 | 0.000 | 0.125 |
+| open_snow | fusion | 24 | 3 | 0 | 21 | 0.125 | 1.000 | 0.125 |
 | open_snow | gfds | 24 | 0 | 0 | 24 | 0.000 |  | 0.000 |
-| open_snow | gfm | 24 | 8 | 0 | 16 | 0.333 | 0.000 | 0.333 |
+| open_snow | gfm | 24 | 8 | 0 | 16 | 0.333 | 1.000 | 0.333 |
 | open_snow | microwave | 24 | 0 | 0 | 24 | 0.000 |  | 0.000 |
 | open_snow | viirs | 24 | 0 | 0 | 24 | 0.000 |  | 0.000 |
-| urban_nosnow | floodscan | 353 | 53 | 431 | 300 | 0.150 | 0.890 | 0.068 |
-| urban_nosnow | fusion | 353 | 51 | 163 | 302 | 0.144 | 0.762 | 0.099 |
-| urban_nosnow | gfds | 353 | 76 | 881 | 277 | 0.215 | 0.921 | 0.062 |
-| urban_nosnow | gfm | 353 | 61 | 20 | 292 | 0.173 | 0.247 | 0.164 |
-| urban_nosnow | microwave | 353 | 106 | 1,163 | 247 | 0.300 | 0.916 | 0.070 |
-| urban_nosnow | viirs | 353 | 47 | 139 | 306 | 0.133 | 0.747 | 0.096 |
+| urban_nosnow | floodscan | 353 | 53 | 431 | 300 | 0.150 | 0.110 | 0.068 |
+| urban_nosnow | fusion | 353 | 51 | 163 | 302 | 0.144 | 0.238 | 0.099 |
+| urban_nosnow | gfds | 353 | 76 | 881 | 277 | 0.215 | 0.079 | 0.062 |
+| urban_nosnow | gfm | 353 | 61 | 20 | 292 | 0.173 | 0.753 | 0.164 |
+| urban_nosnow | microwave | 353 | 106 | 1,163 | 247 | 0.300 | 0.084 | 0.070 |
+| urban_nosnow | viirs | 353 | 47 | 139 | 306 | 0.133 | 0.253 | 0.096 |
 | urban_snow | floodscan | 0 | 0 | 0 | 0 |  |  |  |
 | urban_snow | fusion | 0 | 0 | 0 | 0 |  |  |  |
 | urban_snow | gfds | 0 | 0 | 0 | 0 |  |  |  |
 | urban_snow | gfm | 0 | 0 | 0 | 0 |  |  |  |
 | urban_snow | microwave | 0 | 0 | 0 | 0 |  |  |  |
 | urban_snow | viirs | 0 | 0 | 0 | 0 |  |  |  |
-| vegetated_nosnow | floodscan | 3,644 | 1,066 | 2,090 | 2,578 | 0.293 | 0.662 | 0.186 |
-| vegetated_nosnow | fusion | 3,644 | 1,054 | 2,105 | 2,590 | 0.289 | 0.666 | 0.183 |
-| vegetated_nosnow | gfds | 3,644 | 562 | 3,507 | 3,082 | 0.154 | 0.862 | 0.079 |
-| vegetated_nosnow | gfm | 3,644 | 849 | 138 | 2,795 | 0.233 | 0.140 | 0.224 |
-| vegetated_nosnow | microwave | 3,644 | 1,296 | 4,782 | 2,348 | 0.356 | 0.787 | 0.154 |
-| vegetated_nosnow | viirs | 3,644 | 1,276 | 1,845 | 2,368 | 0.350 | 0.591 | 0.232 |
+| vegetated_nosnow | floodscan | 3,644 | 1,066 | 2,090 | 2,578 | 0.293 | 0.338 | 0.186 |
+| vegetated_nosnow | fusion | 3,644 | 1,054 | 2,105 | 2,590 | 0.289 | 0.334 | 0.183 |
+| vegetated_nosnow | gfds | 3,644 | 562 | 3,507 | 3,082 | 0.154 | 0.138 | 0.079 |
+| vegetated_nosnow | gfm | 3,644 | 849 | 138 | 2,795 | 0.233 | 0.860 | 0.224 |
+| vegetated_nosnow | microwave | 3,644 | 1,296 | 4,782 | 2,348 | 0.356 | 0.213 | 0.154 |
+| vegetated_nosnow | viirs | 3,644 | 1,276 | 1,845 | 2,368 | 0.350 | 0.409 | 0.232 |
 | vegetated_snow | floodscan | 332 | 0 | 0 | 332 | 0.000 |  | 0.000 |
-| vegetated_snow | fusion | 332 | 11 | 4 | 321 | 0.033 | 0.267 | 0.033 |
+| vegetated_snow | fusion | 332 | 11 | 4 | 321 | 0.033 | 0.733 | 0.033 |
 | vegetated_snow | gfds | 332 | 0 | 0 | 332 | 0.000 |  | 0.000 |
-| vegetated_snow | gfm | 332 | 18 | 8 | 314 | 0.054 | 0.308 | 0.053 |
+| vegetated_snow | gfm | 332 | 18 | 8 | 314 | 0.054 | 0.692 | 0.053 |
 | vegetated_snow | microwave | 332 | 0 | 0 | 332 | 0.000 |  | 0.000 |
-| vegetated_snow | viirs | 332 | 0 | 1 | 332 | 0.000 | 1.000 | 0.000 |
+| vegetated_snow | viirs | 332 | 0 | 1 | 332 | 0.000 | 0.000 | 0.000 |
 
 
 ## Phase 5: held-out skill on each source's observed cells (fusion scored on the same cells)
 
-| stratum | product | truth_flood | tp | fp | fn | csi |
-|---|---|---|---|---|---|---|
-| open_nosnow | floodscan | 40,137 | 13,093 | 10,223 | 27,044 | 0.260 |
-| open_nosnow | fusion|floodscan | 40,137 | 15,391 | 11,041 | 24,746 | 0.301 |
-| open_nosnow | fusion|gfds | 34,642 | 13,794 | 10,281 | 20,848 | 0.307 |
-| open_nosnow | fusion|gfm | 16,627 | 5,984 | 3,262 | 10,643 | 0.301 |
-| open_nosnow | fusion|microwave | 40,256 | 15,417 | 11,073 | 24,839 | 0.300 |
-| open_nosnow | fusion|viirs | 22,791 | 10,453 | 7,117 | 12,338 | 0.350 |
-| open_nosnow | gfds | 34,642 | 12,563 | 17,533 | 22,079 | 0.241 |
-| open_nosnow | gfm | 16,627 | 7,368 | 401 | 9,259 | 0.433 |
-| open_nosnow | microwave | 40,256 | 19,466 | 24,045 | 20,790 | 0.303 |
-| open_nosnow | viirs | 22,791 | 16,841 | 10,332 | 5,950 | 0.508 |
-| open_snow | fusion|gfds | 21 | 2 | 0 | 19 | 0.095 |
-| open_snow | fusion|gfm | 20 | 3 | 0 | 17 | 0.150 |
-| open_snow | fusion|microwave | 21 | 2 | 0 | 19 | 0.095 |
-| open_snow | fusion|viirs | 0 | 0 | 0 | 0 |  |
-| open_snow | gfds | 21 | 0 | 0 | 21 | 0.000 |
-| open_snow | gfm | 20 | 8 | 0 | 12 | 0.400 |
-| open_snow | microwave | 21 | 0 | 0 | 21 | 0.000 |
-| open_snow | viirs | 0 | 0 | 0 | 0 |  |
-| urban_nosnow | floodscan | 351 | 53 | 431 | 298 | 0.068 |
-| urban_nosnow | fusion|floodscan | 351 | 51 | 163 | 300 | 0.099 |
-| urban_nosnow | fusion|gfds | 325 | 48 | 163 | 277 | 0.098 |
-| urban_nosnow | fusion|gfm | 116 | 38 | 72 | 78 | 0.202 |
-| urban_nosnow | fusion|microwave | 353 | 51 | 163 | 302 | 0.099 |
-| urban_nosnow | fusion|viirs | 79 | 33 | 87 | 46 | 0.199 |
-| urban_nosnow | gfds | 325 | 76 | 881 | 249 | 0.063 |
-| urban_nosnow | gfm | 116 | 61 | 20 | 55 | 0.449 |
-| urban_nosnow | microwave | 353 | 106 | 1,163 | 247 | 0.070 |
-| urban_nosnow | viirs | 79 | 47 | 139 | 32 | 0.216 |
-| urban_snow | fusion|gfds | 0 | 0 | 0 | 0 |  |
-| urban_snow | fusion|gfm | 0 | 0 | 0 | 0 |  |
-| urban_snow | fusion|microwave | 0 | 0 | 0 | 0 |  |
-| urban_snow | fusion|viirs | 0 | 0 | 0 | 0 |  |
-| urban_snow | gfds | 0 | 0 | 0 | 0 |  |
-| urban_snow | gfm | 0 | 0 | 0 | 0 |  |
-| urban_snow | microwave | 0 | 0 | 0 | 0 |  |
-| urban_snow | viirs | 0 | 0 | 0 | 0 |  |
-| vegetated_nosnow | floodscan | 3,494 | 1,066 | 2,090 | 2,428 | 0.191 |
-| vegetated_nosnow | fusion|floodscan | 3,494 | 1,027 | 1,807 | 2,467 | 0.194 |
-| vegetated_nosnow | fusion|gfds | 2,711 | 629 | 2,063 | 2,082 | 0.132 |
-| vegetated_nosnow | fusion|gfm | 1,444 | 220 | 422 | 1,224 | 0.118 |
-| vegetated_nosnow | fusion|microwave | 3,643 | 1,054 | 2,105 | 2,589 | 0.183 |
-| vegetated_nosnow | fusion|viirs | 1,496 | 786 | 1,466 | 710 | 0.265 |
-| vegetated_nosnow | gfds | 2,711 | 562 | 3,507 | 2,149 | 0.090 |
-| vegetated_nosnow | gfm | 1,444 | 849 | 138 | 595 | 0.537 |
-| vegetated_nosnow | microwave | 3,643 | 1,296 | 4,782 | 2,347 | 0.154 |
-| vegetated_nosnow | viirs | 1,496 | 1,276 | 1,845 | 220 | 0.382 |
-| vegetated_snow | fusion|gfds | 325 | 9 | 4 | 316 | 0.027 |
-| vegetated_snow | fusion|gfm | 108 | 11 | 2 | 97 | 0.100 |
-| vegetated_snow | fusion|microwave | 325 | 9 | 4 | 316 | 0.027 |
-| vegetated_snow | fusion|viirs | 0 | 0 | 0 | 0 |  |
-| vegetated_snow | gfds | 325 | 0 | 0 | 325 | 0.000 |
-| vegetated_snow | gfm | 108 | 18 | 8 | 90 | 0.155 |
-| vegetated_snow | microwave | 325 | 0 | 0 | 325 | 0.000 |
-| vegetated_snow | viirs | 0 | 0 | 1 | 0 | 0.000 |
+| stratum | product | truth_flood | tp | fp | fn | recall | precision | csi |
+|---|---|---|---|---|---|---|---|---|
+| open_nosnow | floodscan | 40,137 | 13,093 | 10,223 | 27,044 | 0.326 | 0.562 | 0.260 |
+| open_nosnow | fusion\|floodscan | 40,137 | 15,391 | 11,041 | 24,746 | 0.383 | 0.582 | 0.301 |
+| open_nosnow | fusion\|gfds | 34,642 | 13,794 | 10,281 | 20,848 | 0.398 | 0.573 | 0.307 |
+| open_nosnow | fusion\|gfm | 16,627 | 5,984 | 3,262 | 10,643 | 0.360 | 0.647 | 0.301 |
+| open_nosnow | fusion\|microwave | 40,256 | 15,417 | 11,073 | 24,839 | 0.383 | 0.582 | 0.300 |
+| open_nosnow | fusion\|viirs | 22,791 | 10,453 | 7,117 | 12,338 | 0.459 | 0.595 | 0.350 |
+| open_nosnow | gfds | 34,642 | 12,563 | 17,533 | 22,079 | 0.363 | 0.417 | 0.241 |
+| open_nosnow | gfm | 16,627 | 7,368 | 401 | 9,259 | 0.443 | 0.948 | 0.433 |
+| open_nosnow | microwave | 40,256 | 19,466 | 24,045 | 20,790 | 0.484 | 0.447 | 0.303 |
+| open_nosnow | viirs | 22,791 | 16,841 | 10,332 | 5,950 | 0.739 | 0.620 | 0.508 |
+| open_snow | fusion\|gfds | 21 | 2 | 0 | 19 | 0.095 | 1.000 | 0.095 |
+| open_snow | fusion\|gfm | 20 | 3 | 0 | 17 | 0.150 | 1.000 | 0.150 |
+| open_snow | fusion\|microwave | 21 | 2 | 0 | 19 | 0.095 | 1.000 | 0.095 |
+| open_snow | fusion\|viirs | 0 | 0 | 0 | 0 |  |  |  |
+| open_snow | gfds | 21 | 0 | 0 | 21 | 0.000 |  | 0.000 |
+| open_snow | gfm | 20 | 8 | 0 | 12 | 0.400 | 1.000 | 0.400 |
+| open_snow | microwave | 21 | 0 | 0 | 21 | 0.000 |  | 0.000 |
+| open_snow | viirs | 0 | 0 | 0 | 0 |  |  |  |
+| urban_nosnow | floodscan | 351 | 53 | 431 | 298 | 0.151 | 0.110 | 0.068 |
+| urban_nosnow | fusion\|floodscan | 351 | 51 | 163 | 300 | 0.145 | 0.238 | 0.099 |
+| urban_nosnow | fusion\|gfds | 325 | 48 | 163 | 277 | 0.148 | 0.227 | 0.098 |
+| urban_nosnow | fusion\|gfm | 116 | 38 | 72 | 78 | 0.328 | 0.345 | 0.202 |
+| urban_nosnow | fusion\|microwave | 353 | 51 | 163 | 302 | 0.144 | 0.238 | 0.099 |
+| urban_nosnow | fusion\|viirs | 79 | 33 | 87 | 46 | 0.418 | 0.275 | 0.199 |
+| urban_nosnow | gfds | 325 | 76 | 881 | 249 | 0.234 | 0.079 | 0.063 |
+| urban_nosnow | gfm | 116 | 61 | 20 | 55 | 0.526 | 0.753 | 0.449 |
+| urban_nosnow | microwave | 353 | 106 | 1,163 | 247 | 0.300 | 0.084 | 0.070 |
+| urban_nosnow | viirs | 79 | 47 | 139 | 32 | 0.595 | 0.253 | 0.216 |
+| urban_snow | fusion\|gfds | 0 | 0 | 0 | 0 |  |  |  |
+| urban_snow | fusion\|gfm | 0 | 0 | 0 | 0 |  |  |  |
+| urban_snow | fusion\|microwave | 0 | 0 | 0 | 0 |  |  |  |
+| urban_snow | fusion\|viirs | 0 | 0 | 0 | 0 |  |  |  |
+| urban_snow | gfds | 0 | 0 | 0 | 0 |  |  |  |
+| urban_snow | gfm | 0 | 0 | 0 | 0 |  |  |  |
+| urban_snow | microwave | 0 | 0 | 0 | 0 |  |  |  |
+| urban_snow | viirs | 0 | 0 | 0 | 0 |  |  |  |
+| vegetated_nosnow | floodscan | 3,494 | 1,066 | 2,090 | 2,428 | 0.305 | 0.338 | 0.191 |
+| vegetated_nosnow | fusion\|floodscan | 3,494 | 1,027 | 1,807 | 2,467 | 0.294 | 0.362 | 0.194 |
+| vegetated_nosnow | fusion\|gfds | 2,711 | 629 | 2,063 | 2,082 | 0.232 | 0.234 | 0.132 |
+| vegetated_nosnow | fusion\|gfm | 1,444 | 220 | 422 | 1,224 | 0.152 | 0.343 | 0.118 |
+| vegetated_nosnow | fusion\|microwave | 3,643 | 1,054 | 2,105 | 2,589 | 0.289 | 0.334 | 0.183 |
+| vegetated_nosnow | fusion\|viirs | 1,496 | 786 | 1,466 | 710 | 0.525 | 0.349 | 0.265 |
+| vegetated_nosnow | gfds | 2,711 | 562 | 3,507 | 2,149 | 0.207 | 0.138 | 0.090 |
+| vegetated_nosnow | gfm | 1,444 | 849 | 138 | 595 | 0.588 | 0.860 | 0.537 |
+| vegetated_nosnow | microwave | 3,643 | 1,296 | 4,782 | 2,347 | 0.356 | 0.213 | 0.154 |
+| vegetated_nosnow | viirs | 1,496 | 1,276 | 1,845 | 220 | 0.853 | 0.409 | 0.382 |
+| vegetated_snow | fusion\|gfds | 325 | 9 | 4 | 316 | 0.028 | 0.692 | 0.027 |
+| vegetated_snow | fusion\|gfm | 108 | 11 | 2 | 97 | 0.102 | 0.846 | 0.100 |
+| vegetated_snow | fusion\|microwave | 325 | 9 | 4 | 316 | 0.028 | 0.692 | 0.027 |
+| vegetated_snow | fusion\|viirs | 0 | 0 | 0 | 0 |  |  |  |
+| vegetated_snow | gfds | 325 | 0 | 0 | 325 | 0.000 |  | 0.000 |
+| vegetated_snow | gfm | 108 | 18 | 8 | 90 | 0.167 | 0.692 | 0.155 |
+| vegetated_snow | microwave | 325 | 0 | 0 | 325 | 0.000 |  | 0.000 |
+| vegetated_snow | viirs | 0 | 0 | 1 | 0 |  | 0.000 | 0.000 |
 
 
 ## Phase 5: held-out skill by continent (all cells)
 
-| continent | product | truth_flood | sens | far | csi |
+| continent | product | truth_flood | recall | precision | csi |
 |---|---|---|---|---|---|
-| Africa | fusion | 1,366 | 0.152 | 0.772 | 0.100 |
-| Africa | gfm | 1,366 | 0.022 | 0.231 | 0.022 |
-| Africa | microwave | 1,366 | 0.242 | 0.775 | 0.132 |
-| Africa | viirs | 1,366 | 0.040 | 0.143 | 0.039 |
-| Asia | fusion | 29,782 | 0.334 | 0.362 | 0.280 |
-| Asia | gfm | 29,782 | 0.263 | 0.048 | 0.260 |
-| Asia | microwave | 29,782 | 0.462 | 0.571 | 0.286 |
-| Asia | viirs | 29,782 | 0.321 | 0.424 | 0.260 |
-| Europe | fusion | 628 | 0.107 | 0.833 | 0.070 |
-| Europe | gfm | 628 | 0.158 | 0.349 | 0.145 |
-| Europe | microwave | 628 | 0.030 | 0.938 | 0.021 |
-| Europe | viirs | 628 | 0.040 | 0.950 | 0.023 |
-| North America | fusion | 544 | 0.011 | 0.974 | 0.008 |
-| North America | gfm | 544 | 0.017 | 0.100 | 0.017 |
-| North America | microwave | 544 | 0.368 | 0.797 | 0.151 |
-| North America | viirs | 544 | 0.550 | 0.451 | 0.378 |
-| Oceania | fusion | 10,416 | 0.531 | 0.437 | 0.376 |
-| Oceania | gfm | 10,416 | 0.016 | 0.124 | 0.016 |
-| Oceania | microwave | 10,416 | 0.566 | 0.548 | 0.336 |
-| Oceania | viirs | 10,416 | 0.775 | 0.352 | 0.545 |
-| South America | fusion | 1,873 | 0.421 | 0.731 | 0.196 |
-| South America | gfm | 1,873 | 0.081 | 0.355 | 0.077 |
-| South America | microwave | 1,873 | 0.349 | 0.778 | 0.157 |
-| South America | viirs | 1,873 | 0.081 | 0.526 | 0.074 |
+| Africa | fusion | 1,366 | 0.152 | 0.228 | 0.100 |
+| Africa | gfm | 1,366 | 0.022 | 0.769 | 0.022 |
+| Africa | microwave | 1,366 | 0.242 | 0.225 | 0.132 |
+| Africa | viirs | 1,366 | 0.040 | 0.857 | 0.039 |
+| Asia | fusion | 29,782 | 0.334 | 0.638 | 0.280 |
+| Asia | gfm | 29,782 | 0.263 | 0.952 | 0.260 |
+| Asia | microwave | 29,782 | 0.462 | 0.429 | 0.286 |
+| Asia | viirs | 29,782 | 0.321 | 0.576 | 0.260 |
+| Europe | fusion | 628 | 0.107 | 0.167 | 0.070 |
+| Europe | gfm | 628 | 0.158 | 0.651 | 0.145 |
+| Europe | microwave | 628 | 0.030 | 0.062 | 0.021 |
+| Europe | viirs | 628 | 0.040 | 0.050 | 0.023 |
+| North America | fusion | 544 | 0.011 | 0.026 | 0.008 |
+| North America | gfm | 544 | 0.017 | 0.900 | 0.017 |
+| North America | microwave | 544 | 0.368 | 0.203 | 0.151 |
+| North America | viirs | 544 | 0.550 | 0.549 | 0.378 |
+| Oceania | fusion | 10,416 | 0.531 | 0.563 | 0.376 |
+| Oceania | gfm | 10,416 | 0.016 | 0.876 | 0.016 |
+| Oceania | microwave | 10,416 | 0.566 | 0.452 | 0.336 |
+| Oceania | viirs | 10,416 | 0.775 | 0.648 | 0.545 |
+| South America | fusion | 1,873 | 0.421 | 0.269 | 0.196 |
+| South America | gfm | 1,873 | 0.081 | 0.645 | 0.077 |
+| South America | microwave | 1,873 | 0.349 | 0.222 | 0.157 |
+| South America | viirs | 1,873 | 0.081 | 0.474 | 0.074 |
 
 
 ## Phase 5: the three criteria by stratum
@@ -291,13 +315,34 @@ Days since last observation on gold days: median of window medians 0.0, median o
 
 ## Ablation (held-out, all strata, fusion product, all cells)
 
-| model | tp | fp | fn | sens | far | csi | reliability_slope_wls_weighted | calibration_slope_logistic_weighted |
-|---|---|---|---|---|---|---|---|---|
-| all_on_change | 5,988 | 2,353 | 38,621 | 0.134 | 0.282 | 0.128 | 0.016 | 0.271 |
-| drop_gfm | 14,869 | 13,468 | 29,740 | 0.333 | 0.475 | 0.256 | 0.008 | 0.152 |
-| drop_microwave | 12,770 | 7,671 | 31,839 | 0.286 | 0.375 | 0.244 | 0.015 | 0.215 |
-| drop_viirs | 9,684 | 12,236 | 34,925 | 0.217 | 0.558 | 0.170 | 0.006 | 0.154 |
-| full | 16,536 | 13,345 | 28,073 | 0.371 | 0.447 | 0.285 | 0.010 | 0.190 |
-| microwave_is_floodscan | 15,581 | 10,790 | 29,028 | 0.349 | 0.409 | 0.281 | 0.012 | 0.195 |
-| microwave_is_gfds | 14,502 | 10,965 | 30,107 | 0.325 | 0.431 | 0.261 | 0.011 | 0.199 |
-| microwave_on_change | 14,262 | 8,694 | 30,347 | 0.320 | 0.379 | 0.268 | 0.014 | 0.220 |
+| model | tp | fp | fn | recall | precision | csi |
+|---|---|---|---|---|---|---|
+| all_on_change | 5,988 | 2,353 | 38,621 | 0.134 | 0.718 | 0.128 |
+| drop_gfm | 14,869 | 13,468 | 29,740 | 0.333 | 0.525 | 0.256 |
+| drop_microwave | 12,770 | 7,671 | 31,839 | 0.286 | 0.625 | 0.244 |
+| drop_viirs | 9,684 | 12,236 | 34,925 | 0.217 | 0.442 | 0.170 |
+| full | 16,536 | 13,345 | 28,073 | 0.371 | 0.553 | 0.285 |
+| microwave_is_floodscan | 15,581 | 10,790 | 29,028 | 0.349 | 0.591 | 0.281 |
+| microwave_is_gfds | 14,502 | 10,965 | 30,107 | 0.325 | 0.569 | 0.261 |
+| microwave_on_change | 14,262 | 8,694 | 30,347 | 0.320 | 0.621 | 0.268 |
+
+
+## Recalibration experiment (held-out gold days; not the product)
+
+| stratum | variant | recall | precision | csi_gold_days | reliability_slope_wls_quantile_bins | calibration_slope_logistic | n_heldout_flood_gold |
+|---|---|---|---|---|---|---|---|
+| open_nosnow | v1 (as specified), P>=0.5 | 0.383 | 0.582 | 0.300 | 0.011 | 0.146 | 40,256 |
+| open_nosnow | recalibrated, P>=0.5 | 0.000 |  | 0.000 | 0.684 | 0.866 | 40,256 |
+| open_nosnow | v1, trained threshold P>=0.02 | 0.530 | 0.555 | 0.372 | 0.011 | 0.146 | 40,256 |
+| open_snow | v1 (as specified), P>=0.5 | 0.125 | 1.000 | 0.125 | 0.042 | 0.258 | 24 |
+| open_snow | recalibrated, P>=0.5 | 0.000 |  | 0.000 | 2.350 | 1.308 | 24 |
+| open_snow | v1, trained threshold P>=0.12 | 0.250 | 0.857 | 0.240 | 0.042 | 0.258 | 24 |
+| vegetated_nosnow | v1 (as specified), P>=0.5 | 0.289 | 0.334 | 0.183 | 0.018 | 0.276 | 3,644 |
+| vegetated_nosnow | recalibrated, P>=0.5 | 0.000 |  | 0.000 | 2.974 | 1.547 | 3,644 |
+| vegetated_nosnow | v1, trained threshold P>=0.16 | 0.316 | 0.316 | 0.187 | 0.018 | 0.276 | 3,644 |
+| vegetated_snow | v1 (as specified), P>=0.5 | 0.033 | 0.733 | 0.033 | -0.030 | -0.470 | 332 |
+| vegetated_snow | recalibrated, P>=0.5 | 0.000 |  | 0.000 | -72.070 | -20.005 | 332 |
+| vegetated_snow | v1, trained threshold P>=0.02 | 0.054 | 0.562 | 0.052 | -0.030 | -0.470 | 332 |
+| urban_nosnow | v1 (as specified), P>=0.5 | 0.144 | 0.238 | 0.099 | 0.011 | 0.178 | 353 |
+| urban_nosnow | recalibrated, P>=0.5 | 0.000 |  | 0.000 | 1.663 | 1.120 | 353 |
+| urban_nosnow | v1, trained threshold P>=0.02 | 0.201 | 0.146 | 0.092 | 0.011 | 0.178 | 353 |

@@ -102,3 +102,56 @@ def csi_by_stratum(skill: pd.DataFrame, out: Path, mode: str = "all") -> None:
     fig.tight_layout()
     fig.savefig(out, dpi=150, facecolor=SURFACE)
     plt.close(fig)
+
+
+def precision_recall_by_stratum(skill: pd.DataFrame, out: Path,
+                                strata: tuple[str, ...] = ("open_nosnow", "vegetated_nosnow", "urban_nosnow")) -> None:
+    """Small multiples, one per stratum: recall (x) against precision (y) for fusion and each model source.
+
+    Filled marker = all cells (a source's NoData counts as a miss). Hollow marker = only the cells that
+    source observed (GFM, VIIRS; microwave observes ~everywhere). Precision is the same in both modes
+    (unobserved cells add misses, never false alarms), so the hollow point sits level with the filled one.
+    Grey curves: equal CSI, where 1/CSI = 1/precision + 1/recall - 1.
+    """
+    t = skill[skill.model == "full"].copy()
+    t["recall"] = t.tp / (t.tp + t.fn)
+    t["precision"] = t.tp / (t.tp + t.fp)
+    allc = t[t["mode"] == "all"].set_index(["stratum", "product"])
+    cond = t[t["mode"] == "conditional"].set_index(["stratum", "product"])
+    short = {"fusion": "Fusion", "gfm": "GFM", "microwave": "Microwave", "viirs": "VIIRS"}
+    # label offsets (points) chosen per stratum so labels of close points do not collide
+    off = {"fusion": (-7, -11, "right"), "gfm": (7, -11, "left"), "microwave": (7, -11, "left"), "viirs": (7, 5, "left")}
+    over = {"urban_nosnow": {"fusion": (7, -11, "left"), "viirs": (-7, 5, "right")}}
+    fig, axes = plt.subplots(1, len(strata), figsize=(10.5, 4.1), sharex=True, sharey=True, facecolor=SURFACE)
+    r = np.linspace(0.001, 1, 400)
+    for ax, st in zip(np.atleast_1d(axes), strata):
+        _style(ax)
+        for c in (0.1, 0.2, 0.3, 0.4, 0.5, 0.6):
+            rr = r[r > c]
+            ax.plot(rr, 1 / (1 / c + 1 - 1 / rr), color=GRID, lw=1, zorder=1)
+            ax.text(0.995, c + 0.012, f"CSI {c:.1f}", fontsize=6.5, color=REF, ha="right", va="bottom")
+        n = int(allc.loc[(st, "fusion"), "truth_flood"]) if (st, "fusion") in allc.index else 0
+        ax.set_title(f"{st.replace('_', ' ').replace('nosnow', 'no snow')} · {n:,} flood cells", fontsize=8.5, color=INK, loc="left")
+        for p in ("fusion", "gfm", "microwave", "viirs"):
+            if (st, p) not in allc.index:
+                continue
+            x, y = allc.loc[(st, p), "recall"], allc.loc[(st, p), "precision"]
+            if p in ("gfm", "viirs") and (st, p) in cond.index:
+                xc, yc = cond.loc[(st, p), "recall"], cond.loc[(st, p), "precision"]
+                ax.plot([x, xc], [y, yc], color=COLOR[p], lw=1, alpha=0.5, zorder=2)
+                ax.plot(xc, yc, "o", ms=8, mfc=SURFACE, mec=COLOR[p], mew=2, zorder=3)
+            ax.plot(x, y, "o", ms=9, color=COLOR[p], mec=SURFACE, mew=2, zorder=6 if p == "fusion" else 4)  # fusion never hidden
+            dx, dy, ha = over.get(st, {}).get(p, off[p])
+            ax.annotate(short[p], (x, y), xytext=(dx, dy), textcoords="offset points", fontsize=7.5, color=INK, ha=ha)
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1.02)
+        ax.set_xlabel("Recall (share of flooded cells flagged)", fontsize=8, color=INK2)
+    np.atleast_1d(axes)[0].set_ylabel("Precision (share of flood calls that are right)", fontsize=8, color=INK2)
+    handles = [plt.Line2D([], [], ls="", marker="o", ms=8, color=INK2, mec=SURFACE, mew=2),
+               plt.Line2D([], [], ls="", marker="o", ms=7, mfc=SURFACE, mec=INK2, mew=2)]
+    fig.legend(handles, ["all cells (couldn't see = missed)", "only cells the product observed"], loc="lower right",
+               ncol=2, fontsize=7.5, frameon=False, bbox_to_anchor=(0.99, 0.0))
+    fig.suptitle("Recall and precision by stratum, held-out events (grey curves: equal CSI)", x=0.01, ha="left", fontsize=10, color=INK)
+    fig.tight_layout(rect=(0, 0.05, 1, 1))
+    fig.savefig(out, dpi=150, facecolor=SURFACE)
+    plt.close(fig)

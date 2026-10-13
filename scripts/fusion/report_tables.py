@@ -1,4 +1,5 @@
-"""Render the results CSVs as markdown tables for docs/final_report.md (results/report_tables.md).
+"""Render the results CSVs as markdown tables for docs/final_report.md (results/report_tables.md),
+and the recall-precision figure (results/phase5_precision_recall_by_stratum.png).
 
 Run after phases 1, 3 and 5: uv run python scripts/fusion/report_tables.py
 """
@@ -21,13 +22,21 @@ def md(df: pd.DataFrame, floatfmt: str = "{:.3f}") -> str:
             return "" if np.isnan(v) else floatfmt.format(v)
         if isinstance(v, (int, np.integer)):
             return f"{v:,}"
-        return str(v)
+        return str(v).replace("|", "\\|")  # e.g. "fusion|gfm": a bare pipe would split the table cell
 
     cols = list(df.columns)
     lines = ["| " + " | ".join(cols) + " |", "|" + "|".join("---" for _ in cols) + "|"]
     for _, r in df.iterrows():
         lines.append("| " + " | ".join(f(r[c]) for c in cols) + " |")
     return "\n".join(lines)
+
+
+def with_rp(df: pd.DataFrame) -> pd.DataFrame:
+    """Add recall = TP/(TP+FN) and precision = TP/(TP+FP), the scores the team reports; CSI stays for criterion (b)."""
+    d = df.copy()
+    d["recall"] = d.tp / (d.tp + d.fn)
+    d["precision"] = d.tp / (d.tp + d.fp)
+    return d
 
 
 def main() -> None:
@@ -66,17 +75,23 @@ def main() -> None:
     pr = pd.read_csv(res / "prior_v1.csv")
     out.append("\n\n## Prior v1 (results/prior_v1.csv)\n")
     out.append(md(pr, "{:.5f}"))
-    st = pd.read_csv(res / "phase5_skill_by_stratum.csv")
+    ov = with_rp(pd.read_csv(res / "phase5_skill_overall.csv"))
+    ovf = ov[ov.model == "full"]
+    out.append("\n\n## Phase 5: held-out skill, all strata (recall, precision; CSI for criterion b)\n")
+    out.append("`all` = every gold cell, a source's NoData counts as a miss; `conditional` = only the cells that source observed "
+               "(fusion|x = fusion scored on x's observed cells).\n")
+    out.append(md(ovf[["product", "mode", "truth_flood", "tp", "fp", "fn", "recall", "precision", "csi"]].sort_values(["mode", "product"])))
+    st = with_rp(pd.read_csv(res / "phase5_skill_by_stratum.csv"))
     full = st[(st.model == "full") & (st["mode"] == "all") & st["product"].isin(["fusion", "gfm", "microwave", "viirs", "floodscan", "gfds"])]
     out.append("\n\n## Phase 5: held-out skill by stratum (all cells; a source's NoData = not detected)\n")
-    out.append(md(full[["stratum", "product", "truth_flood", "tp", "fp", "fn", "sens", "far", "csi"]].sort_values(["stratum", "product"])))
+    out.append(md(full[["stratum", "product", "truth_flood", "tp", "fp", "fn", "recall", "precision", "csi"]].sort_values(["stratum", "product"])))
     cond = st[(st.model == "full") & (st["mode"] == "conditional")]
     out.append("\n\n## Phase 5: held-out skill on each source's observed cells (fusion scored on the same cells)\n")
-    out.append(md(cond[["stratum", "product", "truth_flood", "tp", "fp", "fn", "csi"]].sort_values(["stratum", "product"])))
-    ct = pd.read_csv(res / "phase5_skill_by_continent.csv")
+    out.append(md(cond[["stratum", "product", "truth_flood", "tp", "fp", "fn", "recall", "precision", "csi"]].sort_values(["stratum", "product"])))
+    ct = with_rp(pd.read_csv(res / "phase5_skill_by_continent.csv"))
     ctf = ct[(ct.model == "full") & (ct["mode"] == "all") & ct["product"].isin(["fusion", "gfm", "microwave", "viirs"])]
     out.append("\n\n## Phase 5: held-out skill by continent (all cells)\n")
-    out.append(md(ctf[["continent", "product", "truth_flood", "sens", "far", "csi"]].sort_values(["continent", "product"])))
+    out.append(md(ctf[["continent", "product", "truth_flood", "recall", "precision", "csi"]].sort_values(["continent", "product"])))
     crit = pd.read_csv(res / "phase5_criteria.csv")
     out.append("\n\n## Phase 5: the three criteria by stratum\n")
     out.append(md(crit))
@@ -100,9 +115,17 @@ def main() -> None:
                       "median first-any days": [tim[c].median() for c in any_cols]})
     out.append(f"\n## Days from event start to first detection ({int((tim.gold_flood_footprint_cells > 0).sum())} held-out windows with gold flood)\n")
     out.append(md(t, "{:.1f}"))
-    abl = pd.read_csv(res / "phase5_ablation.csv")
+    abl = with_rp(pd.read_csv(res / "phase5_ablation.csv"))
     out.append("\n\n## Ablation (held-out, all strata, fusion product, all cells)\n")
-    out.append(md(abl))
+    out.append(md(abl[["model", "tp", "fp", "fn", "recall", "precision", "csi"]]))
+    rc = pd.read_csv(res / "experiment_recalibration.csv")
+    rc["precision"] = 1 - rc.far  # the experiment stores FAR = FP/(TP+FP); NaN where nothing was flagged
+    out.append("\n\n## Recalibration experiment (held-out gold days; not the product)\n")
+    out.append(md(rc[["stratum", "variant", "sens", "precision", "csi_gold_days", "reliability_slope_wls_quantile_bins",
+                      "calibration_slope_logistic", "n_heldout_flood_gold"]].rename(columns={"sens": "recall"})))
+    from ds_flood_gfm.fusion import plots
+
+    plots.precision_recall_by_stratum(pd.read_csv(res / "phase5_skill_by_stratum.csv"), res / "phase5_precision_recall_by_stratum.png")
     (res / "report_tables.md").write_text("\n".join(out) + "\n")
     print(f"wrote {res / 'report_tables.md'}")
 
