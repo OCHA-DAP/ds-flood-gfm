@@ -119,9 +119,20 @@ sources:
     observed_min_frac: 0.50
     flood_threshold: 0.30
   modis:
-    # MCDWD_L3 (2003-2025) / MCDWD_L3_NRT (2026-) need a NASA Earthdata login; none is
-    # configured for the team (KB has no mechanism) -> unreachable in v1 (docs/inventory.md).
+    # NASA LANCE MCDWD flood product (Terra+Aqua MODIS, 250 m), LAADS DAAC (D-37). Scripted downloads
+    # need an Earthdata token in the environment variable below (never in code). Not a model
+    # source yet: scored against gold first (scripts/fusion/experiment_modis_gold.py).
     enabled: false
+    archive: "https://ladsweb.modaps.eosdis.nasa.gov/archive"
+    collection: 61
+    product_reprocessed: MCDWD_L3       # reprocessed, complete 2000-2025
+    product_nrt_archive: MCDWD_L3_NRT   # archived near-real-time files from 2026-01-01
+    reprocessed_until: "2025-12-31"
+    token_env: EARTHDATA_TOKEN
+    layer: FloodCS_1Day_250m            # daily evidence: 1-day only (2/3-day composites reuse passes across days)
+    recurring_as: flood                 # code 2 "recurring (seasonal) flood": flood | dry
+    observed_min_frac: 0.50
+    flood_threshold: 0.30
 
 fetch:
   day_threads: 8                    # concurrent days per window for GFM/VIIRS reads (network-bound)

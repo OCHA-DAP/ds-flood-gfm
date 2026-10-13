@@ -242,3 +242,20 @@ Moving to v1.5 is an open issue.
 
   This fails the agreement table's assumption and is the measured cause of v1's over-confidence: naive Bayes adds two coinciding false alarms as two independent votes.
 - **Not done.** No bootstrap intervals for the agreement table: one fit takes 10–30 s, so 200 replicates × 6 strata would take hours. The status calls do not use intervals.
+
+**D-37 MODIS flood product (MCDWD) reachable; scored against gold before any model use.** This supersedes D-16's "cannot be reached".
+- **Access.** The source is LAADS DAAC, with an Earthdata **token** read from the environment variable `EARTHDATA_TOKEN`, never from code. LANCE and LAADS accept only a token for scripted downloads.
+  - The token expires (the profile page shows the date).
+  - For a scheduled job, use the team's shared `dsci` Earthdata account from secrets, as the IMERG pipeline does (KB `pipelines/imerg.md`), and add a token renewal step.
+- **Archive.**
+  - `MCDWD_L3`: reprocessed, complete 2000-01-01 to 2025-12-31.
+  - `MCDWD_L3_NRT`: archived near-real-time files from 2026-01-01, same layout.
+  - Both were checked on LAADS on 2026-10-13.
+- **Format.** HDF4 tiles of 10° × 10° on a geographic grid, 4800 × 4800 pixels of 0.0020833°. The `rasterio` wheel's GDAL has no HDF4 driver, so files are read with `pyhdf`, an added dependency.
+- **Flag values** come from each layer's own description attribute: 255 insufficient data, 0 no water, 1 normal (reference) water, 2 recurring seasonal flood, 3 unusual flood. Under the value rule:
+  - 255 → NoData;
+  - 1 → not flood;
+  - 3 → flood;
+  - 2 → flood or not, per `recurring_as`. Both are scored, because code 2 is NASA's own seasonal baseline.
+- **Composite.** As daily model evidence, only the 1-day layers qualify. The 2- and 3-day composites reuse the same satellite passes on consecutive days, which would be counted again under the carry-over. The default is the cloud-shadow-screened 1-day layer.
+- **Status.** MODIS is not a model source (`sources.modis.enabled: false`). `scripts/fusion/experiment_modis_gold.py` scores it against gold beside VIIRS, first for the events in the VIIRS archive gap (2021-01 to 2023-07). If it enters the model, it shares one optical vote with VIIRS, not a vote of its own (D-36).
