@@ -41,6 +41,8 @@ def _is_transient(e: BaseException) -> bool:
         return True
     # requests/pystac_client wrap the same failures
     name = type(e).__name__
+    if name == "ServiceResponseError" and ("timed out" in str(e) or "Connection" in str(e)):
+        return True  # azure-core transport failure (slow uplink / reset)
     return name in {"ConnectionError", "ChunkedEncodingError", "ReadTimeout", "ConnectTimeout", "APIError"} and "Connection" in str(e)
 
 

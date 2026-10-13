@@ -167,6 +167,8 @@ The account and container follow the flood-gfm precedent; the KB has no rule for
 
 This is a constraint of the team's merge convention, not a step skipped.
 
+**Gotcha.** DAB development mode does **not** pause a schedule whose `pause_status` is set explicitly. The first dev deploy had `UNPAUSED` and created a live daily schedule; it was caught by reading the job back two minutes later, before any trigger fired. The bundle now sets `PAUSED` in the base definition and `UNPAUSED` only in the prod target.
+
 **D-29 GFM scene-level absences.** Two cases:
 - **Flood or exclusion layer missing.** Either the asset is listed in STAC but its file returns 404, or the item does not list the flood or exclusion layer at all; both occur in the archive. Without the exclusion mask, excluded pixels (which read 0) cannot be told apart from dry ones. So the scene is dropped and its id recorded in the cube attributes (`gfm_dropped_scenes`). Config: `on_missing_asset: drop_scene`.
 - **Advisory layer missing.** Some product versions have no advisory layer at all, and many 2015–2016 archive scenes list an advisory file that returns 404 while their flood and exclusion files are fine (8 of 8 dropped scenes checked for EMSR174). Either way there is no GFM snow flag to apply, so the scene is read without it and recorded in `gfm_scenes_without_advisory`. Config: `on_unlisted_advisory: read_without_flag`. The first version of this rule dropped those scenes; cubes built that way were rebuilt. Zero-byte files exist upstream too; one advisory file has a 1970 timestamp. An empty advisory file is treated as missing. An empty flood or exclusion file makes the scene unusable, so it is dropped and recorded.

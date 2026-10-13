@@ -116,6 +116,72 @@ All maps use **data provenance colors** showing which satellite observation each
 
 This helps identify data currency - green areas have the freshest information.
 
+## Flood fusion v1 (daily P(flooded), 0.01°)
+
+A daily global-capable raster product on a **0.01° (~1 km) WGS84 grid**, restricted to the floodable domain (HAND < 15 m, permanent water removed). Three layers per day:
+
+1. **P(flooded)**, from 0 to 1.
+2. **Uncertainty**: the absolute log-odds, plus the count of sources that observed the cell that day.
+3. **Days since the last direct observation.**
+
+It fuses three independent sensor families:
+- **Copernicus GFM** (Sentinel-1 SAR).
+- **FloodScan OR GFDS**, merged into one passive-microwave vote.
+- **NOAA VIIRS flood maps** (optical). These stand in for MODIS, which needs an Earthdata login.
+
+The fusion is per-stratum naive Bayes in log-odds, with sensitivity and specificity learned from Copernicus EMS and UNOSAT flood maps. Yesterday's log-odds carry over to today with a 0.9 decay toward the prior.
+
+> **Resolution.** v1 is deliberately coarser than GFM's 20 m. A cell counts as "flooded" only when at least 30% of its area is flooded, so small or narrow floods are not represented. Use GFM directly when you need detail; use this product when you need a daily, gap-filled, calibrated estimate.
+>
+> **Licence.** FloodScan is a commercial input, and outputs derived from it may not be shared outside OCHA without AER approval.
+
+**v1 status:**
+- **Validation (49 held-out gold events):** the product is built and tested end to end, but as specified it does **not** beat the best single source in any stratum. Its probabilities are strongly over-confident: reliability slope about 0.01 against a target of 0.8–1.2.
+- **Fixable where the data are good.** A per-stratum recalibration fitted on training events fixes calibration in open, snow-free land, where fusion then beats every single source (CSI 0.37 vs 0.33). It is the top-ranked next improvement.
+- **Inputs are ending.** GFDS stopped on 2026-09-14, and FloodScan outside Africa ends on 2026-03-31 on our blob.
+
+Where fusion is better than single products, and where it is not, is written up in **[docs/final_report.md](docs/final_report.md)**.
+
+### Running it (a junior's walk-through)
+
+```bash
+uv sync --extra dev            # environment
+make test                      # 37 synthetic tests: must pass before anything touches real data
+make phase0                    # snow climatology (CDS key in ~/.cdsapirc) + static tile indexes
+make phase1                    # gold events -> event cubes -> per-source skill, oracle + coverage gate
+make phase2                    # stratified random sample cube + static rasters
+make phase3                    # accuracy table (results/accuracy_table.csv) + prior (results/prior_v1.csv)
+make phase4                    # engine tests (gate)
+make phase5                    # held-out validation, daily COGs for every held-out event window
+make phase6                    # mirror to dev blob + MANIFEST.json
+make daily DATE=2026-09-10     # one operational day for the AOIs in configs/fusion.yaml
+```
+
+- **Timing.** Every step is resumable. The network-bound steps take hours on a laptop:
+  - the GFDS prefetch respects a limit of 1 request per second;
+  - GFM, VIIRS and FloodScan reads are windowed.
+- **Logs** go to `data/fusion/logs/`.
+- **Credentials:** `DSCI_AZ_BLOB_*` environment variables (ocha-stratus) and `~/.cdsapirc`. Nothing is in code.
+
+| what | file |
+|---|---|
+| every threshold and path | `configs/fusion.yaml` |
+| why each choice was made | `docs/decisions.md`, `docs/assumptions.md`, `docs/decisions/0001-*.md` |
+| what data exists and its limits | `docs/inventory.md` |
+| what was in the repo before | `docs/repo_audit.md` |
+| gate result | `docs/feasibility.md` |
+| the trained model | `results/accuracy_table.csv`, `results/prior_v1.csv` |
+| validation | `results/phase5_*.csv`, `results/reliability_*.png`, `docs/final_report.md` |
+| scheduled job | `databricks.yml` (job "Flood Fusion Daily"), `scripts/fusion/daily_job.py` |
+
+### Reading an output
+
+```python
+import rioxarray
+da = rioxarray.open_rasterio("data/fusion/out/daily/<window>/<window>_2024-09-15.tif")
+p_flood, abs_logodds, n_sources, days_since_obs = da  # NaN outside the floodable domain
+```
+
 ## Country Configuration
 
 Supported countries in [src/ds_flood_gfm/country_config.py](src/ds_flood_gfm/country_config.py):

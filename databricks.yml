@@ -6,8 +6,9 @@
 # Credentials come from the Job Compute policy (DSCI_AZ_BLOB_* from the dsci scope).
 # Data plane is dev on both targets (an experimental product; KB: dev/prod axes are independent).
 #
-# dev target  : runs the files synced from your checkout (no git push needed); development mode
-#               pauses the schedule. Use it to test a run:
+# dev target  : runs the files synced from your checkout (no git push needed); the schedule is
+#               PAUSED (set explicitly: development mode does not override an explicit status).
+#               Use it to test a run:
 #   databricks bundle validate -t dev
 #   databricks bundle deploy   -t dev
 #   databricks bundle run flood_fusion_daily -t dev --params date=2026-09-10,extra=--cold-start
@@ -60,7 +61,7 @@ resources:
       schedule:
         quartz_cron_expression: "0 0 7 * * ?"   # 07:00 UTC daily, for UTC yesterday
         timezone_id: UTC
-        pause_status: UNPAUSED
+        pause_status: PAUSED                     # unpaused only in the prod target (below)
       parameters:
         - name: stage
           default: ${var.stage}
@@ -124,6 +125,10 @@ targets:
     resources:
       jobs:
         flood_fusion_daily:
+          schedule:
+            quartz_cron_expression: "0 0 7 * * ?"
+            timezone_id: UTC
+            pause_status: UNPAUSED
           git_source:
             git_url: https://github.com/OCHA-DAP/ds-flood-gfm.git
             git_provider: gitHub
