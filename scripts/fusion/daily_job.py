@@ -40,7 +40,7 @@ class Blob:
         self.cc = stratus.get_container_client(container_name=b["container"], stage=b["stage"], write=True)
 
     def name(self, *parts: str) -> str:
-        return self.cfg.blob_path("processed", "flood_fusion_v1", *parts)
+        return self.cfg.blob_path("processed", *parts)
 
     def pull(self, name: str, local: Path) -> bool:
         """Download if the blob exists. Returns False only for a blob that does not exist."""

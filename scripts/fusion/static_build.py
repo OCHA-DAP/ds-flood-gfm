@@ -38,7 +38,7 @@ def main() -> None:
 
         b = cfg["paths"]["blob"]
         blob = stratus.get_container_client(container_name=b["container"], stage=b["stage"], write=True)
-        cached = {x.name.rsplit("/", 1)[-1] for x in blob.list_blobs(name_starts_with=cfg.blob_path("processed", "flood_fusion_v1", "static_cache"))}
+        cached = {x.name.rsplit("/", 1)[-1] for x in blob.list_blobs(name_starts_with=cfg.blob_path("processed", "static_cache"))}
     else:
         cached = set()
     done = skipped_ocean = 0
@@ -56,7 +56,7 @@ def main() -> None:
             static.static_for_window(cfg, tile)
             if blob is not None:
                 with open(cfg.local("static", name), "rb") as f:
-                    blob.upload_blob(cfg.blob_path("processed", "flood_fusion_v1", "static_cache", name), f, overwrite=True)
+                    blob.upload_blob(cfg.blob_path("processed", "static_cache", name), f, overwrite=True)
             done += 1
             log.info("static tile %s built", tile.key())
     log.info("built %d tiles; %d ocean tiles (no HAND tile upstream) skipped", done, skipped_ocean)

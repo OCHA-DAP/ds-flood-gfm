@@ -33,8 +33,14 @@ log = logging.getLogger("phase6")
 
 
 def _cc(cfg):
+    """Container client for uploads over a slow uplink: small blocks (each request finishes well inside
+    the socket timeouts at ~30 KB/s) and long connection/read timeouts."""
+    from azure.storage.blob import ContainerClient
+
     b = cfg["paths"]["blob"]
-    return stratus.get_container_client(container_name=b["container"], stage=b["stage"], write=True)
+    base = stratus.get_container_client(container_name=b["container"], stage=b["stage"], write=True)
+    return ContainerClient.from_container_url(base.url, credential=base.credential, max_block_size=256 * 1024,
+                                              max_single_put_size=256 * 1024, connection_timeout=600, read_timeout=600)
 
 
 def mirror(cfg, cc, local: Path, blob_prefix: str, suffixes: tuple[str, ...]) -> int:
@@ -104,7 +110,7 @@ def main() -> None:
     if a.only_gfds_bands:
         mirror(cfg, cc, loc / "gfds" / "days", cfg.blob_path("raw", "gfds", "signal_row_bands"), (".npz",))
         return
-    proc = cfg.blob_path("processed", "flood_fusion_v1")
+    proc = cfg.blob_path("processed")
     # priority order (slow uplinks): what the scheduled job needs, then the deliverables, then archives
     if not a.skip_raw:
         mirror(cfg, cc, loc / "raw" / "era5_land", cfg.blob_path("raw", "era5_land"), (".nc",))
