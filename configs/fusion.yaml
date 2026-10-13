@@ -138,6 +138,14 @@ accuracy:
   ci_flag_width: 0.15
   min_obs_for_interval: 30          # fewer observed flood (or dry) cells: interval untrustworthy, flagged
   em_prior_strength: 200            # Beta pseudo-count for MAP-EM centred on the nearest stratum's gold values
+  agreement:                        # plan v2 Phase 3, ADR 0002: unsupervised EM on the random sample, compared with gold
+    weight_tolerance: 0.405         # log(1.5): tables "agree" if a report's evidence weight differs by <= this
+    max_iter: 200000                # rare flood classes converge slowly (tens of thousands of iterations)
+    tol: 1.0e-10
+    prev_clip_low: 1.0e-8           # urban sample flood rates (~4e-5) sit below the semi-supervised 1e-4 floor
+    start_ll_tolerance: 1.0         # another start within this many log-units of the best ...
+    param_tolerance: 0.02           # ... at sens/spec differing by more than this = flat likelihood (unstable)
+    boundary: 0.001                 # sens within this of 0 or 1 = degenerate fit
 
 sample:
   years: [2023, 2025]               # inclusive; stratified random sample period (D-23)

@@ -77,12 +77,16 @@ class EMResult:
 
 def dawid_skene(unlab: np.ndarray, n_unlab: np.ndarray, lab: np.ndarray, n_lab: np.ndarray, z_lab: np.ndarray,
                 init_sens: np.ndarray, init_spec: np.ndarray, init_prev: float, prior_strength: float = 0.0,
-                max_iter: int = 20000, tol: float = 1e-7, clip: tuple[float, float] = (1e-4, 1 - 1e-4)) -> EMResult:
+                max_iter: int = 20000, tol: float = 1e-7, clip: tuple[float, float] = (1e-4, 1 - 1e-4),
+                prev_clip: tuple[float, float] | None = None) -> EMResult:
     """Semi-supervised two-class Dawid-Skene EM on pattern counts.
 
     unlab: (P, S) patterns with counts n_unlab; lab: (Q, S) patterns with counts n_lab and known z_lab.
     Beta(a, b) priors centred on the initial values: a = strength*init, b = strength*(1-init).
+    prev_clip bounds the prevalence separately from sens/spec (default: `clip`). The agreement
+    table needs a lower bound than 1e-4: urban flood rates in the random sample are ~4e-5 (ADR 0002).
     """
+    prev_clip = clip if prev_clip is None else prev_clip
     # all-NoData patterns carry no information about any parameter (their likelihood is 1
     # for both classes); keeping them only slows the prevalence update to a crawl
     keep = (unlab != NODATA).any(axis=1) if len(unlab) else np.zeros(0, bool)
@@ -116,13 +120,23 @@ def dawid_skene(unlab: np.ndarray, n_unlab: np.ndarray, lab: np.ndarray, n_lab: 
         new_prev = (w1.sum()) / w.sum()
         new_sens = np.clip(new_sens, *clip)
         new_spec = np.clip(new_spec, *clip)
-        new_prev = float(np.clip(new_prev, *clip))
+        new_prev = float(np.clip(new_prev, *prev_clip))
         delta = max(np.abs(new_sens - sens).max(), np.abs(new_spec - spec).max(), abs(new_prev - prev))
         sens, spec, prev = new_sens, new_spec, new_prev
         if delta < tol:
             converged = True
             break
     return EMResult(sens, spec, prev, it, converged)
+
+
+def observed_loglik(pat: np.ndarray, n: np.ndarray, sens: np.ndarray, spec: np.ndarray, prev: float) -> float:
+    """Observed-data log-likelihood of pattern counts under the two-class model.
+
+    Used to choose between EM runs from different starts (the agreement table, ADR 0002).
+    All-NoData patterns contribute log(1) = 0.
+    """
+    l1, l0 = _loglik_terms(pat, sens, spec)
+    return float(np.sum(np.asarray(n, float) * np.logaddexp(np.log(prev) + l1, np.log1p(-prev) + l0)))
 
 
 def prevalence_mle(patterns: np.ndarray, n: np.ndarray, sens: np.ndarray, spec: np.ndarray,

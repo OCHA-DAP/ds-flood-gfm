@@ -35,8 +35,9 @@ phase2: ## training cube: stratified random sample + static rasters (prior v1 is
 	$(PY) $(P2) sources --workers 2
 	$(PY) $(P2) static
 
-phase3: ## accuracy table (gold + EM for thin strata) and prior v1
+phase3: ## accuracy tables: gold (+ EM for thin strata) and prior v1; then the agreement table and its comparison (ADR 0002)
 	$(PY) scripts/fusion/phase3_accuracy.py
+	$(PY) scripts/fusion/phase3_agreement.py
 
 phase4: ## engine tests (must pass), then a one-day live run on a small AOI as a check
 	$(PY) scripts/fusion/phase4_engine.py test
