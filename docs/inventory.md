@@ -35,6 +35,11 @@ After the v1 filters, 2,742 label sets in 353 events remain usable. 187 of those
 
 ## What the gaps cost
 
+- **The VIIRS gap (2021-01 to 2023-07), checked 2026-10-13.** Neither NOAA's AWS bucket (`VFM_1day_GLB`, `VFM_5day_GLB`: 2012–2020, then 2023 onward, in every format) nor the per-satellite `VIIRS_VFM_MWS_MOSAIC` buckets (2026 only) cover it. GMU's archive (from 2019-10) is listed as offline.
+  - **NOAA CLASS** ("River and Surface Flood Map Products (RSVFM)", 1-day and 5-day gridded composites) holds at least December 2022, per SSEC's ordering guide. 2021 coverage is unverified.
+  - It needs a free CLASS account and web orders (at most 365 days per query, delivered by FTP).
+  - The files are `v1r0`, while the AWS files are `v2r0`, so they would need their own accuracy check.
+  - MODIS (D-37) covers the gap instead.
 - **No MODIS.** The optical slot is VIIRS only, and VIIRS has no data for 2021-01 → 2023-07. For 46 of the 187 v1 events (36 train, 10 held out), every gold day falls in that gap, and 59 event windows overlap it. For those, fusion runs on two sources.
 - **No FloodScan in Europe**, and none outside Africa after 2026-03-31. In Europe the microwave vote is GFDS alone.
 - **GFDS has ended (2026-09-14).** The daily operational job has no microwave input outside Africa from that date. The job records GFDS absence per day; it does not invent zeros.
