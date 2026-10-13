@@ -140,7 +140,7 @@ How the cells are chosen:
 - **Blocks:** 0.25° blocks drawn at random, one per Köppen main group (Beck et al. 2018) × continent cell, plus 12 city-centred 0.5° blocks (6 in Köppen D/E climates, 6 elsewhere), because urban strata are rare.
 - **Top-up:** reserve blocks are added until each stratum has at least 2 million cell-days over 2023–2025, capped at 25 extra blocks. Any shortfall is reported in `results/phase2_sample_cell_days_by_stratum.csv`, not hidden.
 - **Why 2023–2025:** the three most recent full years. GFM has two satellites again there (S1A, plus S1C from 2025), which is closest to how the product runs today.
-- **Prior v1** is the per-stratum prevalence MLE on this sample with sensitivity and specificity fixed from the accuracy table. A one-parameter EM is identifiable, unlike a joint fit. It needs the gold table, so `phase3_accuracy.py` computes it straight after the table.
+- **Prior v1** was planned as the per-stratum prevalence MLE on this sample, with sensitivity and specificity fixed from the accuracy table. That estimator collapsed, and D-35 replaces it. The step runs in `phase3_accuracy.py` straight after the table.
 
 **D-24 Dawid–Skene EM.**
 - **When it runs:** for any stratum with fewer than 50,000 observed gold cell-days (the maximum over the three sources), **or** where any model source has zero observed gold flood cells. In that second case sensitivity would be 0/0, which is not an estimate, so the 50,000 rule cannot be read as requiring it.
@@ -200,6 +200,12 @@ NoData breaks a run, so the first observation after a gap counts. The product it
 **D-34 Numerical guards.** The two clips do different jobs and are kept separate:
 - **Sensitivity and specificity** are clipped to [0.001, 0.999], so no single observation can contribute a weight beyond about ±7 log-odds.
 - **The prior base rate** is clipped to [1e-5, 0.999]. The sample MLE puts several strata near 1e-5 to 1e-4; clipping the prior at 0.001 would have raised those priors as much as 100-fold without saying so.
+
+**D-35 Prior v1 estimator: GFM's flood rate in the random sample.**
+- **Why the planned estimator failed.** That estimator (D-23) was the prevalence MLE on the sample with sensitivity and specificity fixed from the gold table. It hit its lower bound (1e-7) in the three no-snow strata, with zero-width intervals. The gold specificities come from dry windows next to flood events, where false alarms run higher than on random days (`results/phase3_post_window_pofd.csv`). Fixed at those values, the likelihood explains every flagged sample cell as a false alarm.
+- **Estimator used.** Prior v1 is the share of GFM-observed sample cell-days that GFM flags as flood, per stratum, with block-bootstrap intervals. GFM has the lowest false-alarm rate of the three sources. This is the reading closest to "base flood rate per stratum, estimated from the training cube": the sample is the unbiased part of that cube.
+- **What is kept.** The MLE is kept as `base_rate_mle` in `results/prior_v1.csv`.
+- **Bias.** This rate includes GFM's own false alarms, so it is if anything an upper estimate.
 
 **D-28 GSW v1.4 kept.** JRC now publishes v1.5 (1984–2024) and states that occurrence in v1.2–1.4 has consistency errors. v1 keeps v1.4 because:
 - the ≥ 90% permanent-water cut is the least sensitive part of the occurrence range;
