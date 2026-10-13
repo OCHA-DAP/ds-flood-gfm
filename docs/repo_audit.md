@@ -85,7 +85,7 @@ Reconstructed from git history and the outputs on disk. The short version lives 
 | 0 Inventory | done | commit 07651c2; `docs/repo_audit.md`, `docs/inventory.md` |
 | 1 Feasibility | done; gate said continue (coverage gain +93 pp; oracle gain +1.6 CSI points, below its 3-point bar) | commit 785103d; `docs/feasibility.md`, `results/phase1_*` |
 | 2 Data cube | done: gold cubes for 198 events, 53-block random sample | commit d5ca42e; `data/fusion/cube/`, `results/phase2_*` |
-| 3 Accuracy tables | **gold table** done. **Agreement table and comparison** in progress | gold: commit 0e6a7a3, `results/accuracy_table.csv`. Agreement: ADR 0002 |
+| 3 Accuracy tables | done. **Gold table** (the model). **Agreement table and comparison**: built; it does not identify flood, and every stratum keeps gold (D-36) | gold: commit 0e6a7a3, `results/accuracy_table.csv`. Agreement: `scripts/fusion/phase3_agreement.py`, `results/accuracy_table_{agreement,comparison}.csv`, `results/phase3_gold_error_dependence.csv` |
 | 4 Fusion engine | done; 37 synthetic tests | commit bde6192; `src/ds_flood_gfm/fusion/engine.py`, `tests/` |
 | 5 Validation | **held-out gold** done. **Gauge-exceedance test** not started: no observed-gauge source in holdings or the KB; candidates in `docs/gauge_sources.md`, choice pending. **v2-table comparison** not started | commit 5ceab0b; `results/phase5_*`, `docs/final_report.md` §4 |
 | 6 Packaging | done for v1 on dev: blob mirror, MANIFEST, paused dev job (one successful run), KB draft PR #757. Prod deploy waits for merge | commits fd0c8d6, 12601a9 |

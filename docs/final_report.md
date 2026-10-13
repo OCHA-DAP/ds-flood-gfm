@@ -158,7 +158,11 @@ Observed flood frequency stays near 0.01 at every predicted probability. The fus
 
 **The likely cause is the independence assumption (A-03), but which dependence matters is not settled.**
 - **Repetition at the same cell.** Errors that recur at a cell day after day accumulate under the 0.9 carry-over to (L − prior)∞ = w/(1 − 0.9) = 10·w. But two "evidence only on change" ablations (D-33) did not repair the slope (logistic 0.22 and 0.27). So day-to-day repetition is not the main part.
-- **Sources wrong together.** The other candidate is that the sources' errors are correlated with each other at the same cell. For example, seasonal wetlands that both microwave and VIIRS call flooded. The per-source accuracy table cannot see this. It has not been measured.
+- **Sources wrong together: measured, and large** (2026-10-13, `results/phase3_gold_error_dependence.csv`).
+  - On gold-dry training cells, two sources' false alarms coincide 4–18 times more often than independence predicts. In open land without snow, microwave and VIIRS made 141,077 joint false alarms, 5.2 times the independent expectation.
+  - Within the same event the excess is still 2–9 times, so it is the same cells, not just some events being wetter.
+  - Misses on flooded cells barely coincide (1.0–1.5 times).
+  - Naive Bayes counts two coinciding false alarms as two independent votes for flood. This is the measured cause of the over-confidence.
 
 (An earlier version of this report also blamed spatially correlated errors. That was wrong: spatial correlation between cells widens the uncertainty of the calibration estimate, but it does not bias a per-cell probability.)
 
@@ -227,6 +231,17 @@ The snow strata have too few held-out gold flood cells to read (24 and 332).
 - Held-out CSI (0.372) is well above training CSI (0.252) at the same threshold, which points to event-mix noise.
 - There is no confidence interval on 0.372 vs 0.333.
 
+### Agreement accuracy table (plan v2, ADR 0002; D-36)
+
+**Estimating each source's accuracy from how the three sources agree, without gold, does not work on these sources. Every stratum keeps its gold values.**
+
+- **Best case:** synthetic data with independent errors, at the sample's real rarity and observation rates. Specificity comes back within about ±0.0005, but sensitivity does not:
+  - open land: GFM 0.24–0.41, VIIRS 0.45–0.93 (5th–95th percentile over 8 samples);
+  - vegetated and urban land: close to the whole 0–1 range.
+- **Real sample:** the "flood" class the method finds in open land covers 2.4% of cell-days, 15 times the base rate. VIIRS sees 53% of it and GFM only 4%, which fits the products' different water baselines, not gold flood. Vegetated and urban fits are unstable.
+- **Comparison with gold:** per row, 1 agree, 2 diverge, 6 unstable, 9 with no gold to check. A stratum switches only if all its sources agree, and none do.
+- **Why:** the sources' false alarms coincide 4–18 times more often than independence predicts (§4, Reliability). That breaks the agreement method's core assumption, and it is the same cause as the product's over-confidence.
+
 ## 5. Where fusion beats single sources, and where it does not
 
 **Where it wins:**
@@ -245,7 +260,7 @@ The snow strata have too few held-out gold flood cells to read (24 and 332).
 
 ## 6. Open issues
 
-1. **Calibration fails (criterion c).** The likely cause is dependence between sources' errors that the model treats as independent (§4). Recalibration improves calibration but does not reach the target.
+1. **Calibration fails (criterion c).** The measured cause is that the sources' false alarms coincide 4–18 times more often than the model assumes (§4). Recalibration improves calibration but does not reach the target.
 2. **Inputs are disappearing.**
    - GFDS ended on 2026-09-14.
    - FloodScan outside Africa ends on our blob on 2026-03-31. The AER 90-day zips on the dev blob after that are not integrated, and the prod `processed/global/` folder is empty.
@@ -265,29 +280,34 @@ The snow strata have too few held-out gold flood cells to read (24 and 332).
    - The KB page for the dataset is a draft PR.
 11. **No confidence intervals on the Phase 5 skill scores.** Every comparison with a single product is a point estimate. An event-cluster bootstrap (as used for the accuracy table) is needed before any margin is quoted as real.
 
-## 7. Next three improvements, ranked
+## 7. Next improvements, ranked (revised 2026-10-13 after the agreement table)
 
-1. **Test the learned threshold and the recalibration properly.** The code is in `scripts/fusion/experiment_recalibration.py`, so this is low effort. One run gave held-out CSI 0.300 → 0.372 in open/no-snow at P ≥ 0.02, above VIIRS's 0.333. Calibration improved but did not reach criterion (c): WLS slope 0.68, logistic 0.87.
-   - Before relying on it: extend the threshold search below 0.02, and put event-cluster bootstrap intervals on the held-out gain.
-   - It does not help vegetated or urban land.
-2. **Restore the inputs the daily product depends on, then build the static layers globally.**
+1. **Model the dependence between sources.** It is the measured cause of the over-confidence (§4, D-36).
+   - Learn the evidence for each *combination* of the day's reports from gold: per stratum, the 27 flood/dry/no-data patterns of the three sources. Where gold is thin, shrink towards naive Bayes.
+   - The 2026-09-18 spec's stacked logistic regression with interaction terms is the alternative.
+   - Either can be scored on the held-out cubes already on disk.
+   - It changes fixed decision 7 (naive Bayes), so it needs your sign-off.
+2. **Test the learned threshold and the recalibration properly.** The code is in `scripts/fusion/experiment_recalibration.py`. One run gave held-out CSI 0.300 → 0.372 in open/no-snow at P ≥ 0.02, above VIIRS's 0.333. Calibration improved but did not reach criterion (c): WLS slope 0.68, logistic 0.87.
+   - Before relying on it: extend the threshold search below 0.02 and put event-cluster bootstrap intervals on the gain.
+   - It treats the symptom; item 1 treats the cause.
+3. **Restore the inputs the daily product depends on, then build the static layers globally.**
    - Ingest FloodScan for all regions after 2026-03-31: the AER API or the 90-day zips, which also fills the prod `global/` path the KB expects.
    - Configure an Earthdata login for MODIS MCDWD.
    - Run `flood_fusion_static` over all land tiles.
 
-   Without this the operational product outside Africa is GFM plus VIIRS only. It comes second only because the first item is nearly free.
-3. **Model correlated errors instead of assuming independence.** Measured evidence for each step:
-   - **Drop GFDS where FloodScan exists.** On held-out gold days, adding GFDS to the microwave vote adds 6,656 hits but 17,246 false alarms. In the fused product the OR is worth only 0.004 CSI.
-   - **Measure dependence between sources at the same cell.** Compare the joint flood/dry patterns of the three sources, given the gold label, with what independence predicts. This tests the remaining explanation for the over-confidence (§4).
-   - **Learn the source weights jointly.** Stacked logistic regression on the same cube, which is what the 2026-09-18 spec proposed, instead of fixing them from single-source confusion matrices.
-   - **Bound the accumulated state.** Cap |L − prior|, or decay dry evidence faster, so that weeks of "dry" cannot bury a new flood. That targets the North America failure mode in §4 (not tested). It changes fixed decision 6, so it needs your sign-off.
+   Without this the operational product outside Africa is GFM plus VIIRS only.
+
+Smaller items:
+- **Drop GFDS where FloodScan exists.** On held-out gold days, adding GFDS to the microwave vote adds 6,656 hits but 17,246 false alarms. In the fused product the OR is worth only 0.004 CSI.
+- **Bound the accumulated state.** Cap |L − prior|, or decay dry evidence faster, so that weeks of "dry" cannot bury a new flood. This targets the North America failure (§4); not tested. It changes fixed decision 6.
+- **The gauge test** (plan Phase 5): candidate sources are in `docs/gauge_sources.md`, and the choice is pending.
 
 ## 8. Deliverables and how to reproduce
 
 | deliverable | where |
 |---|---|
 | code, one entry point per phase | `Makefile` (`make phase0` … `make phase6`, `make test`, `make daily`), `scripts/fusion/`, `src/ds_flood_gfm/fusion/` |
-| tests (37, synthetic) | `tests/` |
+| tests (45, synthetic) | `tests/` |
 | accuracy table with sample sizes and 95% intervals | `results/accuracy_table.csv` |
 | daily outputs for every held-out window | 8,277 COGs, locally (`data/fusion/out/daily/`) and on dev blob `projects/ds-flood-gfm/processed/flood_fusion_v1/daily/` (§4) |
 | dataset card | `…/flood_fusion_v1/MANIFEST.json`, written by `phase6_package.py` as the second upload step; registration page is KB draft PR #757 |

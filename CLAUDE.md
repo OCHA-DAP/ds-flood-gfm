@@ -16,7 +16,7 @@ This repo has two parts.
   - a real dry is 0.
 
   No broad `except`. Opt-in exceptions are named flags (`--continue-on-error`, `--cold-start`, `on_missing_asset: drop_scene`) and are recorded in outputs.
-- **Tests before real data.** `make test` (37 synthetic tests) must pass, and `phase4_engine.py` refuses to run if they fail.
+- **Tests before real data.** `make test` (45 synthetic tests) must pass, and `phase4_engine.py` refuses to run if they fail.
 - **Held-out events are sacred.** `results/event_split.csv` is frozen. Phases 1–3 use `split == train` only. Never fit anything on `holdout`.
 
 ## Data locations
@@ -57,7 +57,7 @@ Update this at every commit that changes a phase's state.
 | 0 Inventory | done |
 | 1 Feasibility | done (gate: continue) |
 | 2 Data cube | done |
-| 3 Accuracy tables | gold table done; agreement table + comparison in progress (ADR 0002) |
+| 3 Accuracy tables | done: gold table (the model) + agreement table and comparison (`make phase3`). Agreement does not identify flood; every stratum keeps gold (D-36) |
 | 4 Fusion engine | done |
 | 5 Validation | held-out gold done; gauge test not started: candidates in `docs/gauge_sources.md`, choice pending; v2-table comparison not started |
 | 6 Packaging | done for v1 on dev; prod deploy waits for merge |

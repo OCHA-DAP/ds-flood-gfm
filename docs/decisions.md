@@ -214,3 +214,31 @@ NoData breaks a run, so the first observation after a gap counts. The product it
 - v1.5 is on a different endpoint, mixes Landsat collections, and has a co-registration offset of ≥ 1 pixel.
 
 Moving to v1.5 is an open issue.
+
+**D-36 Agreement accuracy table (plan v2, ADR 0002): built; it does not identify flood, and gold shows why.**
+- **What was built.** `scripts/fusion/phase3_agreement.py` (`make phase3`), with the logic in `fusion/agreement.py`:
+  - unsupervised Dawid–Skene on the random sample, per stratum, from three starts; best log-likelihood wins; flood is the minority class;
+  - a comparison with gold on evidence weights (ADR 0002);
+  - a check on gold cells of the independence assumption the agreement table rests on.
+
+  Thresholds are under `accuracy.agreement` in the config.
+- **Even the best case recovers only specificity.** `scripts/fusion/experiment_agreement_identifiability.py` plants the gold accuracies, the sample's real observation rates and base rates, and independent errors. Over 8 synthetic samples (5th–95th percentile):
+  - specificity comes back within about ±0.0005 in every stratum;
+  - sensitivity does not. Open land: GFM 0.24–0.41, VIIRS 0.45–0.93. Vegetated and urban land: close to the whole 0–1 range (VIIRS 0.08–1.0, 0.01–1.0).
+
+  Flood is too rare on ordinary days for agreement alone to pin down how often a source catches it.
+- **On the real sample the "flood" class is something else.**
+  - Open/no-snow: the class covers 2.4% of cell-days, 15 times the base rate. VIIRS sees 53% of it, microwave 19%, GFM 4%. That fits the products' different water baselines (VIIRS and FloodScan count seasonal water; GFM subtracts its own reference water), not gold flood.
+  - Vegetated/no-snow does not converge.
+  - Urban/no-snow is degenerate: two sources at sensitivity 1.0.
+- **Comparison.** Per row: 1 agree, 2 diverge, 6 unstable, 9 with no gold to check (snow strata).
+  - **Rule added during the build:** a stratum uses the agreement values only if *every* source agrees, because all three come from one joint fit. The single "agree" (microwave, open/no-snow) sits in a fit that diverges for GFM and VIIRS.
+  - **Result:** every stratum keeps gold, and `results/accuracy_table.csv` is unchanged.
+- **Why.** On gold-dry training cells the sources' false alarms coincide far more often than independence predicts (`results/phase3_gold_error_dependence.csv`):
+  - **open/no-snow:** microwave + VIIRS 141,077 joint false alarms, lift 5.2; GFM + VIIRS lift 7.9;
+  - **vegetated/no-snow:** lifts 4.8–17.7;
+  - **within the same event:** still 2.2–9.1 in both strata, so the same cells, not just wetter events;
+  - **misses on flood cells:** barely coincide (lift 1.0–1.5).
+
+  This fails the agreement table's assumption and is the measured cause of v1's over-confidence: naive Bayes adds two coinciding false alarms as two independent votes.
+- **Not done.** No bootstrap intervals for the agreement table: one fit takes 10–30 s, so 200 replicates × 6 strata would take hours. The status calls do not use intervals.

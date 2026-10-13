@@ -58,3 +58,18 @@ Option 3, as in `docs/flood_fusion_plan.md`. The implementation rules below are 
 - v1 outputs (`results/accuracy_table.csv`, the daily COGs) are unchanged.
 - The agreement table, the comparison and the v2 table are separate files. The product switches to v2 only after a held-out comparison with v1.
 - Gold cannot be retired. It is the only thing that can show the agreement table is wrong.
+
+## Outcome (2026-10-13)
+
+**The agreement table was built and does not identify flood. Gold shows why, and this also gives the measured cause of v1's over-confidence.** Detail: D-36 in `docs/decisions.md`; outputs `results/accuracy_table_agreement.csv`, `results/accuracy_table_comparison.csv`, `results/phase3_gold_error_dependence.csv`.
+
+- **Even in the best case it cannot recover sensitivity.** On synthetic data with independent errors, at the sample's real rarity and observation rates, specificity is recovered but sensitivity is not (`results/experiment_agreement_identifiability.csv`).
+- **On the real sample, its "flood" class is something else.**
+  - In open land without snow it covers 2.4% of cell-days, 15 times the base flood rate. VIIRS sees 53% of it, microwave 19%, GFM 4%. That fits the products' different water baselines, not flood as gold defines it.
+  - In vegetated and urban land the fit is unstable.
+- **Comparison with gold:**
+  - per row: 1 agree, 2 diverge, 6 unstable, 9 with no gold to check;
+  - every stratum keeps gold, so the model table is unchanged.
+
+  One rule was added during the build: a stratum uses the agreement values only if *all* its sources agree, because they come from one joint fit.
+- **Why:** on gold-dry cells, the sources' false alarms coincide 4–18 times more often than independence predicts, and 2–9 times within the same event. The independence assumption fails, both for the agreement table and for the naive-Bayes engine.
