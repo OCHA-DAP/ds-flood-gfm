@@ -298,6 +298,20 @@ The snow strata have too few held-out gold flood cells to read (24 and 332).
 - **Why recall falls.** The gold maps count seasonal water as flood, so masking it removes true hits.
 - **The coinciding false alarms are not seasonal water.** In held-out open land, the lift rises from 4.1 to 5.3 after masking.
 
+### MODIS in the VIIRS archive gap (D-37)
+
+**NASA's MODIS flood product (MCDWD, 2000–2025, now reachable with an Earthdata token) fills the optical gap.** It was scored on the 52 events whose gold days fall in 2021-01 to 2023-07, when the NOAA VIIRS archive is empty:
+
+| same 249 event-days | recall · precision | CSI |
+|---|---|---|
+| MODIS OR GFM | 0.27 · 0.76 | 0.247 |
+| microwave vote | 0.28 · 0.37 | 0.189 |
+| MODIS 1-day | 0.19 · 0.73 | 0.175 |
+| fusion v1 (no optical input in the gap) | 0.13 · 0.45 | 0.112 |
+| GFM | 0.10 · 0.87 | 0.101 |
+
+Making MODIS part of the optical vote needs MODIS over whole event windows (about 100+ GB of tiles). That's a Databricks job.
+
 ## 5. Where fusion beats single sources, and where it does not
 
 **Where it wins:**

@@ -319,3 +319,7 @@ Moving to v1.5 is an open issue.
   - An emulator also inherits GFM's ceiling against gold: recall 0.19 overall, 0.02 on events with non-Sentinel-1 gold.
   - "GFM, else last GFM" is a high-precision, low-recall layer and may suit uses that need precision. Fusion is the higher-recall option.
   - Untested: a trained threshold (0.5 is conservative for a 1.3% class), and richer temporal features.
+- **Result (2026-10-13).** Scored on the 52 events in the VIIRS archive gap: 249 event-days, 30,688 gold flood cell-days. Outputs: `results/experiment_modis_gold_gap.csv` and `_context.csv`.
+  - **MODIS by composite** (recall · precision, all labelled cells; recall where observed in brackets): 1-day 0.19 · 0.73 (0.46); cloud-shadow-screened 1-day 0.17 · 0.75 (0.45); 3-day 0.12 · 0.87 (0.43). Counting the recurring (seasonal) class as flood is slightly better for every composite.
+  - **The other sources on the same event-days:** fusion v1, which has no optical input there, scores 0.13 · 0.45 (CSI 0.112); GFM 0.10 · 0.87; the microwave vote 0.28 · 0.37. MODIS OR GFM scores **0.27 · 0.76 (CSI 0.247)**, the best.
+  - **Reading.** MODIS fills the optical gap well. The next step is to make it part of the optical vote (with VIIRS where both exist). That needs MODIS over whole event windows, not only gold days: about 100+ GB of tiles, which belongs on Databricks rather than this laptop.
