@@ -122,6 +122,9 @@ def earthdata_token(username: str, password: str) -> str:
     """
     import base64
 
+    # secrets stored via the CLI often carry a trailing newline: harmless in a .netrc (whitespace-split),
+    # fatal in HTTP Basic auth
+    username, password = username.strip(), password.strip()
     req = urllib.request.Request("https://urs.earthdata.nasa.gov/api/users/find_or_create_token", method="POST",
                                  headers={"Authorization": "Basic " + base64.b64encode(f"{username}:{password}".encode()).decode()})
     try:
