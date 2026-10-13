@@ -73,7 +73,13 @@ The overview is about 16 times cheaper to read and was adopted.
 
 That gives 187 events on six continents, against the prompt's aim of at least 150 events on at least 5 continents. Excluded events and reasons are in `results/events_excluded.csv`. The caps remove the largest events (for example Pakistan 2022 and Bangladesh 2020), which biases v1 toward smaller events. This is recorded as an open issue.
 
-**D-15 Split.** Each event is assigned to the HydroBASINS level-4 basin nearest its centroid. Per continent, whole basins are drawn at random (seed 20261012) until 25% of that continent's events are held out. No basin is on both sides; the code asserts this. Result: 140 training events and 47 held-out events. The split is frozen in `results/event_split.csv`. Phase 1 uses **training events only**, so the held-out set stays unseen until Phase 5.
+**D-14b Snow supplement.** The cost-ordered quotas left the two snow strata with almost no gold. Across the first 135 events there were **2** gold flood cells in snow strata and 0 in urban-snow and vegetated-snow. So every other usable event was added if it meets both conditions:
+- at least 5% of its window is snow season in a month that has a gold day;
+- it fits the size caps.
+
+That added 11 events, all in Europe (EMSR268, 280, 283, 421, 442, 511, 557, 644, 668, 783, 856), for **198 events** in total; the selection column in `results/event_split.csv` marks them `snow_supplement`. EMSR427 qualified on snow but has 170,000 cells and was left out. Nothing had been fitted when this was done, and the split was regenerated with the same seed: 42 of the original 187 events changed side, which is harmless before any fitting.
+
+**D-15 Split.** Each event is assigned to the HydroBASINS level-4 basin nearest its centroid. Per continent, whole basins are drawn at random (seed 20261012) until 25% of that continent's events are held out. No basin is on both sides; the code asserts this. Result after D-14b: **149 training events and 49 held-out events**. The split is frozen in `results/event_split.csv`. Phase 1 uses **training events only**, so the held-out set stays unseen until Phase 5.
 
 ## Sources
 
@@ -89,7 +95,17 @@ That gives 187 events on six continents, against the prompt's aim of at least 15
 
 **D-18 FloodScan regions.** Africa uses the prod daily COGs, which are current. Asia-Australia and the Americas use the dev raw NetCDFs, which end 2026-03-31. Where grids overlap (50–60°E) the Africa product wins. Outside every region, or after a region's archive ends, cells are NoData; Europe is never covered. FloodScan has no unobserved state inside its regions.
 
-**D-19 Compute and politeness.** Everything runs on the user's laptop under `nice -n 19`, with at most 3 worker processes and a few threads each, small jobs first, resumable per event. GFDS reads are spaced at least 1 s apart and fetched once per day, as row bands covering every window active that day; the per-event alternative would have meant about 40,000 requests. A 403 from GDACS counts as "day absent" only after a known-good file has been confirmed readable, so a block cannot pass as a gap. Databricks was not used for the backfill: it would have needed the code merged first (D-22).
+**D-19 Compute and politeness.**
+- **Where it runs:** on the user's laptop under `nice -n 19`, with at most 2–3 worker processes, small or cheap units first, resumable per event.
+- **Databricks** was not used for the backfill, because it would need the code merged first (D-27).
+- **GFDS reads** are fetched once per day, as row bands covering every window active that day; the per-event alternative would have meant about 40,000 requests.
+- **GFDS politeness was revised after measuring the server** (2026-10-12). Each range request costs about 1.1 s, and bandwidth is about 0.3 MB/s per connection. That made the planned single connection at 1 request/s a 10+ hour prefetch (60 s/day once the sample blocks were added).
+- **Current rule:** at most 4 connections, at least 1 s between requests on each (so the server sees ≤ 4 requests/s), and needed rows merged across gaps of ≤ 16 rows.
+- **Rejected:**
+  - whole-file downloads: 64 s/day;
+  - merging into huge bands: the bytes dominate.
+- **403 handling:** a 403 from GDACS counts as "day absent" only after a known-good file reads. A block therefore cannot pass as a gap.
+- **Fetch order:** sample-period days (2023–2025) first, so that the Phase 2 sample cubes can build while the rest downloads. Stage C follows the same order.
 
 ## Metrics
 
@@ -108,11 +124,82 @@ How the cells are chosen:
 
 **D-21 Prior v2 not built.** The GloFAS reanalysis and forecast sit on EWDS. Using them would mean a separate `.cdsapirc` endpoint, accepting licences per dataset, and a request schema that changed in July 2026. On top of that, prior v2 needs return-period thresholds, a nearest-river-cell mapping and a regression. All of that together is well over 5% of the effort, so v1 uses prior v1 only, and prior v2 is ranked as a next improvement.
 
-## Packaging (filled in Phase 6)
+## Phase 2–6 decisions
 
-**D-22 Scheduling and registration.** See the Phase 6 entries below.
+**D-22 Registration and scheduling follow the KB's actual mechanisms.**
+- **No dataset registry.** The KB has no registry for team-produced datasets. Its registration routes are:
+  - a `pipelines/*.md` page with `deployment.jobs`, `inputs` and `outputs` frontmatter;
+  - the generated `assets/<project>/` blob inventory;
+  - the pipeline registry, which discovers Databricks jobs automatically.
+- **What v1 adds:**
+  - the dataset's own `MANIFEST.json` on blob;
+  - a KB page, `pipelines/flood-fusion.md`, opened as a draft PR from a worktree, as the KB asks;
+  - a Databricks Asset Bundle (`databricks.yml`) using the team's `run_task.py` wrapper and the Job Compute policy.
+
+**D-23 Stratified random sample (Phase 2).**
+- **Blocks:** 0.25° blocks drawn at random, one per Köppen main group (Beck et al. 2018) × continent cell, plus 12 city-centred 0.5° blocks (6 in Köppen D/E climates, 6 elsewhere), because urban strata are rare.
+- **Top-up:** reserve blocks are added until each stratum has at least 2 million cell-days over 2023–2025, capped at 25 extra blocks. Any shortfall is reported in `results/phase2_sample_cell_days_by_stratum.csv`, not hidden.
+- **Why 2023–2025:** the three most recent full years. GFM has two satellites again there (S1A, plus S1C from 2025), which is closest to how the product runs today.
+- **Prior v1** is the per-stratum prevalence MLE on this sample with sensitivity and specificity fixed from the accuracy table. A one-parameter EM is identifiable, unlike a joint fit. It needs the gold table, so `phase3_accuracy.py` computes it straight after the table.
+
+**D-24 Dawid–Skene EM.**
+- **When it runs:** for any stratum with fewer than 50,000 observed gold cell-days (the maximum over the three sources), **or** where any model source has zero observed gold flood cells. In that second case sensitivity would be 0/0, which is not an estimate, so the 50,000 rule cannot be read as requiring it.
+- **Data:** gold cells enter labelled and sample cells unlabelled (semi-supervised).
+- **Initialisation and prior:** values come from the nearest stratum with complete gold estimates: same land cover with the other snow state, otherwise the same snow state. The fit is MAP with Beta priors of 200 pseudo-counts centred on those values. Plain maximum likelihood with three binary sources and sparse joint observations can drift to degenerate solutions; MAP keeps it near the donor unless the data say otherwise.
+- **No data at all:** a stratum with neither gold nor sample observations gets the donor's values, `method = no_data_donor_copy(...)`, and a forced flag. It never passes as an estimate.
+- **Hard checks:** `Model.from_tables` raises on any non-finite sensitivity, specificity or base rate.
+
+**D-25 Storage.** Following the KB path convention, outputs go to the dev account, container `projects`:
+- `ds-flood-gfm/processed/flood_fusion_v1/` with `daily/`, `static/`, `cubes/`, `results/` and `MANIFEST.json`;
+- inputs we downloaded, under `ds-flood-gfm/raw/{datasource}/`.
+
+The account and container follow the flood-gfm precedent; the KB has no rule for experimental products. FloodScan-derived outputs stay internal because of the licence.
+
+**D-26 Operational scope of v1.** The brief asks for a daily global product.
+- **What is built:** the engine and job are tiled and global-capable. The static layers (HAND, GSW, WorldCover) are built on demand per 1° tile and cached.
+- **What is not:** a one-off **global static build** (about 15,000 land tiles) is too heavy for the user's laptop. It is provided as the `flood_fusion_static` job (`scripts/fusion/static_build.py`) and was **not run**.
+- **What the daily job covers:** two AOIs where the team runs flood frameworks (Nigeria Niger–Benue, Chad Logone–Chari). All held-out event windows are produced for validation.
+- **Extending coverage:** add AOIs or run the static job; no code change is needed.
+
+**D-27 Prod deployment is gated on review.**
+- **Prod:** the team convention (KB `conventions.md`) is that code reaches `main` through a reviewed PR, and DAB prod jobs pull `main`. A prod job therefore cannot run this code before review, and v1 does not deploy to the prod target.
+- **Dev:** the bundle is validated for both targets and deployed to the **dev** target, where development mode pauses the schedule. The prod deploy is a single documented command for after the merge.
+
+This is a constraint of the team's merge convention, not a step skipped.
+
+**D-29 GFM scene-level absences.** Two cases:
+- **Flood or exclusion layer missing.** Either the asset is listed in STAC but its file returns 404, or the item does not list the flood or exclusion layer at all; both occur in the archive. Without the exclusion mask, excluded pixels (which read 0) cannot be told apart from dry ones. So the scene is dropped and its id recorded in the cube attributes (`gfm_dropped_scenes`). Config: `on_missing_asset: drop_scene`.
+- **Advisory layer missing.** Some product versions have no advisory layer at all, and many 2015–2016 archive scenes list an advisory file that returns 404 while their flood and exclusion files are fine (8 of 8 dropped scenes checked for EMSR174). Either way there is no GFM snow flag to apply, so the scene is read without it and recorded in `gfm_scenes_without_advisory`. Config: `on_unlisted_advisory: read_without_flag`. The first version of this rule dropped those scenes; cubes built that way were rebuilt. Zero-byte files exist upstream too; one advisory file has a 1970 timestamp. An empty advisory file is treated as missing. An empty flood or exclusion file makes the scene unusable, so it is dropped and recorded.
+
+**D-30 Metric details.**
+- **Oracle candidates.** In each stratum the candidates are sources with at least 200 observed gold flood cells, plus the overall best source. This keeps a well-sampled source from losing to one with almost no evidence. The flood-weighted per-stratum gain is also reported; it is ≥ 0 by construction.
+- **Time to detection** has two forms:
+  - first day on or after the first gold day when at least max(5, 10%) of the gold flood footprint is flagged;
+  - first such day anywhere in the window. Negative means before the first gold map: either the flood had already begun or it is a false alarm.
+- **Reliability** has two forms:
+  - slope from weighted least squares of observed frequency on mean predicted probability across 10 bins (the criterion);
+  - logistic calibration slope from a binomial MLE on the bin counts (reported too).
+
+  A stratum whose predictions have no spread gets NaN ("not estimable"), not a number.
+
+**D-31 Stage C failures are opt-in to skip.** `phase1 sources --continue-on-error` writes failing events to `results/phase1_stage_c_failures.csv` and the log. The metrics step then excludes them with a warning that lists them. Without the flag, the first failure stops the run.
 
 ## Static layer versions
+
+**D-32 Jeffreys smoothing, and flags that say why a number is weak.**
+- **Smoothing.** Gold sensitivity and specificity are Beta(½, ½) posterior means, (k + 0.5)/(n + 1), and the bootstrap intervals use the same estimator. Raw proportions are kept as `sens_raw`/`spec_raw`. In the dry run, microwave sensitivity in vegetated/no-snow came out at exactly 0 from 46 flood cells. Clipped to 0.001, that turns a microwave "flood" into a strong *dry* signal. Smoothed, it is 0.011, a near-neutral weight. This is an estimator choice inside fixed decision 5, not a change to it.
+- **`prior-dominated` rows.** An EM row is marked this way, and flagged, when the effective number of flood or dry cells the source contributed under the EM posterior is below the Beta prior's 200 pseudo-counts. Such a row is the donor's value, not an estimate.
+- **`flag_small_n`.** A gold row is flagged when it has fewer than 30 observed flood or dry cells, because a bootstrap interval from one event can collapse to zero width.
+
+**D-33 Ablation: evidence only on change.** Fixed decision 6 fixes the recursion; it does not define what counts as a new observation. A source that reports the same value at the same cell on consecutive days is not independent evidence under the model's own assumption if its errors persist. GFDS false alarms tied to a static baseline do persist. Phase 5 therefore adds two **ablation-only** variants:
+- `microwave_on_change`: microwave evidence counts only on days its value differs from the day before;
+- `all_on_change`: the same for all three sources.
+
+NoData breaks a run, so the first observation after a gap counts. The product itself stays exactly as specified.
+
+**D-34 Numerical guards.** The two clips do different jobs and are kept separate:
+- **Sensitivity and specificity** are clipped to [0.001, 0.999], so no single observation can contribute a weight beyond about ±7 log-odds.
+- **The prior base rate** is clipped to [1e-5, 0.999]. The sample MLE puts several strata near 1e-5 to 1e-4; clipping the prior at 0.001 would have raised those priors as much as 100-fold without saying so.
 
 **D-28 GSW v1.4 kept.** JRC now publishes v1.5 (1984–2024) and states that occurrence in v1.2–1.4 has consistency errors. v1 keeps v1.4 because:
 - the ≥ 90% permanent-water cut is the least sensitive part of the occurrence range;

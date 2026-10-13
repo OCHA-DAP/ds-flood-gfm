@@ -78,6 +78,7 @@ sources:
     advisory_asset: advisory_flags
     advisory_nodata_values: [1, 3]  # 1 = snow/frozen/dry soil, 3 = 1 + rough water (GFM PUM)
     on_missing_asset: drop_scene    # HTTP 404 on an asset file = absent upstream: drop that scene, record its id
+    on_unlisted_advisory: read_without_flag   # scene's product version has no advisory layer: no snow flag to apply; recorded
     nodata: 255
     overview_level: 1               # rasterio overview_level 1 = factor 4 = 80 m
     observed_min_frac: 0.50         # cell observed iff >= 50% of its samples are evaluated
@@ -92,10 +93,11 @@ sources:
     regional_nc:                    # historical SFED NetCDFs outside Africa (dev raster)
       stage: dev
       container: raster
+      # grid (cell-edge left/top, size) and last day, verified 2026-10-12; checked again on open
       files:
-        asia_australia: floodscan/daily/v5/raw/aer_sfed_area_300s_19980112_20260331_v05r01_aa_no_ndt.nc
-        north_america: floodscan/daily/v5/raw/aer_sfed_area_300s_19980112_20260331_v05r01_na_no_ndt.nc
-        south_america: floodscan/daily/v5/raw/aer_sfed_area_300s_19980112_20260331_v05r01_sa_no_ndt.nc
+        asia_australia: {blob: floodscan/daily/v5/raw/aer_sfed_area_300s_19980112_20260331_v05r01_aa_no_ndt.nc, left: 50.0, top: 78.0, ncols: 1260, nrows: 1476, last_day: "2026-03-31"}
+        north_america: {blob: floodscan/daily/v5/raw/aer_sfed_area_300s_19980112_20260331_v05r01_na_no_ndt.nc, left: -169.0, top: 84.0, ncols: 1404, nrows: 924, last_day: "2026-03-31"}
+        south_america: {blob: floodscan/daily/v5/raw/aer_sfed_area_300s_19980112_20260331_v05r01_sa_no_ndt.nc, left: -82.0, top: 13.0, ncols: 576, nrows: 828, last_day: "2026-03-31"}
     flood_threshold: 0.30
   gfds:
     enabled: true
@@ -105,7 +107,9 @@ sources:
     signal_scale: 1000000
     k_emissivity: 0.35              # R1 physics: 1 - eps_water/eps_land at 36 GHz H-pol
     flood_threshold: 0.30
-    min_seconds_between_requests: 1.0
+    min_seconds_between_requests: 1.0   # per connection
+    max_concurrent_requests: 4          # connections; server sees <= 4 req/s (D-19)
+    band_merge_gap_rows: 16             # merge needed rows into bands across gaps <= 16 rows
     user_agent: "OCHA-CHD-DS ds-flood-gfm flood-fusion v1"
   viirs:
     # NOAA/GMU VIIRS flood map v2r0, 1-day global composite (s3://noaa-jpss, public).
@@ -119,6 +123,9 @@ sources:
     # configured for the team (KB has no mechanism) -> unreachable in v1 (docs/inventory.md).
     enabled: false
 
+fetch:
+  day_threads: 8                    # concurrent days per window for GFM/VIIRS reads (network-bound)
+
 fusion:
   decay: 0.9                        # logodds_t = prior + decay * (logodds_{t-1} - prior) + evidence_t
   prob_threshold: 0.5               # P >= 0.5 -> flood when scoring the fused map
@@ -129,14 +136,31 @@ accuracy:
   em_min_gold_cells: 50000          # strata with fewer observed gold cells get Dawid-Skene EM
   bootstrap_reps: 500
   ci_flag_width: 0.15
+  min_obs_for_interval: 30          # fewer observed flood (or dry) cells: interval untrustworthy, flagged
   em_prior_strength: 200            # Beta pseudo-count for MAP-EM centred on the nearest stratum's gold values
 
 sample:
-  years: [2023, 2025]               # inclusive; stratified random sample period
-  block_deg: 0.25
+  years: [2023, 2025]               # inclusive; stratified random sample period (D-23)
+  block_deg: 0.25                   # random blocks
+  city_block_deg: 0.5               # city-centred blocks (urban strata are rare)
+  blocks_per_cell: 1                # random blocks per Koppen group x continent
+  city_blocks_snow: 6               # largest cities in Koppen D/E climates
+  city_blocks_other: 6
+  max_topup_blocks: 40              # cap on reserve blocks added to reach the target
+  snow_reserve_random: 30           # extra reserve candidates in Koppen D/E (snow strata top-up)
+  snow_reserve_cities: 20           # snow-climate cities ranked beyond the chosen ones
   min_cell_days_per_stratum: 2000000
   seed: 20261012
 
 validation:
   reliability_bins: 10
   slope_ok: [0.8, 1.2]
+
+operational:
+  # v1 scheduled scope (D-26): AOIs whose static layers are built on first run and cached
+  # on blob. Global daily coverage needs the global static build (static_build job).
+  lag_days: 1                       # run for UTC today - 1 (VIIRS/FloodScan arrive next day)
+  tile_deg: 1                       # job tiles
+  aois:
+    - {name: nga_niger_benue, bbox: [5.5, 6.5, 9.0, 9.5]}
+    - {name: tcd_logone_chari, bbox: [14.0, 9.5, 16.0, 12.5]}

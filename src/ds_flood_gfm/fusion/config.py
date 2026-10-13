@@ -49,6 +49,26 @@ class Config:
         return "/".join([PROJECT_PREFIX, base, *parts])
 
 
+def pull_raw(cfg: Config, local: Path, datasource: str) -> bool:
+    """Fetch `local`'s file from blob raw/{datasource}/{name} if it exists there.
+
+    Returns False only when the blob does not exist (absence); other errors raise.
+    Raw inputs are pushed there by scripts/fusion/phase6_package.py.
+    """
+    import ocha_stratus as stratus
+    from azure.core.exceptions import ResourceNotFoundError
+
+    b = cfg.raw["paths"]["blob"]
+    cc = stratus.get_container_client(container_name=b["container"], stage=b["stage"])
+    try:
+        data = cc.get_blob_client(cfg.blob_path("raw", datasource, local.name)).download_blob().readall()
+    except ResourceNotFoundError:
+        return False
+    local.parent.mkdir(parents=True, exist_ok=True)
+    local.write_bytes(data)
+    return True
+
+
 def load_config(path: str | Path | None = None) -> Config:
     p = Path(path) if path is not None else DEFAULT_CONFIG
     if not p.exists():

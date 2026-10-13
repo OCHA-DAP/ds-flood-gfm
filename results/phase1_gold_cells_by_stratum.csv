@@ -1,0 +1,10 @@
+,flood,flood,dry,dry
+split,holdout,train,holdout,train
+stratum,,,,
+_footprint_cells,0,0,195023,473345
+open_nosnow,40256,49688,141835,453924
+open_snow,24,83,238,1974
+urban_nosnow,353,559,12292,37854
+urban_snow,0,0,40,243
+vegetated_nosnow,3644,7288,127219,418402
+vegetated_snow,332,81,11520,5284
