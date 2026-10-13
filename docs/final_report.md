@@ -98,7 +98,7 @@ The planned estimator was the prevalence MLE with the gold sensitivity and speci
 
 The daily outputs (COG: P, |L|, number of sources observed, days since observation) exist for **every day of all 85 held-out event windows**: 8,277 files in `data/fusion/out/daily/`.
 
-**Blob status at the end of the session (2026-10-12 19:17).** The mirror to dev `projects/ds-flood-gfm/processed/flood_fusion_v1/daily/` was **in progress, not complete**. Google Drive sync was holding the uplink to about 30 KB/s, and the ERA5-Land input was still uploading, so no fusion output had landed yet. The uploader is resumable (it skips files whose size already matches) and works in priority order: snow input, `MANIFEST.json`, results, static, daily COGs, cubes, then raw archives. Finish with `uv run python scripts/fusion/phase6_package.py --skip-gfds-bands`, then `--only-gfds-bands` for the 5.5 GB GFDS row-band archive.
+**Blob status at the end of the session (2026-10-12 19:50).** The mirror to dev `projects/ds-flood-gfm/processed/flood_fusion_v1/` was well along but **not complete**. Already on blob: `MANIFEST.json`, all results tables and figures, all 490 static COGs, and about 6,400 of the 8,277 held-out daily COGs. Still to go: the rest of the daily COGs, the cubes and the raw archives. The upload had been slowed for a while by Google Drive sync holding the uplink to about 30 KB/s. The uploader is resumable (it skips files whose size already matches) and works in priority order: snow input, `MANIFEST.json`, results, static, daily COGs, cubes, then raw archives. Finish with `uv run python scripts/fusion/phase6_package.py --skip-gfds-bands`, then `--only-gfds-bands` for the 5.5 GB GFDS row-band archive.
 
 ### Skill by stratum (gold days; a source's NoData counts as "not detected")
 
@@ -206,7 +206,7 @@ Observed flood frequency stays near 0.01 at every predicted probability. The fus
    - MODIS needs an Earthdata login.
    - VIIRS has no data for 2021-01 → 2023-07, so 46 events had no optical input.
 3. **No global static build, so no global daily product yet.** The `flood_fusion_static` job exists and the global build has not been run (about 15,000 tiles).
-4. **The prod schedule is not deployed.** The dev job (Databricks 718536903707906) is deployed with its schedule paused. Prod needs this branch merged to `main` (D-27).
+4. **The prod schedule is not deployed.** The dev job (Databricks 718536903707906) is deployed with its schedule paused, and it ran once successfully on Job Compute. Prod needs this branch merged to `main` (D-27).
 5. **The snow and urban strata are thin.** Urban/snow has no gold flood cells at all; its parameters are EM and partly copied from the donor stratum, flagged as such.
 6. **Dry-window recession** inflates measured false alarms (A-02). The post-event window should start later.
 7. **Event selection is biased toward smaller events** by the cost caps; Pakistan 2022 and Bangladesh 2020 are excluded. The 141 events beyond the quotas and the 5 unbuilt UNOSAT giants are unused.
@@ -242,6 +242,6 @@ Observed flood frequency stays near 0.01 at every predicted probability. The fus
 | accuracy table with sample sizes and 95% intervals | `results/accuracy_table.csv` |
 | daily outputs for every held-out window | complete locally (`data/fusion/out/daily/`, 8,277 COGs). The mirror to dev blob `projects/ds-flood-gfm/processed/flood_fusion_v1/daily/` was in progress at session end (§4). |
 | dataset card | `…/flood_fusion_v1/MANIFEST.json`, written by `phase6_package.py` as the second upload step; registration page is KB draft PR #757 |
-| scheduled job | `databricks.yml`; dev jobs "[dev] Flood Fusion Daily" (718536903707906, schedule paused) and "Static Build" (186374068781759). Deployed and validated, **not yet executed on Job Compute**; prod deploy after merge. |
+| scheduled job | `databricks.yml`; dev jobs "[dev] Flood Fusion Daily" (718536903707906, schedule paused) and "Static Build" (186374068781759). **Executed once on Job Compute**: run 876940144771744 succeeded for 2026-10-10. It covered 24 tiles over both AOIs from a cold start and wrote daily COGs, state, static cache and a run manifest that records GFDS as absent. Prod deploy comes after merge. |
 | docs | `docs/repo_audit.md`, `docs/inventory.md`, `docs/feasibility.md`, `docs/decisions.md` (D-01–D-35), `docs/assumptions.md`, ADR 0001 |
 | runbook | `README.md` "Flood fusion v1", `CLAUDE.md` |
