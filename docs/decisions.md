@@ -323,3 +323,8 @@ Moving to v1.5 is an open issue.
   - **MODIS by composite** (recall · precision, all labelled cells; recall where observed in brackets): 1-day 0.19 · 0.73 (0.46); cloud-shadow-screened 1-day 0.17 · 0.75 (0.45); 3-day 0.12 · 0.87 (0.43). Counting the recurring (seasonal) class as flood is slightly better for every composite.
   - **The other sources on the same event-days:** fusion v1, which has no optical input there, scores 0.13 · 0.45 (CSI 0.112); GFM 0.10 · 0.87; the microwave vote 0.28 · 0.37. MODIS OR GFM scores **0.27 · 0.76 (CSI 0.247)**, the best.
   - **Reading.** MODIS fills the optical gap well. The next step is to make it part of the optical vote (with VIIRS where both exist). That needs MODIS over whole event windows, not only gold days: about 100+ GB of tiles, which belongs on Databricks rather than this laptop.
+- **Subsetting (checked 2026-10-13).** NASA also publishes the composites as GeoTIFFs (`MCDWD_L3_{F1,F1C,F2,F3}_NRT`).
+  - They are internally tiled (256 × 256, deflate; no overviews, not marked COG), so a window can be read remotely with the token. The daily job can use them without whole-tile downloads.
+  - They are kept only for a rolling window of about 7 days. On 2026-10-13 the earliest in CMR was 2026-10-06, with nothing for 2022.
+  - History (2000–2025) exists only as the HDF4 reprocessed archive. HDF4 cannot be range-read, so every needed tile-day must be downloaded whole (5–26 MB).
+  - NASA GIBS serves the product as rendered imagery for any date. That is not the reprocessed data, and is not used.
