@@ -137,8 +137,8 @@ The fusion is per-stratum naive Bayes in log-odds, with sensitivity and specific
 
 **v1 status:**
 - **Validation (49 held-out gold events):** the product is built and tested end to end, but as specified it does **not** beat the best single source in any stratum. Its probabilities are strongly over-confident: reliability slope about 0.01 against a target of 0.8–1.2.
-- **Where a single product observed, it beats fusion.** On GFM-observed cells: GFM 0.440 vs fusion 0.283. On VIIRS-observed cells: VIIRS 0.495 vs fusion 0.341.
-- **One lead, not yet established.** In open, snow-free land, a decision threshold learned on training events (P ≥ 0.02) gave held-out CSI 0.372 vs VIIRS 0.333. That rests on one run, with no confidence interval. A per-stratum recalibration improved calibration there but did not reach the 0.8–1.2 target.
+- **Where a single product observed, it beats fusion.** Recall · precision on GFM-observed cells: GFM 0.45 · 0.94 vs fusion 0.34 · 0.63. On VIIRS-observed cells: VIIRS 0.75 · 0.60 vs fusion 0.46 · 0.57.
+- **One lead, not yet established.** In open, snow-free land, a decision threshold learned on training events (P ≥ 0.02) raised held-out recall from 0.38 to 0.53 at precision 0.56 (VIIRS: 0.42 and 0.62). That rests on one run, with no confidence interval. A per-stratum recalibration improved calibration there but did not reach the 0.8–1.2 target.
 - **Why it is over-confident (measured 2026-10-13).** On cells the gold maps call dry, the sources' false alarms coincide 4–18 times more often than the model's independence assumption allows. An agreement-based accuracy table (plan v2, ADR 0002) fails for the same reason, so the model keeps the gold table.
 - **Inputs are ending.** GFDS stopped on 2026-09-14, and FloodScan outside Africa ends on 2026-03-31 on our blob.
 

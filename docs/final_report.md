@@ -18,16 +18,31 @@ Each day it writes three layers: P(flooded), uncertainty (|log-odds| and the num
 | criterion | result |
 |---|---|
 | (a) daily coverage of the floodable domain above any single product | **met, trivially.** 100% vs 99.9% for the microwave vote, which by itself covers nearly everything. GFM covers 10%, VIIRS 55%. |
-| (b) CSI per stratum ≥ the best single product in that stratum | **not met in any stratum.** Open/no-snow: 0.30 vs VIIRS 0.33. Vegetated: 0.18 vs VIIRS 0.23. Urban: 0.10 vs GFM 0.16. The snow strata are too thin to judge. |
+| (b) CSI per stratum ≥ the best single product in that stratum | **not met in any stratum.** Open/no-snow: 0.30 vs VIIRS 0.33 (recall · precision 0.38 · 0.58 vs 0.42 · 0.62). Vegetated: 0.18 vs VIIRS 0.23. Urban: 0.10 vs GFM 0.16. The snow strata are too thin to judge. |
 | (c) reliability slope 0.8–1.2 | **not met.** The slope is about 0.01 (logistic 0.16–0.36) in every stratum. The probabilities are strongly over-confident: mean P 0.11 against an observed flood frequency of 0.003 in open/no-snow. |
 
-**Overall it is mid-pack.** Held-out CSI over all strata is **0.285**. That beats GFM (0.184), FloodScan (0.248), GFDS (0.198) and, narrowly, the microwave vote (0.280), but loses to VIIRS (0.319).
+**Overall it is mid-pack.** Across all strata, fusion flags 37% of the gold-flooded cells (**recall 0.37**), and 55% of its flood calls are right (**precision 0.55**).
+- **VIIRS:** recall 0.41 and precision 0.60.
+- **GFM:** the most precise product (0.94), but recall only 0.19, mostly because it observes 10% of the domain.
+- **The microwave vote:** the highest recall (0.47), but precision 0.41.
 
-**Where a single product actually observed, it beats fusion.** On cells GFM observed, GFM scores CSI 0.440 and fusion 0.283. On cells VIIRS observed, VIIRS scores 0.495 and fusion 0.341. Fusion's headline lead over GFM comes from counting GFM's unobserved cells as misses (§4).
+CSI, which combines recall and precision: VIIRS 0.319, fusion 0.285, microwave 0.280, FloodScan 0.248, GFDS 0.198, GFM 0.184.
+
+**Where a single product actually observed, it beats fusion** (§4):
+- **On cells GFM observed:** GFM has recall 0.45 and precision 0.94; fusion 0.34 and 0.63. Fusion misses floods GFM catches and adds false alarms.
+- **On cells VIIRS observed:** VIIRS has 0.75 and 0.60; fusion 0.46 and 0.57. Here fusion loses on recall: one VIIRS flood report lifts a cell from the low prior only to about P 0.02.
+
+Fusion's headline lead over GFM comes from counting GFM's unobserved cells as misses.
 
 **One experiment points to a gain in open land; it is not established.** On training events only, I fitted a per-stratum recalibration of the fused log-odds and, separately, picked the decision threshold that maximised CSI. Both were then applied unchanged to the held-out events (§4):
 - **Calibration improves but still fails criterion (c).** In open/no-snow the reliability slope rises from 0.01 to 0.68 (logistic calibration slope 0.15 → 0.87). The target is 0.8–1.2.
-- **The CSI gain comes from the threshold, not the recalibration.** Calling a cell flooded when the v1 P ≥ 0.02 (instead of 0.5) gives held-out CSI **0.372** in open/no-snow, against VIIRS **0.333**. The recalibrated probabilities never reach 0.5, so at the spec's threshold they flag nothing.
+- **The gain comes from the threshold, not the recalibration.** In open/no-snow, calling a cell flooded when the v1 P ≥ 0.02 (instead of 0.5) changes held-out scores as follows:
+  - recall rises from 0.38 to **0.53**;
+  - precision falls only from 0.58 to **0.56**;
+  - for comparison, VIIRS has 0.42 and 0.62;
+  - CSI goes to 0.372 against VIIRS's 0.333.
+
+  The recalibrated probabilities never reach 0.5, so at the spec's threshold they flag nothing.
 - **Caveats.** 0.02 is the lowest threshold searched. The same threshold scored only 0.252 on training events. There is no confidence interval on the difference.
 - **Vegetated and urban strata** did not improve.
 
@@ -113,7 +128,24 @@ For a while the upload ran at about 30 KB/s. The cause was not measured: Google 
 
 ### Skill by stratum (gold days; a source's NoData counts as "not detected")
 
-![CSI by stratum](../results/phase5_csi_by_stratum.png)
+![Recall and precision by stratum](../results/phase5_precision_recall_by_stratum.png)
+
+Scores used here:
+- **recall:** the share of gold-flooded cells a product flags;
+- **precision:** the share of its flood calls that gold confirms;
+- **CSI** = hits ÷ (hits + misses + false alarms): combines both, and is what criterion (b) uses.
+
+**Recall · precision** by stratum:
+
+| stratum (held-out gold flood cells) | fusion | GFM | microwave | VIIRS | FloodScan | GFDS |
+| --- | --- | --- | --- | --- | --- | --- |
+| open, no snow (40,256) | 0.38 · 0.58 | 0.18 · 0.95 | 0.48 · 0.45 | 0.42 · 0.62 | 0.33 · 0.56 | 0.31 · 0.42 |
+| vegetated, no snow (3,644) | 0.29 · 0.33 | 0.23 · 0.86 | 0.36 · 0.21 | 0.35 · 0.41 | 0.29 · 0.34 | 0.15 · 0.14 |
+| urban, no snow (353) | 0.14 · 0.24 | 0.17 · 0.75 | 0.30 · 0.08 | 0.13 · 0.25 | 0.15 · 0.11 | 0.22 · 0.08 |
+
+The snow strata have 24 and 332 held-out flood cells, too few to read; their numbers are in `results/report_tables.md`.
+
+**CSI by stratum, for criterion (b)** (bold = best):
 
 | stratum (held-out gold flood cells) | fusion | GFM | microwave | VIIRS | FloodScan | GFDS |
 |---|---|---|---|---|---|---|
@@ -128,27 +160,31 @@ Skill on each source's own observed cells, with fusion scored on the same cells,
 
 **On the cells a single product actually observed, that product beats fusion** (all strata):
 
-| cells scored | that product | fusion |
+| cells scored | that product: recall · precision | fusion on the same cells: recall · precision |
 |---|---|---|
-| where GFM observed | 0.440 | 0.283 |
-| where VIIRS observed | 0.495 | 0.341 |
+| where GFM observed | 0.45 · 0.94 | 0.34 · 0.62 |
+| where VIIRS observed | 0.75 · 0.60 | 0.46 · 0.57 |
 
-So fusion's lead over GFM in the table above comes from scoring GFM's unobserved cells as misses. Where a good observation exists, mixing in the other sources makes the answer worse:
-- the microwave vote's false-alarm ratio is 0.59;
-- evidence is added as if the sources were independent (A-03).
+CSI: 0.440 vs 0.283, and 0.495 vs 0.341.
+
+So fusion's lead over GFM in the tables above comes from scoring GFM's unobserved cells as misses. Where a good observation exists, fusion is worse for two reasons:
+- **False alarms from the other sources.** On GFM's cells, precision drops from 0.94 to 0.63. The microwave vote's own precision is 0.41, and coinciding false alarms are counted as independent votes (Reliability, below).
+- **One report is not enough.** On VIIRS's cells, recall drops from 0.75 to 0.46. Open land's base rate is P 0.0016.
+  - One VIIRS flood report lifts a cell only to P 0.02.
+  - Reaching 0.5 takes all three sources saying flood on the same day (P 0.69), or VIIRS saying flood three days running (four if microwave says dry).
 
 **These skill scores are point estimates.** Phase 5 has no bootstrap intervals (only the accuracy table does). The direction is consistent: fusion is below the best single product in every stratum and in 5 of 6 continents. The size of each gap is not established.
 
 ### By continent (all strata)
 
-| continent | fusion | best single |
+| continent | fusion: recall · precision (CSI) | best single by CSI: recall · precision (CSI) |
 |---|---|---|
-| South America | **0.196** | microwave 0.157 |
-| Asia | 0.280 | microwave 0.286 (GFM, VIIRS 0.260) |
-| Africa | 0.100 | microwave 0.132 |
-| Oceania | 0.376 | VIIRS 0.545 |
-| Europe | 0.070 | GFM 0.145 |
-| North America | 0.008 | VIIRS 0.378 (544 flood cells; explained below) |
+| South America | **0.42 · 0.27 (0.196)** | microwave 0.35 · 0.22 (0.157) |
+| Asia | 0.33 · 0.64 (0.280) | microwave 0.46 · 0.43 (0.286) |
+| Africa | 0.15 · 0.23 (0.100) | microwave 0.24 · 0.23 (0.132) |
+| Oceania | 0.53 · 0.56 (0.376) | VIIRS 0.78 · 0.65 (0.545) |
+| Europe | 0.11 · 0.17 (0.070) | GFM 0.16 · 0.65 (0.145) |
+| North America | 0.01 · 0.03 (0.008) | VIIRS 0.55 · 0.55 (0.378) — 544 flood cells; explained below |
 
 ### Reliability
 
@@ -156,7 +192,7 @@ So fusion's lead over GFM in the table above comes from scoring GFM's unobserved
 
 Observed flood frequency stays near 0.01 at every predicted probability. The fused P is over-confident in every stratum (plots: `results/reliability_*.png`).
 
-**The likely cause is the independence assumption (A-03), but which dependence matters is not settled.**
+**The cause is the independence assumption (A-03).** Two kinds of dependence were checked:
 - **Repetition at the same cell.** Errors that recur at a cell day after day accumulate under the 0.9 carry-over to (L − prior)∞ = w/(1 − 0.9) = 10·w. But two "evidence only on change" ablations (D-33) did not repair the slope (logistic 0.22 and 0.27). So day-to-day repetition is not the main part.
 - **Sources wrong together: measured, and large** (2026-10-13, `results/phase3_gold_error_dependence.csv`).
   - On gold-dry training cells, two sources' false alarms coincide 4–18 times more often than independence predicts. In open land without snow, microwave and VIIRS made 141,077 joint false alarms, 5.2 times the independent expectation.
@@ -186,18 +222,18 @@ Observed flood frequency stays near 0.01 at every predicted probability. The fus
 
 **Time to first detection.** Of 66 held-out windows with gold flood, fusion detects the flood (at least 10% of the gold footprint flagged) in 32, with a median of 1 day after the first gold map. That matches GFM (31 windows, 1 day) and VIIRS (32 windows, 0.5 days). Microwave "detects" a median 24 days *before* the first gold map: that is persistent false alarms or seasonal water, not early warning.
 
-### Ablation (held-out, all strata, CSI)
+### Ablation (held-out, all strata)
 
-| model | CSI | change vs full |
-|---|---|---|
-| full | **0.285** | — |
-| drop VIIRS | 0.170 | −0.115 |
-| drop microwave | 0.244 | −0.041 |
-| drop GFM | 0.256 | −0.029 |
-| microwave = FloodScan only | 0.281 | −0.004 |
-| microwave = GFDS only | 0.261 | −0.024 |
-| microwave evidence only on change | 0.268 | −0.017 |
-| all sources evidence only on change | 0.128 | −0.157 |
+| model | recall | precision | CSI | CSI change vs full |
+|---|---|---|---|---|
+| full | 0.37 | 0.55 | **0.285** | — |
+| drop VIIRS | 0.22 | 0.44 | 0.170 | −0.115 |
+| drop microwave | 0.29 | 0.62 | 0.244 | −0.041 |
+| drop GFM | 0.33 | 0.52 | 0.256 | −0.029 |
+| microwave = FloodScan only | 0.35 | 0.59 | 0.281 | −0.004 |
+| microwave = GFDS only | 0.33 | 0.57 | 0.261 | −0.024 |
+| microwave evidence only on change | 0.32 | 0.62 | 0.268 | −0.018 |
+| all sources evidence only on change | 0.13 | 0.72 | 0.128 | −0.158 |
 
 **What the ablation says:**
 - **Every source contributes.** VIIRS contributes most.
@@ -214,17 +250,17 @@ Both were applied unchanged to the held-out events.
 
 Reliability here uses 10 quantile bins, because recalibrated probabilities all fall in the lowest equal-width bin. So the v1 slopes differ slightly from §4. "WLS" is the reliability slope that criterion (c) uses.
 
-| stratum | WLS slope, v1 → recalibrated | logistic slope, v1 → recalibrated | CSI v1, P ≥ 0.5 | CSI recalibrated, P ≥ 0.5 | CSI v1 at trained threshold (training CSI) | best single |
+| stratum | WLS slope, v1 → recalibrated | logistic slope, v1 → recalibrated | v1 at P ≥ 0.5: recall · precision | recalibrated at P ≥ 0.5 | v1 at trained threshold: recall · precision (held-out CSI; training CSI) | best single: recall · precision |
 |---|---|---|---|---|---|---|
-| open, no snow | 0.01 → 0.68 | 0.15 → 0.87 | 0.300 | 0 | **0.372** at P ≥ 0.02 (0.252) | VIIRS 0.333 |
-| vegetated, no snow | 0.02 → 2.97 | 0.28 → 1.55 | 0.183 | 0 | 0.187 at P ≥ 0.16 (0.147) | VIIRS 0.232 |
-| urban, no snow | 0.01 → 1.66 | 0.18 → 1.12 | 0.099 | 0 | 0.092 at P ≥ 0.02 (0.068) | GFM 0.164 |
+| open, no snow | 0.01 → 0.68 | 0.15 → 0.87 | 0.38 · 0.58 | flags nothing | P ≥ 0.02: 0.53 · 0.56 (0.372; 0.252) | VIIRS 0.42 · 0.62 |
+| vegetated, no snow | 0.02 → 2.97 | 0.28 → 1.55 | 0.29 · 0.33 | flags nothing | P ≥ 0.16: 0.32 · 0.32 (0.187; 0.147) | VIIRS 0.35 · 0.41 |
+| urban, no snow | 0.01 → 1.66 | 0.18 → 1.12 | 0.14 · 0.24 | flags nothing | P ≥ 0.02: 0.20 · 0.15 (0.092; 0.068) | GFM 0.17 · 0.75 |
 
 The snow strata have too few held-out gold flood cells to read (24 and 332).
 
 **What it shows:**
 - **Calibration.** Much better in open/no-snow, but still outside 0.8–1.2 on the WLS slope. It overshoots in vegetated and urban land.
-- **CSI.** The gain comes entirely from the lower threshold. Recalibration is monotone, so on its own it cannot change the map, and at 0.5 the recalibrated P flags nothing.
+- **Recall and precision.** The gain comes entirely from the lower threshold. In open land, recall rises by 0.15 while precision falls by 0.03. Recalibration is monotone, so on its own it cannot change the map, and at 0.5 the recalibrated P flags nothing.
 
 **What it does not establish:**
 - 0.02 is the lowest threshold searched, so the optimum may lie below it.
@@ -246,15 +282,17 @@ The snow strata have too few held-out gold flood cells to read (24 and 332).
 
 **Where it wins:**
 - **Daily coverage.** Every floodable cell has a value every day, and every gap is filled. Its value depends entirely on the microwave vote.
-- **Overall skill over GFM, FloodScan and GFDS, when unobserved cells count as misses.** Fusion beats all three on that scoring. On the cells GFM actually observed, GFM alone is far better (§4).
+- **Recall over GFM, FloodScan and GFDS, when unobserved cells count as misses.** Fusion flags more of the flooded cells (0.37) than GFM (0.19), FloodScan (0.32) or GFDS (0.30), at precision 0.55. On the cells GFM actually observed, GFM alone is far better (§4).
 - **South America.** Fusion is the best product there.
-- **Possibly, large open floodplains with a lower threshold.** With a threshold learned on training events (P ≥ 0.02), fusion scored 0.372 vs VIIRS 0.333 in open/no-snow. That rests on one run, with no interval and the threshold at the edge of the search (§4).
+- **Possibly, large open floodplains with a lower threshold.** With a threshold learned on training events (P ≥ 0.02), fusion's recall in open/no-snow rose to 0.53 at precision 0.56, against VIIRS's 0.42 and 0.62 (CSI 0.372 vs 0.333). That rests on one run, with no interval and the threshold at the edge of the search (§4).
 
 **Where it loses:**
 - **Vegetated and urban land.** GFM or VIIRS alone is better.
 - **Oceania and North America.** VIIRS alone is better.
 - **Europe.** GFM alone is better. Europe has no FloodScan, GFDS has ended, and CEMS maps there are small.
-- **Wherever a good single observation exists.** On cells GFM observed, GFM wins 0.440 to 0.283. On cells VIIRS observed, VIIRS wins 0.495 to 0.341.
+- **Wherever a good single observation exists.**
+  - On cells GFM observed: GFM has recall 0.45 and precision 0.94, against fusion's 0.34 and 0.63.
+  - On cells VIIRS observed: VIIRS has 0.75 and 0.60, against 0.46 and 0.57.
 - **Snow season.** There are too few gold floods to say.
 - **The probabilities themselves.** They should not be read as probabilities, even after the experimental recalibration (§4). They work as a ranking score only.
 
@@ -271,7 +309,7 @@ The snow strata have too few held-out gold flood cells to read (24 and 332).
 5. **The snow and urban strata are thin.** Urban/snow has no gold flood cells at all; its parameters are EM and partly copied from the donor stratum, flagged as such.
 6. **Dry-window recession** inflates measured false alarms (A-02). The post-event window should start later.
 7. **Event selection is biased toward smaller events** by the cost caps; Pakistan 2022 and Bangladesh 2020 are excluded. The 141 events beyond the quotas and the 5 unbuilt UNOSAT giants are unused.
-8. **Slow reaction to a new flood.** Accumulated dry evidence keeps P near 0 for new floods. North America is the clearest case: fusion CSI 0.008 vs VIIRS 0.378 (§4).
+8. **Slow reaction to a new flood.** Accumulated dry evidence keeps P near 0 for new floods. North America is the clearest case: fusion recall 0.01 vs VIIRS 0.55 (§4).
 9. **A day missing from the FloodScan Africa archive** (archive lag) is now recorded in the daily run manifest (`floodscan_africa_absent`), as GFDS absence is. Before this fix it was silent NoData.
 10. **Other:**
    - GSW v1.4 has known occurrence errors; v1.5 exists (D-28).
@@ -287,7 +325,7 @@ The snow strata have too few held-out gold flood cells to read (24 and 332).
    - The 2026-09-18 spec's stacked logistic regression with interaction terms is the alternative.
    - Either can be scored on the held-out cubes already on disk.
    - It changes fixed decision 7 (naive Bayes), so it needs your sign-off.
-2. **Test the learned threshold and the recalibration properly.** The code is in `scripts/fusion/experiment_recalibration.py`. One run gave held-out CSI 0.300 → 0.372 in open/no-snow at P ≥ 0.02, above VIIRS's 0.333. Calibration improved but did not reach criterion (c): WLS slope 0.68, logistic 0.87.
+2. **Test the learned threshold and the recalibration properly.** The code is in `scripts/fusion/experiment_recalibration.py`. One run, in open/no-snow at P ≥ 0.02: recall 0.38 → 0.53 and precision 0.58 → 0.56 (VIIRS 0.42 and 0.62; CSI 0.300 → 0.372, against 0.333). Calibration improved but did not reach criterion (c): WLS slope 0.68, logistic 0.87.
    - Before relying on it: extend the threshold search below 0.02 and put event-cluster bootstrap intervals on the gain.
    - It treats the symptom; item 1 treats the cause.
 3. **Restore the inputs the daily product depends on, then build the static layers globally.**
