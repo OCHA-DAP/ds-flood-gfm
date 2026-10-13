@@ -294,3 +294,28 @@ Moving to v1.5 is an open issue.
 
   Reliability with corrected labels is still about 0.03. Never-flooded footprint cells reach P ≥ 0.5 on 2–7% of dry-window days and outnumber gold-day cells about 50 to 1. Whether those are false alarms or water the analysts did not map cannot be told with these labels, so criterion (c) cannot be measured cleanly with them.
 - **Status.** Proposed. It changes fixed decision 5, so adoption is the user's call. No intervals yet.
+
+**D-40 "Super-GFM" (learn GFM's map from daily inputs): first test does not beat GFM persistence.**
+- **Idea (user, 2026-10-13).** Train on GFM's own calls as labels to get a GFM-like map on days without a Sentinel-1 pass.
+- **Test.** `scripts/fusion/experiment_super_gfm.py`:
+  - **Labels:** gradient-boosted trees on 4.2 M GFM-labelled cell-days from training events.
+  - **Features:** microwave today and its last 3/7 days; VIIRS today, last value and age; GFM last value and age; static fractions; GSW monthly normally-wet share; season; latitude.
+  - **Product scored:** "GFM if observed, else the model", on held-out gold days.
+- **Results**, recall · precision (CSI):
+
+  | product | all held-out gold days | events with non-Sentinel-1 gold (8,032 flood cells) |
+  |---|---|---|
+  | super-GFM | 0.25 · 0.77 (0.233) | 0.12 · 0.86 |
+  | GFM persistence | 0.25 · 0.81 (0.239) | 0.14 · 0.68 |
+  | prior-only control | 0.19 · 0.86 | |
+  | GFM alone | 0.19 · 0.94 | 0.02 · 0.91 |
+  | fusion v1 | 0.37 · 0.55 (0.285) | **0.38 · 0.50**, the best |
+  | VIIRS | 0.41 · 0.60 (0.319) | 0.19 · 0.54 |
+
+  - On days GFM observed, the model (which never sees GFM that day) reproduces GFM's flood at recall 0.30 and precision 0.58.
+  - Permutation importance: GFM's last value dominates (0.21). The microwave features are at or below zero.
+- **Reading.**
+  - The daily inputs carry too little information to reproduce GFM between passes. The model collapses to persistence.
+  - An emulator also inherits GFM's ceiling against gold: recall 0.19 overall, 0.02 on events with non-Sentinel-1 gold.
+  - "GFM, else last GFM" is a high-precision, low-recall layer and may suit uses that need precision. Fusion is the higher-recall option.
+  - Untested: a trained threshold (0.5 is conservative for a 1.3% class), and richer temporal features.
