@@ -61,6 +61,8 @@ class FloodScanSource:
             self.regions.append(Region(name, float(meta["left"]), float(meta["top"]), int(meta["ncols"]), int(meta["nrows"]),
                                        dt.date.fromisoformat(meta["last_day"])))
         self._africa_cache: dict[dt.date, np.ndarray] = {}
+        # days the Africa archive has no file for (upstream absence); callers record them
+        self.absent_days: set[dt.date] = set()
 
     def _nc_for(self, reg: Region) -> xr.Dataset:
         """Open a regional NetCDF on first use (downloaded once) and check its grid against the config."""
@@ -108,7 +110,8 @@ class FloodScanSource:
                 data = cc.get_blob_client(name).download_blob().readall()
             except ResourceNotFoundError:
                 self._africa_cache[day] = None
-                return None  # upstream absence for this day (recorded by the caller as NoData)
+                self.absent_days.add(day)
+                return None  # upstream absence for this day: NoData, and listed in absent_days
             import os
             import threading
 

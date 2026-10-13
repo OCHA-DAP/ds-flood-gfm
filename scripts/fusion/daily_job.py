@@ -76,7 +76,8 @@ def main() -> None:
     prev = day - dt.timedelta(days=1)
     blob = None if a.no_upload else Blob(cfg)
     model = job.load_model(cfg)
-    manifest = {"valid_time": day.isoformat(), "version": cfg["version"], "tiles": [], "cold_started": [], "gfds_absent": False}
+    manifest = {"valid_time": day.isoformat(), "version": cfg["version"], "tiles": [], "cold_started": [],
+                "gfds_absent": False, "floodscan_africa_absent": False}
     for aoi in op["aois"]:
         win = grid.window_from_bounds(*aoi["bbox"])
         for tile in grid.tiles_for_window(win, op["tile_deg"]):
@@ -97,6 +98,7 @@ def main() -> None:
             if cold:
                 manifest["cold_started"].append(key)
             manifest["gfds_absent"] = manifest["gfds_absent"] or bool(prov.absent["gfds"])
+            manifest["floodscan_africa_absent"] = manifest["floodscan_africa_absent"] or bool(prov.absent["floodscan_africa"])
             if blob:
                 blob.push(io.daily_cog_path(cfg, key, day), blob.name("daily", key, f"{key}_{day.isoformat()}.tif"))
                 blob.push(job.state_path(cfg, key, day), blob.name("state", key, f"{day.isoformat()}.npz"))
@@ -109,6 +111,8 @@ def main() -> None:
         blob.push(mpath, blob.name("runs", f"{day.isoformat()}.json"))
     if manifest["gfds_absent"]:
         log.warning("GFDS had no file for %s (feed stopped 2026-09-14): microwave = FloodScan only where it covers", day)
+    if manifest["floodscan_africa_absent"]:
+        log.warning("FloodScan Africa has no file yet for %s (archive lag?): microwave = GFDS only in Africa, if any", day)
     log.info("daily run %s: %d tiles", day, len(manifest["tiles"]))
 
 

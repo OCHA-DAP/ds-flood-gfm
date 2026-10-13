@@ -68,7 +68,7 @@ class LiveProvider:
 
         self.cfg, self.win = cfg, win
         self.gfm, self.fs, self.gfds, self.viirs = GFMSource(cfg), FloodScanSource(cfg), GFDSSource(cfg), VIIRSSource(cfg)
-        self.absent: dict[str, list[str]] = {"gfds": []}
+        self.absent: dict[str, list[str]] = {"gfds": [], "floodscan_africa": []}
 
     def get(self, day: dt.date) -> tuple[dict[str, np.ndarray], list[str]]:
         w = self.win
@@ -79,6 +79,8 @@ class LiveProvider:
         gf, _, absent = self.gfds.observe_days(w, [day])
         if absent:
             self.absent["gfds"].append(day.isoformat())
+        if day in self.fs.absent_days:
+            self.absent["floodscan_africa"].append(day.isoformat())
         mw = merge_microwave(fs[0], gf[0])
         vi, _ = self.viirs.observe_day(w, day)
         obs = {"gfm": g, "microwave": mw, "viirs": vi}

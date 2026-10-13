@@ -71,10 +71,10 @@ This is an experiment, not the product. It is ranked first among the next improv
 | open, no snow | 0.29 [0.20–0.47] / 0.987 | 0.26 [0.18–0.35] / 0.949 | 0.66 [0.47–0.78] / 0.945 |
 | vegetated, no snow | 0.32 / 0.994 | 0.22 / 0.979 | 0.68 / 0.987 |
 | urban, no snow | 0.37 / 0.999 | 0.26 / 0.954 | 0.30 / 0.995 |
-| snow strata | EM; four rows prior-dominated (flagged) | EM | EM |
+| snow strata | EM; three rows prior-dominated (flagged) | EM | EM |
 
 **Flags:**
-- **17 of the 18 rows have a 95% interval wider than 0.15.** Sensitivity varies a great deal from event to event. Specificities are tight.
+- **15 of the 18 rows have a 95% interval wider than 0.15,** and 17 are flagged in all. The other two are prior-dominated EM rows, flagged regardless of width. Sensitivity varies a great deal from event to event. Specificities are tight.
 - **The snow strata are weakly identified.** They have 83, 81 and 0 training gold flood cells.
 
 **Prior v1** (`results/prior_v1.csv`) is GFM's flood rate in the random sample, per stratum:
@@ -96,7 +96,9 @@ The planned estimator was the prevalence MLE with the gold sensitivity and speci
 
 ## 4. Validation on held-out events (`results/phase5_*`)
 
-The daily outputs (COG: P, |L|, number of sources observed, days since observation) exist for **every day of all 85 held-out event windows**: 8,277 files under `processed/flood_fusion_v1/daily/` on the dev blob.
+The daily outputs (COG: P, |L|, number of sources observed, days since observation) exist for **every day of all 85 held-out event windows**: 8,277 files in `data/fusion/out/daily/`.
+
+**Blob status at the end of the session (2026-10-12 19:17).** The mirror to dev `projects/ds-flood-gfm/processed/flood_fusion_v1/daily/` was **in progress, not complete**. Google Drive sync was holding the uplink to about 30 KB/s, and the ERA5-Land input was still uploading, so no fusion output had landed yet. The uploader is resumable (it skips files whose size already matches) and works in priority order: snow input, `MANIFEST.json`, results, static, daily COGs, cubes, then raw archives. Finish with `uv run python scripts/fusion/phase6_package.py --skip-gfds-bands`, then `--only-gfds-bands` for the 5.5 GB GFDS row-band archive.
 
 ### Skill by stratum (gold days; a source's NoData counts as "not detected")
 
@@ -132,7 +134,7 @@ Observed flood frequency stays near 0.01 at every predicted probability. The fus
 
 **The cause is the independence assumption (A-03).** Errors that recur at the same cell day after day accumulate under the 0.9 carry-over to (L − prior)∞ = w/(1 − 0.9) = 10·w. Errors that are spatially correlated within an event add up in the same way. Two "evidence only on change" ablations (D-33) did not repair the slope (logistic 0.22 and 0.27), so day-to-day persistence is not the main cause.
 
-**The same accumulation also makes the product slow to react.** In North America, VIIRS says flood on 299 of the 544 held-out gold flood cells. On none of them does the fused P reach 0.5, and its median there is about 0, even though the microwave vote agrees on 152 of those cells. The reason: in the weeks before a flood, daily "dry" evidence accumulates too. VIIRS dry adds −1.0 a day and microwave dry −0.25, which settles around −12 log-odds below the prior, and a few days of flood evidence cannot climb out of that.
+**The same accumulation also makes the product slow to react.** In North America, VIIRS says flood on 299 of the 544 held-out gold flood cells. On none of them does the fused P reach 0.5, and its median there is about 0, even though the microwave vote agrees on 152 of those cells. The reason: in the weeks before a flood, daily "dry" evidence accumulates too. VIIRS dry adds −1.0 a day and microwave dry −0.25. Measured the day before the first gold map, those cells sit a median **8.3 log-odds below the prior** (10th percentile −10.0, 90th −4.0), and a few days of flood evidence cannot climb out of that.
 
 ### Coverage, observation age, time to first detection
 
@@ -209,7 +211,8 @@ Observed flood frequency stays near 0.01 at every predicted probability. The fus
 6. **Dry-window recession** inflates measured false alarms (A-02). The post-event window should start later.
 7. **Event selection is biased toward smaller events** by the cost caps; Pakistan 2022 and Bangladesh 2020 are excluded. The 141 events beyond the quotas and the 5 unbuilt UNOSAT giants are unused.
 8. **Slow reaction to a new flood.** Accumulated dry evidence keeps P near 0 for new floods. North America is the clearest case: fusion CSI 0.008 vs VIIRS 0.378 (§4).
-9. **Other:**
+9. **A day missing from the FloodScan Africa archive** (archive lag) is now recorded in the daily run manifest (`floodscan_africa_absent`), as GFDS absence is. Before this fix it was silent NoData.
+10. **Other:**
    - GSW v1.4 has known occurrence errors; v1.5 exists (D-28).
    - FloodScan licence: outputs are internal only.
    - The days-since-observation layer is uninformative while microwave is daily.
@@ -237,8 +240,8 @@ Observed flood frequency stays near 0.01 at every predicted probability. The fus
 | code, one entry point per phase | `Makefile` (`make phase0` … `make phase6`, `make test`, `make daily`), `scripts/fusion/`, `src/ds_flood_gfm/fusion/` |
 | tests (37, synthetic) | `tests/` |
 | accuracy table with sample sizes and 95% intervals | `results/accuracy_table.csv` |
-| daily outputs for every held-out window | dev blob `projects/ds-flood-gfm/processed/flood_fusion_v1/daily/` (local `data/fusion/out/daily/`) |
-| dataset card | dev blob `…/flood_fusion_v1/MANIFEST.json` |
-| scheduled job | `databricks.yml`; dev jobs "[dev] Flood Fusion Daily" (718536903707906) and "Static Build" (186374068781759) |
+| daily outputs for every held-out window | complete locally (`data/fusion/out/daily/`, 8,277 COGs). The mirror to dev blob `projects/ds-flood-gfm/processed/flood_fusion_v1/daily/` was in progress at session end (§4). |
+| dataset card | `…/flood_fusion_v1/MANIFEST.json`, written by `phase6_package.py` as the second upload step; registration page is KB draft PR #757 |
+| scheduled job | `databricks.yml`; dev jobs "[dev] Flood Fusion Daily" (718536903707906, schedule paused) and "Static Build" (186374068781759). Deployed and validated, **not yet executed on Job Compute**; prod deploy after merge. |
 | docs | `docs/repo_audit.md`, `docs/inventory.md`, `docs/feasibility.md`, `docs/decisions.md` (D-01–D-35), `docs/assumptions.md`, ADR 0001 |
 | runbook | `README.md` "Flood fusion v1", `CLAUDE.md` |
