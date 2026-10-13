@@ -59,7 +59,7 @@ Update this at every commit that changes a phase's state.
 | 2 Data cube | done |
 | 3 Accuracy tables | gold table done; agreement table + comparison in progress (ADR 0002) |
 | 4 Fusion engine | done |
-| 5 Validation | held-out gold done; gauge test not started (no source chosen); v2-table comparison not started |
+| 5 Validation | held-out gold done; gauge test not started: candidates in `docs/gauge_sources.md`, choice pending; v2-table comparison not started |
 | 6 Packaging | done for v1 on dev; prod deploy waits for merge |
 
 ## v1 result in one line

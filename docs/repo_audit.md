@@ -87,5 +87,5 @@ Reconstructed from git history and the outputs on disk. The short version lives 
 | 2 Data cube | done: gold cubes for 198 events, 53-block random sample | commit d5ca42e; `data/fusion/cube/`, `results/phase2_*` |
 | 3 Accuracy tables | **gold table** done. **Agreement table and comparison** in progress | gold: commit 0e6a7a3, `results/accuracy_table.csv`. Agreement: ADR 0002 |
 | 4 Fusion engine | done; 37 synthetic tests | commit bde6192; `src/ds_flood_gfm/fusion/engine.py`, `tests/` |
-| 5 Validation | **held-out gold** done. **Gauge-exceedance test** not started: no observed-gauge source in holdings or the KB, choice pending. **v2-table comparison** not started | commit 5ceab0b; `results/phase5_*`, `docs/final_report.md` §4 |
+| 5 Validation | **held-out gold** done. **Gauge-exceedance test** not started: no observed-gauge source in holdings or the KB; candidates in `docs/gauge_sources.md`, choice pending. **v2-table comparison** not started | commit 5ceab0b; `results/phase5_*`, `docs/final_report.md` §4 |
 | 6 Packaging | done for v1 on dev: blob mirror, MANIFEST, paused dev job (one successful run), KB draft PR #757. Prod deploy waits for merge | commits fd0c8d6, 12601a9 |

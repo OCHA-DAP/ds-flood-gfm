@@ -51,7 +51,7 @@ Option 3, as in `docs/flood_fusion_plan.md`. The implementation rules below are 
   - the fit is degenerate (some source no better than chance).
 - **Strata without adequate gold** keep their v1 rows. These are the three snow strata. Their status is `no_gold_to_check`, and the agreement value is shown beside the v1 row as information. An unchecked agreement estimate is exactly what this design exists to prevent.
 - **Each divergence records its direction.** Gold's false-alarm rates come from the weeks around floods, while the sample covers random days. So a specificity divergence is partly expected from that difference in population. It is not, by itself, evidence that the sources share a blind spot.
-- **River-gauge test:** the gauge source is not chosen yet. Observed-gauge candidates are being researched; the choice is the user's.
+- **River-gauge test:** the gauge source is not chosen yet. Observed-gauge candidates are listed in `docs/gauge_sources.md`; the choice is the user's.
 
 ### Consequences
 
