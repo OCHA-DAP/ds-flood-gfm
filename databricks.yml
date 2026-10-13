@@ -1,8 +1,9 @@
 # Databricks Asset Bundle — ds-flood-gfm flood fusion v1
 #
-# Two jobs, both through databricks/run_task.py (team wrapper; KB infrastructure/databricks.md):
+# Three jobs, all through databricks/run_task.py (team wrapper; KB infrastructure/databricks.md):
 #   flood_fusion_daily   scheduled daily: scripts/fusion/daily_job.py for the configured AOIs
 #   flood_fusion_static  on demand: scripts/fusion/static_build.py --bbox ... (extends coverage)
+#   flood_fusion_modis   on demand: scripts/fusion/modis_windows.py (MODIS counts for every event window)
 # Credentials come from the Job Compute policy (DSCI_AZ_BLOB_* from the dsci scope).
 # Data plane is dev on both targets (an experimental product; KB: dev/prod axes are independent).
 #
@@ -107,6 +108,45 @@ resources:
           spark_python_task:
             python_file: databricks/run_task.py
             parameters: ["scripts/fusion/static_build.py", "--stage", "{{job.parameters.stage}}", "--", "--bbox", "{{job.parameters.bbox}}"]
+
+    flood_fusion_modis:
+      name: Flood Fusion MODIS Windows
+      description: >
+        NASA MCDWD flood product for every event window and day: per-cell pixel counts of the 1-day
+        layers, one NetCDF per window to dev blob processed/flood_fusion_v1/modis/ (D-37, D-41).
+        Resumable. Earthdata token from the team login (dsci IMERG_USERNAME / IMERG_PASSWORD).
+      tags:
+        databricks: job
+        blob_container: projects
+      permissions:
+        - group_name: dsci
+          level: CAN_MANAGE
+      max_concurrent_runs: 1
+      timeout_seconds: 43200
+      parameters:
+        - name: stage
+          default: ${var.stage}
+        - name: events          # comma-separated event codes; empty = all events
+          default: ""
+      job_clusters:
+        - job_cluster_key: main
+          new_cluster: *cluster_spec
+      tasks:
+        - task_key: modis
+          job_cluster_key: main
+          libraries:
+            - pypi: { package: "ocha-stratus>=0.1.6" }
+            - pypi: { package: "rasterio>=1.4" }
+            - pypi: { package: "xarray" }
+            - pypi: { package: "netcdf4" }
+            - pypi: { package: "pyproj" }
+            - pypi: { package: "pyyaml" }
+            - pypi: { package: "pyhdf" }
+          spark_python_task:
+            python_file: databricks/run_task.py
+            parameters: ["scripts/fusion/modis_windows.py", "--stage", "{{job.parameters.stage}}",
+                         "--secret", "IMERG_USERNAME", "--secret", "IMERG_PASSWORD", "--",
+                         "--events={{job.parameters.events}}"]
 
 targets:
   dev:

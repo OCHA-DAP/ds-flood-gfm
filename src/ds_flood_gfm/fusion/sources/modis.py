@@ -36,6 +36,7 @@ import json
 import math
 import os
 import tempfile
+import threading
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -51,6 +52,7 @@ TILE_PX = 4800
 PIX = TILE_DEG / TILE_PX
 HDF4_MAGIC = b"\x0e\x03\x13\x01"
 LAYERS = ("Flood_1Day_250m", "FloodCS_1Day_250m", "Flood_2Day_250m", "Flood_3Day_250m")
+_HDF_LOCK = threading.Lock()  # the HDF4 library is not thread-safe; downloads run in threads, reads one at a time
 
 
 def tiles_for_bounds(minx: float, miny: float, maxx: float, maxy: float) -> list[tuple[int, int]]:
@@ -111,6 +113,29 @@ def values_from_counts(counts: dict[str, np.ndarray], recurring_as: str, observe
     return out, frac
 
 
+def earthdata_token(username: str, password: str) -> str:
+    """An Earthdata user token for a login: the existing one, or a new one if none exists.
+
+    POST https://urs.earthdata.nasa.gov/api/users/find_or_create_token with HTTP Basic auth (Earthdata
+    Login user-token documentation). Tokens last 60 days, and a user may hold at most two; find-or-create
+    never adds a third.
+    """
+    import base64
+
+    req = urllib.request.Request("https://urs.earthdata.nasa.gov/api/users/find_or_create_token", method="POST",
+                                 headers={"Authorization": "Basic " + base64.b64encode(f"{username}:{password}".encode()).decode()})
+    try:
+        with urllib.request.urlopen(req, timeout=60) as r:
+            tok = json.loads(r.read()).get("access_token")
+    except urllib.error.HTTPError as e:
+        if e.code == 401:
+            raise PermissionError("Earthdata login rejected (HTTP 401) while requesting a token") from e
+        raise
+    if not tok:
+        raise RuntimeError("Earthdata token API answered without an access_token")
+    return tok
+
+
 def check_hdf_payload(head: bytes, url: str) -> None:
     """Raise if a download is not an HDF4 file (LAADS answers a rejected token with an HTML login page)."""
     if head[:4] == HDF4_MAGIC:
@@ -127,9 +152,13 @@ class MODISFloodSource:
         self.cfg = cfg
         self.s = cfg["sources"]["modis"]
         self.token = os.environ.get(self.s["token_env"])
+        user, pw = os.environ.get(self.s["login_user_env"]), os.environ.get(self.s["login_password_env"])
+        if not self.token and user and pw:
+            # scheduled jobs: the team's shared Earthdata login from the dsci scope (KB pipelines/imerg.md)
+            self.token = earthdata_token(user, pw)
         if not self.token:
-            raise RuntimeError(f"misconfigured: environment variable {self.s['token_env']} (Earthdata token) is not set; "
-                               "see docs/decisions.md D-37")
+            raise RuntimeError(f"misconfigured: set {self.s['token_env']} (an Earthdata token), or "
+                               f"{self.s['login_user_env']} and {self.s['login_password_env']}; see docs/decisions.md D-37")
         self.absent: list[tuple[str, str]] = []
         self.until = dt.date.fromisoformat(self.s["reprocessed_until"])
 
@@ -144,12 +173,20 @@ class MODISFloodSource:
             with urllib.request.urlopen(req, timeout=300) as r:
                 return r.read()
 
-        try:
-            return retry(_do, f"MODIS {url}")
-        except urllib.error.HTTPError as e:
-            if e.code in (401, 403):
-                raise PermissionError(f"Earthdata token rejected (HTTP {e.code}) for {url}") from e
-            raise
+        import time
+
+        for attempt in range(5):
+            try:
+                return retry(_do, f"MODIS {url}")
+            except urllib.error.HTTPError as e:
+                if e.code in (401, 403):
+                    raise PermissionError(f"Earthdata token rejected (HTTP {e.code}) for {url}") from e
+                # LAADS answers load with 429/5xx: a busy server is transient, any other status is not
+                if e.code in (429, 502, 503, 504) and attempt < 4:
+                    time.sleep(30 * (attempt + 1))
+                    continue
+                raise
+        raise RuntimeError(f"unreachable: {url}")
 
     def day_listing(self, day: dt.date) -> dict[str, str]:
         """'hHHvVV' -> file name for one day (cached). Empty dict: the day folder does not exist upstream."""
@@ -187,9 +224,10 @@ class MODISFloodSource:
             f.write(data)
             tmp = Path(f.name)
         try:
-            sd = SD(str(tmp), SDC.READ)
-            out = {layer: sd.select(layer).get() for layer in layers}
-            sd.end()
+            with _HDF_LOCK:
+                sd = SD(str(tmp), SDC.READ)
+                out = {layer: sd.select(layer).get() for layer in layers}
+                sd.end()
         finally:
             tmp.unlink()
         return out

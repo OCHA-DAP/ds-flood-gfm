@@ -129,6 +129,9 @@ sources:
     product_nrt_archive: MCDWD_L3_NRT   # archived near-real-time files from 2026-01-01
     reprocessed_until: "2025-12-31"
     token_env: EARTHDATA_TOKEN
+    login_user_env: IMERG_USERNAME      # jobs: the team's shared Earthdata login (dsci scope), turned into a token
+    login_password_env: IMERG_PASSWORD
+    threads: 6                          # concurrent tile downloads (scripts/fusion/modis_windows.py)
     layer: FloodCS_1Day_250m            # daily evidence: 1-day only (2/3-day composites reuse passes across days)
     recurring_as: flood                 # code 2 "recurring (seasonal) flood": flood | dry
     observed_min_frac: 0.50

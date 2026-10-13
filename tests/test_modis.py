@@ -90,6 +90,7 @@ def test_payload_check_separates_rejected_token_from_corrupt_file():
 
 def test_missing_token_is_a_misconfiguration(monkeypatch):
     cfg = load_config()
-    monkeypatch.delenv(cfg["sources"]["modis"]["token_env"], raising=False)
+    for k in ("token_env", "login_user_env", "login_password_env"):
+        monkeypatch.delenv(cfg["sources"]["modis"][k], raising=False)
     with pytest.raises(RuntimeError, match="misconfigured"):
         modis.MODISFloodSource(cfg)
