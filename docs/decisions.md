@@ -259,3 +259,20 @@ Moving to v1.5 is an open issue.
   - 2 → flood or not, per `recurring_as`. Both are scored, because code 2 is NASA's own seasonal baseline.
 - **Composite.** As daily model evidence, only the 1-day layers qualify. The 2- and 3-day composites reuse the same satellite passes on consecutive days, which would be counted again under the carry-over. The default is the cloud-shadow-screened 1-day layer.
 - **Status.** MODIS is not a model source (`sources.modis.enabled: false`). `scripts/fusion/experiment_modis_gold.py` scores it against gold beside VIIRS, first for the events in the VIIRS archive gap (2021-01 to 2023-07). If it enters the model, it shares one optical vote with VIIRS, not a vote of its own (D-36).
+
+**D-38 Seasonal "normally wet" baseline from JRC GSW monthly recurrence (experiment).**
+- **Why.** On gold-dry cells the sources' false alarms coincide 4–18 times more often than independence allows (D-36), and the agreement fit's "wet" class looks like seasonal water. A per-cell, per-month baseline should remove those calls.
+- **Source.** `gs://global-surface-water/downloads2021/monthlyRecurrence2021/`: 12 calendar months, Landsat 1984–2021, 30 m. It's a public bucket, the same one v1 reads occurrence from, and needs no Earth Engine or login.
+  - Tiles are 10° and 40,000 × 40,000 pixels of 0.00025°, so a 0.01° cell is exactly 40 × 40 pixels.
+  - Code: `fusion/baseline.py`.
+- **Rule, fixed before any result was seen:**
+  - a pixel is normally wet in month m if it was water in at least 50% of the observed years;
+  - a cell is normally wet if at least 30% of its pixels are.
+  - Masking turns a source's *flood* call in a normally-wet cell into NoData. Dry calls are unchanged.
+- **Caveat.** In this export the `has_observations` layers are the same for every month and match "occurrence > 0" for 99% of pixels (checked on the Inner Niger Delta). They mark "water ever seen", not "this month was observed". A persistently cloudy month reads 0, so the baseline can miss cloudy-season water: it errs towards masking too little.
+- **Test.** `scripts/fusion/experiment_seasonal_baseline.py` reports, on training and held-out events separately:
+  - how much gold flood falls on normally-wet cells;
+  - per-source recall and precision before vs after masking;
+  - the coinciding-false-alarm lift before vs after.
+
+  Nothing is fitted. If the baseline helps, the next step (rebuilding the accuracy table and rerunning fusion) needs a decision, since it changes what each source counts as evidence.

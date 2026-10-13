@@ -158,6 +158,10 @@ accuracy:
     param_tolerance: 0.02           # ... at sens/spec differing by more than this = flat likelihood (unstable)
     boundary: 0.001                 # sens within this of 0 or 1 = degenerate fit
 
+baseline:                           # seasonal "normally wet" baseline (D-38), JRC GSW monthly recurrence 1984-2021
+  wet_recurrence_pct: 50            # a pixel is normally wet in month m if water in >= 50% of observed years
+  normal_wet_min_frac: 0.30         # a cell is normally wet if >= 30% of its pixels are (same as the flood threshold)
+
 sample:
   years: [2023, 2025]               # inclusive; stratified random sample period (D-23)
   block_deg: 0.25                   # random blocks
