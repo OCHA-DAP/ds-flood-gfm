@@ -168,7 +168,7 @@ def timeline_figure(cfg) -> None:
     w = 0.8
     ax.bar(days, dry_never_event, width=w, color=LAND, edgecolor="#cfc9b8", linewidth=0.3, label="dry", zorder=2)
     ax.bar(days, dry_ever_window, width=w, bottom=dry_never_event, color="#f6c9a8", hatch="////", edgecolor="#eb6834", linewidth=0,
-           label="flooded on a map day: dry as built; no label under the proposed rule", zorder=2)
+           label="flooded on a map day (dry under the current rule; no label under the proposed rule)", zorder=2)
     ax.bar(days, flood, width=w, bottom=np.where(in_event, dry_never_event, 0), color=WATER, label="flooded", zorder=3)
     top = int((dry_never_event + dry_ever_window + np.where(in_event, flood, 0)).max())
     ax.set_ylim(0, top * 1.32)
