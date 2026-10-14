@@ -227,7 +227,13 @@ def event_windows(row: pd.Series) -> list[EventWindow]:
 # --------------------------------------------------------------------------- rasterisation
 
 def _polygonal(wkb) -> shapely.Geometry | None:
-    """2-D polygonal part of a WKB geometry (CEMS gold v1 has 3-D coordinates and line fragments)."""
+    """2-D polygonal parts of a WKB geometry (CEMS gold v1 has 3-D coordinates and line fragments).
+
+    One part comes back as a Polygon; several as a GeometryCollection of Polygons, NOT unioned.
+    `burn_fraction` rasterises the parts one by one, which marks a sub-pixel if any part covers its
+    centre: the same as burning their union. The union itself is not needed and is the slow step:
+    on events with hundreds of MB of polygons (EMSR848, FL20220728NER) it ran for over an hour.
+    """
     if wkb is None:
         return None
     geom = shapely.force_2d(shapely.from_wkb(wkb))
@@ -236,29 +242,35 @@ def _polygonal(wkb) -> shapely.Geometry | None:
     parts = shapely.get_parts(geom)
     polys = [p for p in parts if p.geom_type in ("Polygon", "MultiPolygon")]
     nested = [q for p in parts if p.geom_type == "GeometryCollection" for q in shapely.get_parts(p) if q.geom_type in ("Polygon", "MultiPolygon")]
-    polys += nested
+    polys = list(shapely.get_parts(np.array(polys + nested, dtype=object)))  # MultiPolygons -> Polygons
     if not polys:
         return None
-    return shapely.union_all(polys) if len(polys) > 1 else polys[0]
+    return polys[0] if len(polys) == 1 else shapely.GeometryCollection(polys)
 
 
 def burn_fraction(geom: shapely.Geometry | None, win: grid.Window, burn_res: float) -> np.ndarray:
-    """Fraction of each 0.01-degree cell covered by `geom`, from a burn at `burn_res` (block-sum)."""
+    """Fraction of each 0.01-degree cell covered by `geom`, from a burn at `burn_res` (block-sum).
+
+    `geom` may be a Polygon, MultiPolygon or a GeometryCollection of overlapping Polygons: each part is
+    burned, so overlaps count once.
+    """
     out = np.zeros(win.shape, "float32")
     if geom is None:
         return out
+    parts = shapely.get_parts(geom)
     k = round(grid.RES / burn_res)
     # rasterise one-degree chunks to bound memory on large windows
     for sub in grid.tiles_for_window(win, 1):
         minx, miny, maxx, maxy = sub.bounds
-        clip = shapely.clip_by_rect(geom, minx, miny, maxx, maxy)
-        if clip.is_empty:
+        clip = shapely.clip_by_rect(parts, minx, miny, maxx, maxy)
+        clip = clip[~shapely.is_empty(clip)]
+        if not len(clip):
             continue
         h, w = sub.shape[0] * k, sub.shape[1] * k
         from affine import Affine
 
         t = Affine(burn_res, 0, minx, 0, -burn_res, maxy)
-        fine = rasterize([(clip, 1)], out_shape=(h, w), transform=t, fill=0, dtype="uint8", all_touched=False)
+        fine = rasterize([(c, 1) for c in clip], out_shape=(h, w), transform=t, fill=0, dtype="uint8", all_touched=False)
         frac = fine.reshape(sub.shape[0], k, sub.shape[1], k).mean(axis=(1, 3))
         rs, cs = win.slices_of(sub)
         out[rs, cs] = frac

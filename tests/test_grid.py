@@ -5,7 +5,7 @@ Why these cases:
 - cell_index maps cell centres back to their own (row, col);
 - GFDS 0.09-degree pixels nest exactly 9x9 (the adapter relies on (i + 5) // 9);
 - tiles_for_window partitions a window without overlap or gaps;
-- gold burn_fraction returns exact area fractions for axis-aligned shapes.
+- gold burn_fraction returns exact area fractions for axis-aligned shapes, and burning overlapping parts equals burning their union.
 """
 
 import numpy as np
@@ -69,3 +69,17 @@ def test_polygonal_drops_lines_and_z():
     geom = shapely.GeometryCollection([shapely.LineString([(0, 0, 5), (1, 1, 5)]), shapely.box(0, 0, 1, 1)])
     p = gold._polygonal(shapely.to_wkb(geom))
     assert p.geom_type == "Polygon" and not shapely.has_z(p)
+
+
+def test_burn_fraction_parts_equal_union():
+    """Overlapping polygons are burned part by part, not unioned (slow on huge label sets); the cell fractions
+    must equal those of the union, with no double counting where parts overlap."""
+    w = grid.Window(5000, 5010, 18000, 18010)
+    minx, miny, maxx, maxy = w.bounds
+    a = shapely.box(minx + 0.003, miny + 0.002, minx + 0.047, miny + 0.061)
+    b = shapely.Polygon([(minx + 0.02, miny + 0.01), (minx + 0.09, miny + 0.03), (minx + 0.05, miny + 0.095)])
+    parts = gold._polygonal(shapely.to_wkb(shapely.GeometryCollection([a, b])))
+    assert parts.geom_type == "GeometryCollection"
+    f = gold.burn_fraction(parts, w, 0.001)
+    np.testing.assert_allclose(f, gold.burn_fraction(shapely.union_all([a, b]), w, 0.001))
+    assert f.max() <= 1.0
