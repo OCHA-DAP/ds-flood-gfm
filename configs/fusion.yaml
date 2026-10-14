@@ -68,6 +68,10 @@ gold:
   split_seed: 20261012
   basins_level: 4                   # HydroBASINS level for grouping events into basins
 
+scope:
+  # D-42 (2026-10-14): the analysis covers these continents; Europe and North America are set aside
+  continents: [Africa, Asia, South America, Oceania]
+
 sources:
   gfm:
     enabled: true

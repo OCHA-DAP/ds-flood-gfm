@@ -2,6 +2,7 @@
 
 Subcommands run in order and are each resumable:
   select   gold indexes -> filtered label sets -> event table -> v1 selection -> basin split
+  extra    in-scope events v1 left out (D-42) -> two build lists, events_extra_{small,large}.parquet
   gold     stage A per event window: static layers + gold truth           (data/fusion/cube/gold/)
   tally    gold cells per stratum x continent (decides whether selection covers all 6 strata)
   gfds     shared GFDS prefetch for every (day, window) pair              (data/fusion/gfds/days/)
@@ -9,6 +10,7 @@ Subcommands run in order and are each resumable:
   metrics  per-source per-stratum skill, oracle test, coverage test, gate (results/phase1_*.csv)
 
 Run: nice -n 19 uv run python scripts/fusion/phase1_feasibility.py <subcommand> [--workers N]
+     gold, gfds and sources take --events-file to build a list other than the v1 selection.
 """
 
 from __future__ import annotations
@@ -18,6 +20,7 @@ import logging
 import sys
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from pathlib import Path
 
 import pandas as pd
 
@@ -67,8 +70,25 @@ def cmd_select(cfg) -> None:
     log.info("selected %d events (%s); split %s", len(sel), sel.continent.value_counts().to_dict(), sel.split.value_counts().to_dict())
 
 
-def _load_selected(cfg) -> tuple[pd.DataFrame, pd.DataFrame]:
+def cmd_extra(cfg) -> None:
+    """In-scope events the v1 selection left out (D-42), as two build lists: over quota (small) and over the size caps."""
+    ev = pd.read_parquet(cfg.local("gold", "event_table_all.parquet"))
     sel = pd.read_parquet(cfg.local("gold", "events_selected.parquet"))
+    reason = pd.read_csv(cfg.results_dir / "events_excluded.csv").set_index("code").reason
+    extra = ev[ev.continent.isin(cfg["scope"]["continents"]) & ~ev.code.isin(sel.code)].copy()
+    unknown = sorted(set(extra.code) - set(reason.index))
+    if unknown:
+        raise ValueError(f"in-scope events neither selected nor listed in events_excluded.csv: {unknown}")
+    extra["v1_exclusion"] = extra.code.map(reason)
+    small = extra[extra.v1_exclusion.str.startswith("beyond continent quota")]
+    for name, part in (("small", small), ("large", extra.drop(small.index))):
+        path = cfg.local("gold", f"events_extra_{name}.parquet")
+        part.sort_values("cells").to_parquet(path)
+        log.info("%s: %d events, %d cells, %s", path.name, len(part), int(part.cells.sum()), part.continent.value_counts().to_dict())
+
+
+def _load_selected(cfg, events_file: str | None = None) -> tuple[pd.DataFrame, pd.DataFrame]:
+    sel = pd.read_parquet(events_file or cfg.local("gold", "events_selected.parquet"))
     kept = pd.read_parquet(cfg.local("gold", "label_sets_kept.parquet"))
     return sel, kept
 
@@ -80,8 +100,8 @@ def _gold_one(cfg_path: str, row: pd.Series, kept: pd.DataFrame) -> tuple[str, f
     return row.code, time.time() - t
 
 
-def cmd_gold(cfg, workers: int, codes: list[str] | None = None) -> None:
-    sel, kept = _load_selected(cfg)
+def cmd_gold(cfg, workers: int, codes: list[str] | None = None, events_file: str | None = None) -> None:
+    sel, kept = _load_selected(cfg, events_file)
     if codes:
         sel = sel[sel.code.isin(codes)]
     sel = sel.sort_values("cells")  # small first (cost proxy)
@@ -125,10 +145,10 @@ def cmd_tally(cfg) -> None:
     _ = np
 
 
-def cmd_gfds(cfg) -> None:
+def cmd_gfds(cfg, events_file: str | None = None) -> None:
     from ds_flood_gfm.fusion.sources.gfds import GFDSSource
 
-    sel, _ = _load_selected(cfg)
+    sel, _ = _load_selected(cfg, events_file)
     req = cube.gfds_requests(cfg, sel)
     # fold in the phase-2 sample blocks (if designed) so each day is fetched once for both
     blocks_path = cfg.local("sample", "blocks.parquet")
@@ -203,8 +223,8 @@ def _sources_one(cfg_path: str, row: pd.Series) -> tuple[str, float]:
     return row.code, time.time() - t
 
 
-def cmd_sources(cfg, workers: int, continue_on_error: bool = False) -> None:
-    sel, _ = _load_selected(cfg)
+def cmd_sources(cfg, workers: int, continue_on_error: bool = False, events_file: str | None = None) -> None:
+    sel, _ = _load_selected(cfg, events_file)
     # same order as the GFDS prefetch (sample-period events first, then chronological), so the
     # run trails the prefetch instead of waiting for all of it
     y0, y1 = cfg["sample"]["years"]
@@ -224,7 +244,9 @@ def cmd_sources(cfg, workers: int, continue_on_error: bool = False) -> None:
                 log.error("sources %d/%d %s FAILED: %s", i, len(futs), futs[f], e)
                 continue
             log.info("sources %d/%d %s %.1fs", i, len(futs), code, secs)
-    fpath = cfg.results_dir / "phase1_stage_c_failures.csv"
+    # a build list other than the v1 selection gets its own failure file, so v1's record is never overwritten
+    suffix = f"_{Path(events_file).stem}" if events_file else ""
+    fpath = cfg.results_dir / f"phase1_stage_c_failures{suffix}.csv"
     pd.DataFrame(failures, columns=["code", "error"]).to_csv(fpath, index=False)
     if failures:
         log.error("%d events failed stage C; listed in %s", len(failures), fpath)
@@ -246,10 +268,11 @@ def cmd_metrics(cfg) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["select", "gold", "tally", "gfds", "sources", "metrics"])
+    ap.add_argument("cmd", choices=["select", "extra", "gold", "tally", "gfds", "sources", "metrics"])
     ap.add_argument("--config", default=None)
     ap.add_argument("--workers", type=int, default=3)
     ap.add_argument("--codes", default="", help="gold: comma-separated subset of event codes")
+    ap.add_argument("--events-file", default=None, help="gold, gfds, sources: build this event list instead of the v1 selection")
     ap.add_argument("--continue-on-error", action="store_true",
                     help="stage C: record failing events in results/phase1_stage_c_failures.csv and go on")
     a = ap.parse_args()
@@ -257,14 +280,16 @@ def main() -> None:
     _setup_logging(cfg, a.cmd)
     if a.cmd == "select":
         cmd_select(cfg)
+    elif a.cmd == "extra":
+        cmd_extra(cfg)
     elif a.cmd == "gold":
-        cmd_gold(cfg, a.workers, [c for c in a.codes.split(",") if c])
+        cmd_gold(cfg, a.workers, [c for c in a.codes.split(",") if c], a.events_file)
     elif a.cmd == "tally":
         cmd_tally(cfg)
     elif a.cmd == "gfds":
-        cmd_gfds(cfg)
+        cmd_gfds(cfg, a.events_file)
     elif a.cmd == "sources":
-        cmd_sources(cfg, a.workers, a.continue_on_error)
+        cmd_sources(cfg, a.workers, a.continue_on_error, a.events_file)
     elif a.cmd == "metrics":
         cmd_metrics(cfg)
 

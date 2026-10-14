@@ -328,3 +328,17 @@ Moving to v1.5 is an open issue.
   - They are kept only for a rolling window of about 7 days. On 2026-10-13 the earliest in CMR was 2026-10-06, with nothing for 2022.
   - History (2000–2025) exists only as the HDF4 reprocessed archive. HDF4 cannot be range-read, so every needed tile-day must be downloaded whole (5–26 MB).
   - NASA GIBS serves the product as rendered imagery for any date. That is not the reprocessed data, and is not used.
+
+**D-41 MODIS joins VIIRS in one optical vote; MODIS counts for every event window come from a Databricks job.**
+- **Rule.** MODIS (MCDWD, D-37) and VIIRS are the same sensor family: optical, and blocked by cloud. They are merged into one optical vote the way FloodScan and GFDS form the microwave vote (fixed decision 2): flood if either says flood, dry if at least one observed and neither says flood. They are not added as two independent sources, which would double-count shared cloud gaps and shared errors (D-36).
+- **Data.** Every event window, every day, needs about 25,000 MODIS tile-days (about 376 GB of HDF4 tiles, which cannot be read in part). `scripts/fusion/modis_windows.py` downloads each tile-day once, keeps only per-cell pixel counts of the 1-day layers, and writes one NetCDF per window to dev blob `processed/flood_fusion_v1/modis/`. It runs as the on-demand Databricks job `flood_fusion_modis`.
+- **Test.** `scripts/fusion/experiment_optical_vote.py` scores four models on held-out events, with the v1 or the corrected dry-window labels, each with and without the optical vote, and splits the results by whether the event falls in the VIIRS gap.
+- **Status.** Blocked: the job needs an Earthdata login it can use. The team login in the dsci secret scope is rejected by NASA's token API (HTTP 401). Options are the user's personal token in a Databricks secret, or fixing the team account.
+
+**D-42 Scope: Africa, Asia, South America and Oceania, with every usable event in them (user decision, 2026-10-14).**
+- **Scope.** Europe and North America are set aside for now (`scope.continents` in `configs/fusion.yaml`). FloodScan does not cover Europe, and pooling regions whose sources differ hides how each one performs.
+- **Every usable event.** Within scope, every event that passes the gold rules (D-10) is used. v1's per-continent quotas and size caps (D-14) and the snow top-up (D-14b, all in Europe) no longer apply. That adds 51 events to the 119 in-scope v1 events, for 170:
+  - 30 left out by the quotas (27 Africa, 3 Asia; 1.2 M cells);
+  - 21 left out by the size caps (13 Asia, 8 Africa; 2.9 M cells, 4.9 GB of label data; Bangladesh 2020 alone is 2.1 GB).
+- **Building them.** `phase1_feasibility.py extra` writes the two build lists `data/fusion/gold/events_extra_{small,large}.parquet`. The `gold`, `gfds` and `sources` steps take `--events-file` to build a list, skipping windows already built. Their failures go to `results/phase1_stage_c_failures_<list>.csv`, so v1's record is kept. The v1 selection files and `results/event_split.csv` are not touched; the five-fold design that replaces the split comes next.
+- **Order.** The 30 smaller events first on the laptop, to measure the rate; the 21 large ones after.
