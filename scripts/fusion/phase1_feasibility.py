@@ -109,7 +109,14 @@ def cmd_gold(cfg, workers: int, codes: list[str] | None = None, events_file: str
     with ProcessPoolExecutor(workers) as ex:
         futs = {ex.submit(_gold_one, str(cfg.path), row, kept[kept.code == row.code]): row.code for _, row in sel.iterrows()}
         for i, f in enumerate(as_completed(futs), 1):
-            code, secs = f.result()  # a failure raises here and stops the run, naming the event
+            try:
+                code, secs = f.result()
+            except Exception:
+                # report the failure now and cancel the queue; otherwise the pool finishes every queued
+                # event (hours) before the error surfaces (seen 2026-10-14)
+                log.error("gold %s FAILED; cancelling %d queued events", futs[f], sum(not g.done() for g in futs))
+                ex.shutdown(wait=False, cancel_futures=True)
+                raise
             log.info("gold %d/%d %s %.1fs", i, len(futs), code, secs)
 
 
@@ -237,8 +244,10 @@ def cmd_sources(cfg, workers: int, continue_on_error: bool = False, events_file:
         for i, f in enumerate(as_completed(futs), 1):
             try:
                 code, secs = f.result()
-            except Exception as e:  # only reached with --continue-on-error; recorded, never dropped
+            except Exception as e:  # recorded with --continue-on-error, never dropped; otherwise stop now
                 if not continue_on_error:
+                    log.error("sources %s FAILED; cancelling the queued events", futs[f])
+                    ex.shutdown(wait=False, cancel_futures=True)
                     raise
                 failures.append({"code": futs[f], "error": f"{type(e).__name__}: {e}"})
                 log.error("sources %d/%d %s FAILED: %s", i, len(futs), futs[f], e)
