@@ -69,6 +69,17 @@ the service lasts; the deeper mitigation is that GFDS is a processing chain
 over public AMSR2/GPM brightness temperatures, so the signal could be
 recomputed from source if the feed stops.
 
+**Update (October 2026): the feed has stopped.** The last daily raster is
+14 September 2026. Every later day is missing from the server, although the
+1997–2026 archive is still downloadable. The GPM component had already
+stopped on 28 February 2026, so from March 2026 the merged product was
+AMSR2 alone. Both stops coincide with upstream changes: NASA moved GMI
+files from HDF5 to NetCDF4 on 4 March 2026, and NOAA ended AMSR2 product
+generation on 2 September 2026 as AMSR3 takes over. The timing fits, but
+the cause is not confirmed. The status evidence is in
+`docs/gdacs-gfds-assessment.md`. What rebuilding the signal from AMSR3
+and GMI would take is in `docs/gfds-rebuild-evaluation.md`.
+
 ## Sensors and methods, side by side
 
 Before comparing outputs, it is worth being precise about what each system
@@ -91,7 +102,7 @@ completely in what they do with it.
 | Noise handling | 4-day trailing average (chosen over spatial averaging in the 2007 report) | Temporal-spatial false-positive filtering plus 3-day averaging |
 | Coverage | Global (40°N to 40°S in the TRMM-only era, 1997 to 2002) | Africa and the Americas in NRT, not global |
 | Cadence / latency | Daily grids, updated every 3 h; ~3 h (AMSR2) to ~24 h (GPM) behind acquisition | Daily |
-| Archive | December 1997 to present | 1998 to present (team holdings) |
+| Archive | December 1997 to 14 September 2026 (feed stopped) | 1998 to present (team holdings) |
 | Output variable | σ-anomaly of a wetness ratio; no physical units | Flooded fraction, 0 to 1 (SFED; MFED for maximum) |
 | Alert layer | ~10k manually curated virtual-gauge sites; 4 to 6σ thresholds set empirically | Products consumed directly; the team computes its own baselines and return periods |
 | Access | Free, no auth, plain HTTP | Commercial license (AER) |

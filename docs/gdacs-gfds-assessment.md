@@ -3,6 +3,14 @@
 *Assessed 2026-08-17. All access patterns below were verified hands-on that day
 (files downloaded, rasters opened, API queried).*
 
+> **Status 2026-10-14: the feed has stopped.** The last daily file is
+> 2026-09-14. See [Status update (2026-10-14)](#status-update-2026-10-14-the-feed-has-stopped)
+> below. What it would take to rebuild the signal ourselves is in
+> [gfds-rebuild-evaluation.md](gfds-rebuild-evaluation.md). Statements below
+> that the archive runs "to current" describe August 2026. The closing
+> recommendation, a `gfds-ingest` pipeline for a live feed, is superseded:
+> the evaluation recommends archiving instead.
+
 ## What it is
 
 The [GDACS flood detection product](https://www.gdacs.org/flooddetection/download.aspx)
@@ -47,6 +55,89 @@ Dartmouth Flood Observatory group at the University of Colorado
    independent physics calibration is a first step in that direction.
 3. Watch the Colorado transfer: if DFO adopts the system, hosting and
    endpoints may change.
+
+## Status update (2026-10-14): the feed has stopped
+
+Checked 2026-10-14 from the server's own directory listings (the `DATA/`
+folders are browsable) and HEAD requests:
+
+- **Last daily file: 2026-09-14.** `ALL/SignalTiffs/2026/09/` ends with
+  `signal_20260914_ALL.tif`, written 2026-09-17 22:25 (server time). At 16.3 MB
+  against the usual ~23 MB, it is probably a partial day.
+  - Requests for `ALL` signal and magnitude files from 2026-09-15 to today
+    return HTTP 403.
+  - The folder listings show that those files do not exist, so the 403
+    means absence, not a block.
+  - The `ALL`, `SINGLE` and `AMSR2` signal folders all end at `2026/09`. For
+    `ALL` and `AMSR2` we checked file by file that nothing comes after
+    09-14.
+  - A 2024 file still returns 200, so the historical archive is still
+    served.
+- **GPM stopped first, on 2026-02-28.** `GPM/SignalTiffs/2026/` holds only
+  `01` and `02`; the last file is `signal_20260228_GPM_HDF5.tif`. From
+  March to September 2026, `ALL` was AMSR2 alone: for 2026-09-09 to
+  09-14, each `ALL` file has exactly the byte size of the matching AMSR2
+  file.
+- **Two upstream changes line up with the two stops.** These are matches
+  in timing; the cause is not confirmed.
+  - GPM: NASA moved GMI L1B/1CR to V08 on 2026-03-04, with "a format
+    change from HD5 to NetCDF4 and corresponding filename change"
+    ([NOAA OSPO notice, 2026-02-20](https://ospo.noaa.gov/data/messages/2026/02/MSG_20260220_2002.html)).
+    GFDS's GPM files carry `HDF5` in their names, and they stop four days
+    earlier.
+  - AMSR2: NOAA's "AMSR2 data and product generation will cease at 00z on
+    September 2, 2026, as we transition to AMSR3"
+    ([NOAA OSPO](https://www.ospo.noaa.gov/products/suites/gaasp/maps.html)).
+    The link to GFDS is weaker: GFDS's AMSR2 files run 12 days past that
+    date, and we do not know where JRC gets AMSR2 from. JAXA still lists
+    AMSR2 data as open-ended.
+  - Either way, an unmaintained pipeline (see the 2026-09-04 note) cannot
+    absorb upstream format or sensor changes. That is the failure mode any
+    rebuild has to plan for.
+- **Gaps and latency before the stop.**
+  - 2026-09-07 and 09-08 never appeared.
+  - Files for 09-04 to 09-06 were all written together on 09-07.
+  - In September 2026, `ALL` files appeared about **3 days** after the
+    observation date, not the "~3 h" in the docs.
+  - AMSR2 files for August 2025 were written on 2025-10-20, two months late.
+  - Fusion v1 (branch `feat/flood-fusion-v1`, `docs/inventory.md`) counted
+    60 absent days among the 4,116 it fetched for 2015–2026.
+- **Per-sensor file names differ from `ALL`.**
+  - AMSR2: `AMSR2/SignalTiffs/YYYY/MM/signal_YYYYMMDD_HD5.tif`.
+  - GPM: `GPM/SignalTiffs/YYYY/MM/signal_YYYYMMDD_GPM_HDF5.tif`.
+  - The `{name}_{YYYYMMDD}_{PRODUCT}.tif` pattern under "Products and
+    access" holds only for `ALL`.
+- **Per-sensor "answer key" files exist.** `SourceTiffs` (T_M),
+  `CalibrationTiffs` (T_C) and `PositionTiffs` (which of the 81 window
+  cells was the calibration pixel) are empty under `ALL`, as the tech note
+  says they should be. They are populated per sensor; years are from the
+  folder listings:
+  - GPM: all three, 2015–2026.
+  - AMSR2: `SourceTiffs` 2013–2026; `CalibrationTiffs` and `PositionTiffs`
+    2013 to 2018-09 only.
+- **Which baseline sd is in use.** A note in `ALL/AveragesAndSd/`
+  ("Which file is being used.txt") says the sd rasters were recalculated
+  "setting minimum value to 5000", which is 0.005 in signal units. The
+  files are `bt_signal_sd_sf_min_to_0.5.tif` and
+  `bt_4days_signal_sd_sf_min_to_0.5.tif`. Our Nigeria anomaly's
+  `max(sd, 0.005)` floor matches this.
+- **The virtual-gauge API returns nothing.**
+  - `data.aspx` and `data_v2.aspx` answer HTTP 200 with an empty body, or an
+    empty `<TABLE> </TABLE>`, for every query tried. That includes
+    2026-09-10 to 09-12, when rasters existed.
+  - We never recorded a known-good query, so we cannot tell "no data since
+    the stop" from "endpoint broken" or "our parameters are wrong".
+  - The `currentfloods.aspx` viewer page now returns 404.
+- **What this means for us.**
+  - The archive is the asset now. The backfill recommended above is no
+    longer about keeping up with a live feed; it is about not losing
+    1997–2026 if the server goes.
+  - The fusion daily job already records GFDS as absent each day rather
+    than writing zeros (branch `feat/flood-fusion-v1`).
+- **A discrepancy to resolve.** The comparison table below lists FloodScan's
+  sensors as "AMSR2/SSMIS". Book chapter 05's sensors table lists AMSR2 and
+  GMI. Either way FloodScan depends on AMSR2, which is being retired (see
+  the rebuild evaluation).
 
 ## Products and access (verified)
 

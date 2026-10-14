@@ -517,3 +517,8 @@ while the service lasts, and treat the physics calibration as more than a
 convenience, because it is the route that survives the feed. The underlying
 AMSR2/GPM brightness temperatures are public, so the whole signal chain can
 be rebuilt from source if GDACS goes dark.
+
+Update (October 2026): it has. The last GFDS raster is 14 September 2026.
+AMSR2 itself is being retired in favour of AMSR3, so a rebuild would run on
+AMSR3 and GMI rather than on the sensors named above
+(`docs/gfds-rebuild-evaluation.md`).
