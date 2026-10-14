@@ -5,6 +5,7 @@ the GSW monthly "normally wet" share (baseline.normally_wet) and the event cubes
 
   docs/figures/strata_example.png         TC20240905VNM window 0 (Typhoon Yagi, Viet Nam, 2024):
                                           HAND, permanent water, WorldCover land type, and the result.
+  docs/figures/event_timeline_example.png EMSR838 Punjab window: labelled cells per day (before, map days, after).
   docs/figures/water_vs_flood_example.png EMSR838, Punjab, Pakistan, 2025-08-28: gold map, normally-wet
                                           water in August, and GFM, VIIRS, FloodScan and GFDS that day.
 
@@ -147,11 +148,54 @@ def water_figure(cfg) -> None:
     print(f"water_vs_flood_example.png: gold flood on normally-wet cells {on_wet:.2f}")
 
 
+def timeline_figure(cfg) -> None:
+    """Labelled cells per day in one window: the days before, the map days, the days after."""
+    ds = cube_for(cfg, "EMSR838", "r5731-5810_c25311-25452")
+    days = pd.to_datetime(ds.day.values)
+    t = np.where(ds.domain.values.astype(bool)[None], ds.truth.values, NOTRUTH)
+    start, end = pd.Timestamp(ds.attrs["event_start"]), pd.Timestamp(ds.attrs["event_end"])
+    in_event = (days >= start) & (days <= end)
+    ever = (t[in_event] == FLOOD).any(axis=0)
+    flood = (t == FLOOD).sum(axis=(1, 2))
+    dry_never = ((t == DRY) & ~ever[None]).sum(axis=(1, 2))
+    dry_ever = ((t == DRY) & ever[None]).sum(axis=(1, 2))
+    dry_never_event = np.where(in_event, dry_never + dry_ever, dry_never)
+    dry_ever_window = np.where(in_event, 0, dry_ever)
+    fig, ax = plt.subplots(figsize=(13, 4.2), facecolor=SURFACE)
+    ax.set_facecolor(SURFACE)
+    for lo, hi, col in ((days[0], start, "#f1efe9"), (start, end, "#e3edf9"), (end, days[-1], "#f1efe9")):
+        ax.axvspan(lo - pd.Timedelta(hours=12), hi + pd.Timedelta(hours=12), color=col, zorder=0)
+    w = 0.8
+    ax.bar(days, dry_never_event, width=w, color=LAND, edgecolor="#cfc9b8", linewidth=0.3, label="dry", zorder=2)
+    ax.bar(days, dry_ever_window, width=w, bottom=dry_never_event, color="#f6c9a8", hatch="////", edgecolor="#eb6834", linewidth=0,
+           label="flooded on a map day: dry as built; no label under the proposed rule", zorder=2)
+    ax.bar(days, flood, width=w, bottom=np.where(in_event, dry_never_event, 0), color=WATER, label="flooded", zorder=3)
+    top = int((dry_never_event + dry_ever_window + np.where(in_event, flood, 0)).max())
+    ax.set_ylim(0, top * 1.32)
+    kw = dict(fontsize=8.5, color=INK, va="top")
+    ax.text(days[1], top * 1.28, "30 days before the first map\nevery examined cell labelled dry\nused to fit false-alarm rates", **kw)
+    ax.text(start, top * 1.28, "event period:\nonly map days\nare labelled\n(the scored days)", **kw)
+    ax.text(end + pd.Timedelta(days=9), top * 1.28, "60 days after the last map\nevery examined cell labelled dry\nused to fit false-alarm rates", **kw)
+    ax.set_ylabel("labelled cells in this window", fontsize=9, color=INK2)
+    ax.tick_params(labelsize=8, colors=INK2)
+    for sp in ("top", "right"):
+        ax.spines[sp].set_visible(False)
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.1), ncol=3, fontsize=8.5, frameon=False)
+    ax.set_title(f"One event window, every day: EMSR838 (Punjab, Pakistan), window of {int((t != NOTRUTH).any(axis=0).sum()):,} examined cells, "
+                 f"{len(days)} days", loc="left", fontsize=10.5, color=INK)
+    fig.tight_layout()
+    fig.savefig(OUT / "event_timeline_example.png", dpi=150, facecolor=SURFACE)
+    plt.close(fig)
+    md = [str(d.date()) for d, f, n in zip(days, flood, dry_never + dry_ever) if (f + n) and start <= d <= end]
+    print(f"event_timeline_example.png: map days in this window {md}; flooded-on-a-map-day cells {int(ever.sum())}")
+
+
 def main() -> None:
     cfg = load_config()
     OUT.mkdir(parents=True, exist_ok=True)
     strata_figure(cfg)
     water_figure(cfg)
+    timeline_figure(cfg)
 
 
 if __name__ == "__main__":
