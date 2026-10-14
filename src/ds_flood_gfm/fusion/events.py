@@ -117,3 +117,43 @@ def split_events(ev: pd.DataFrame, cfg: Config) -> pd.DataFrame:
     if (leak > 1).any():
         raise AssertionError(f"basins on both sides of the split: {leak[leak > 1].index.tolist()}")
     return ev
+
+
+def assign_folds(ev: pd.DataFrame, n_folds: int, seed: int, big_share: float) -> pd.Series:
+    """Cross-validation fold (0 .. n_folds-1) per event; all events of a basin share a fold (D-43).
+
+    Needs columns code, continent, basin_id and flood (gold flooded cell-days). Basins are placed one
+    at a time, most flooded first:
+      * a basin holding at least `big_share` of all gold flood goes to the fold with the least flood so
+        far, so the few events that dominate the flooded area are spread across folds;
+      * any other basin goes to the fold with the fewest events of its continent(s), then the fewest
+        events, then the lowest number.
+    A seeded shuffle orders basins that tie, so the result is fixed by the seed.
+    """
+    if n_folds < 2:
+        raise ValueError(f"n_folds must be at least 2, got {n_folds}")
+    missing = [c for c in ("code", "continent", "basin_id", "flood") if c not in ev]
+    if missing:
+        raise KeyError(f"assign_folds needs columns {missing}")
+    if ev[["continent", "basin_id", "flood"]].isna().any().any() or (ev.flood < 0).any():
+        raise ValueError("every event needs a continent, a basin_id and a non-negative flood count")
+    rng = np.random.default_rng(seed)
+    b = ev.groupby("basin_id").agg(n=("code", "size"), flood=("flood", "sum"))
+    b["tiebreak"] = rng.permutation(len(b))
+    b = b.sort_values(["flood", "tiebreak"], ascending=[False, True])
+    big = b.flood >= big_share * b.flood.sum()
+    load, n_all = [0.0] * n_folds, [0] * n_folds
+    n_cont = [dict.fromkeys(ev.continent.unique(), 0) for _ in range(n_folds)]
+    fold_of = {}
+    for basin, row in b.iterrows():
+        conts = ev.loc[ev.basin_id == basin, "continent"].value_counts()
+        if big[basin]:
+            f = min(range(n_folds), key=lambda k: (load[k], k))
+        else:
+            f = min(range(n_folds), key=lambda k: (sum(n_cont[k][c] for c in conts.index), n_all[k], k))
+        fold_of[basin] = f
+        load[f] += float(row.flood)
+        n_all[f] += int(row.n)
+        for c, k in conts.items():
+            n_cont[f][c] += int(k)
+    return ev.basin_id.map(fold_of).astype(int).rename("fold")

@@ -66,6 +66,9 @@ gold:
   dry_day_step: 3                   # accuracy table uses every 3rd dry-window day (cost); validation uses all
   holdout_frac: 0.25
   split_seed: 20261012
+  n_folds: 5                        # cross-validation: whole basins per fold (D-43)
+  fold_seed: 20261014
+  fold_big_basin_share: 0.02        # basins with >= 2% of all gold flood are spread first, by flooded area
   basins_level: 4                   # HydroBASINS level for grouping events into basins
 
 scope:
