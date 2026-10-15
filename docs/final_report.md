@@ -13,7 +13,7 @@ How every number below is computed (grid cells, gold labels, the hit/miss/false-
 - **One basin weighs heavily.** Four UNOSAT Bangladesh floods (2017, 2018, 2020, 2022) in one level-4 basin hold 40% of all gold flooded cell-days. Without them: fusion F1 0.35, microwave vote 0.34, FloodScan 0.33, with overlapping intervals.
 - **Criteria:** (a) equal to the microwave vote (both cover almost every cell); (b) passes on the point estimate in open and vegetated land, with overlapping intervals, fails in urban land (GFM better); (c) fails in every land type.
 - **Event level:** fusion catches 68% of events (microwave vote 74%, GFM 49%) but raises a false event on 34% (GFM 13%). Caught without a false event: fusion 36%, GFM 39%.
-- **Sentinel-1 bias in the gold:** GFM had an image for 7% of floodable cell-days but 51% of gold flooded cell-days. On map days whose maps are not from Sentinel-1, GFM's F1 is 0.12 and fusion's 0.46.
+- **Sentinel-1 bias in the gold:** GFM had an image for 7% of floodable cell-days overall, but for 32% of labelled cells on map days and 51% of gold flooded cell-days; map days fall on Sentinel-1 passes, most likely because many maps are drawn from Sentinel-1. On map days whose maps are not from Sentinel-1, GFM's F1 is 0.12 and fusion's 0.46.
 
 **All cells** (a product's gaps count as misses):
 

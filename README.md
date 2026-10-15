@@ -135,7 +135,9 @@ The fusion is per-stratum naive Bayes in log-odds, with sensitivity and specific
 >
 > **Licence.** FloodScan is a commercial input, and outputs derived from it may not be shared outside OCHA without AER approval.
 
-**v1 status:**
+**Cross-validated result (2026-10-15; `docs/final_report.md`, top section):** on the 170 gold events in Africa, Asia, South America and Oceania, scored in five folds by river basin, fusion has the highest F1 (0.44; microwave vote 0.38, FloodScan 0.37, GFM 0.24, VIIRS 0.22). The lead is within the uncertainty and leans on one Bangladesh basin holding 40% of the gold flood (without it: fusion 0.35, microwave vote 0.34). Probabilities are still not calibrated (criterion c fails).
+
+**First run (2026-10-12) status:**
 - **Validation (49 held-out gold events):** the product is built and tested end to end, but as specified it does **not** beat the best single source in any stratum. Measured as specified, its reliability slope is about 0.01 (target 0.8–1.2). Most of that comes from the dry-window labels (D-39); on gold days alone the slope is 0.27–0.47, still too extreme.
 - **Where a single product observed, it beats fusion.** Recall · precision on GFM-observed cells: GFM 0.45 · 0.94 vs fusion 0.34 · 0.63. On VIIRS-observed cells: VIIRS 0.75 · 0.60 vs fusion 0.46 · 0.57.
 - **One lead, not yet established.** In open, snow-free land, a decision threshold learned on training events (P ≥ 0.02) raised held-out recall from 0.38 to 0.53 at precision 0.56 (VIIRS: 0.42 and 0.62). That rests on one run, with no confidence interval. A per-stratum recalibration improved calibration there but did not reach the 0.8–1.2 target.

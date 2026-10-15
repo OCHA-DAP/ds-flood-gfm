@@ -26,6 +26,7 @@ Option 2. Config: `event_level` in `configs/fusion.yaml`; code: `crossval.event_
 - **False event.** The same rule on the same cells on ordinary days: days 30 to 10 before the first map. The 10-day buffer allows for flooding that began before mapping.
 - **Per land type.** The same rules with the footprint restricted to one land type (events with at least 5 such cells).
 - **Reported** per product and fusion, overall and per continent: share caught, share with a false event, median days to detection, with intervals from resampling events.
+- **Derived column** (added 2026-10-14, before the run): "caught, no false event", the share of events caught and quiet on days 30 to 10 before. It separates detection from a product flagging the same cells for weeks.
 
 Decided under the user's delegation of 2026-10-14, before any cross-validated score was computed.
 
