@@ -349,6 +349,7 @@ Moving to v1.5 is an open issue.
 - **Why flood area first.** A few events dominate the flooded area: five hold 45% of the gold flood in the 119 built in-scope events. Balancing event counts alone gave one fold 34% of the open-land flood and another 6%; placing the big basins first gives 18–22%.
 - **Output.** `scripts/fusion/make_folds.py` writes `results/event_folds.csv` and `results/event_folds_balance.csv`. It runs only once every in-scope event is built, and the fold file is frozen like the split (a different assignment is refused without `--overwrite`).
 - **Discipline.** Anything tuned is tuned inside each fold. No event set stays untouched, so every rule is fixed before the re-run's results are seen. `results/event_split.csv` stays as v1's record.
+- **Outcome (2026-10-15).** One HydroBASINS level-4 basin (four UNOSAT Bangladesh floods) holds 40% of the gold flood in the 170 events, so its fold holds 43% of the open-land and 62% of the vegetated flood; the 18–22% measured on 119 events does not hold. Results are also reported without that basin. ADR 0004, Outcome.
 
 **D-44 Three land types replace the six strata; the snow split is dropped (user decision, 2026-10-14). ADR 0005.**
 - **Why.** 518 of the 520 gold flooded cell-days in snow strata are in Europe, now out of scope; in scope the snow strata would be donor copies (D-24).

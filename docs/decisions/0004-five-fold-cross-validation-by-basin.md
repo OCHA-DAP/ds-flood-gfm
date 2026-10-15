@@ -25,3 +25,9 @@ Option 3 (user decision, 2026-10-14). Every event is scored once, by a model fit
 - Fitting is counting, so five fits cost little.
 - No event set stays untouched, so every rule used to score the re-run (ADRs 0005–0007) is fixed and committed before the first score is computed.
 - `results/event_split.csv` stays as v1's record.
+
+## Outcome (2026-10-15)
+
+The rule balanced what it could; one basin cannot be split. Four UNOSAT floods in Bangladesh (FL20170815BGD, FL20180619BGD, FL20200713BGD, FL20220525BGD) share HydroBASINS level-4 basin 4040975160 and hold 40% of all gold flooded cell-days in the 170 events. Their fold holds 43% of the open-land flood and 62% of the vegetated flood; the other folds hold 8–17% each (`results/event_folds_balance.csv`). The 18–22% balance measured on the 119 events built before the large ones does not hold for the full set.
+
+Consequences: that fold's rates are fitted on the remaining 57% (open) and 38% (vegetated) of the flood, and pooled scores lean on those four floods. The results are therefore also reported without that basin (`scripts/fusion/cv_breakdowns.py`, `results/cv/skill_without_largest_basin.csv`).
