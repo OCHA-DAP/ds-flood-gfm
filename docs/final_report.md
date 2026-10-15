@@ -10,6 +10,7 @@ How every number below is computed (grid cells, gold labels, the hit/miss/false-
 
 **In short.**
 - Fusion has the highest F1 overall (0.44), in Asia (0.49), in open land (0.47) and in vegetated land (0.30). Its lead over the best single product, the microwave vote (0.38), is within the uncertainty.
+- **VIIRS is what puts fusion ahead.** Re-run without VIIRS (same folds, rates and prior), fusion scores 0.39 overall, level with the microwave vote. Where VIIRS has files it adds 0.08 F1 (paired 95% interval 0.06–0.10) and raises fusion's F1 on 68 of 109 events. VIIRS's own score (0.22) is low mostly because its archive has no files for 2021-01 to 2023-07, which holds 28% of the gold flood.
 - **One basin weighs heavily.** Four UNOSAT Bangladesh floods (2017, 2018, 2020, 2022) in one level-4 basin hold 40% of all gold flooded cell-days. Without them: fusion F1 0.35, microwave vote 0.34, FloodScan 0.33, with overlapping intervals.
 - **Criteria:** (a) equal to the microwave vote (both cover almost every cell); (b) passes on the point estimate in open and vegetated land, with overlapping intervals, fails in urban land (GFM better); (c) fails in every land type.
 - **Event level:** fusion catches 68% of events (microwave vote 74%, GFM 49%) but raises a false event on 34% (GFM 13%). Caught without a false event: fusion 36%, GFM 39%.
@@ -90,6 +91,16 @@ With the old dry-window rule (every examined cell dry before and after): fusion 
 | GFM | 0.23 (0.16–0.27) | 0.29 (0.15–0.45) |
 
 Outside the gap VIIRS scores 0.29, against 0.49 on the first run's 29 in-scope test events; cloud over the added Asian monsoon floods is the likely reason (not measured).
+
+The two period columns are different events (every product scores higher on the gap events), so they do not measure what the gap costs. What VIIRS adds, measured by re-running fusion without it (`results/cv/skill_viirs_ablation.csv`):
+
+| events | fusion | fusion without VIIRS | added by VIIRS (paired 95% interval) |
+|---|---|---|---|
+| 115 with VIIRS files | 0.44 | 0.36 | 0.08 (0.06–0.10) |
+| 55 in the gap | 0.45 | 0.45 | none: no VIIRS files |
+| all 170 | 0.44 | 0.39 | 0.06 (0.04–0.08) |
+
+So the gap probably costs fusion an optical input's worth on 28% of the gold flood. MODIS could restore an optical input there; its value inside fusion is unmeasured (it has never been run through the engine), and the first-run MODIS comparison (§4, D-37) does not carry over: there fusion without optical input scored F1 0.20 on the gap events, here 0.45.
 
 **Criteria** (CSI for criterion b; reliability slopes by weighted least squares):
 
