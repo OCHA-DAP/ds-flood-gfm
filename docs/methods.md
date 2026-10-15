@@ -7,7 +7,7 @@ The reference for *what is counted and how* in flood fusion v1. It covers:
 
 Every threshold below is given with its config key (`configs/fusion.yaml`) and its decision or assumption number (`docs/decisions.md`, `docs/assumptions.md`), so it can be checked against the code. Results live elsewhere (`docs/final_report.md`); this page only explains the mechanics.
 
-*Written 2026-10-13 for v1 as built (branch `feat/flood-fusion-v1`). If the code changes a rule, change it here in the same commit.*
+*Written 2026-10-13 for v1 as built (branch `feat/flood-fusion-v1`); §10 added 2026-10-14 for the cross-validated re-run, which changes some of the v1 rules below. If the code changes a rule, change it here in the same commit.*
 
 ## In one paragraph
 
@@ -137,4 +137,36 @@ Yesterday's value carries over with decay 0.9 towards the prior: L = prior + 0.9
 | fusion engine | `src/ds_flood_gfm/fusion/engine.py` |
 | confusion counts, scoring modes, reliability, timing | `src/ds_flood_gfm/fusion/validate.py`, `src/ds_flood_gfm/fusion/metrics.py` |
 | accuracy table, EM, prior | `src/ds_flood_gfm/fusion/table.py`, `src/ds_flood_gfm/fusion/accuracy.py` |
+| cross-validated re-run (§10) | `src/ds_flood_gfm/fusion/crossval.py`, `scripts/fusion/phase5_crossval.py`, folds in `src/ds_flood_gfm/fusion/events.py` (`assign_folds`) and `scripts/fusion/make_folds.py` |
 | all thresholds | `configs/fusion.yaml` |
+
+## 10. The cross-validated re-run (from 2026-10-14; ADRs 0003–0007)
+
+The re-run keeps §1–§5 (grid, labels, product values, fusion, one count per labelled cell) and changes how events, strata and dry days are used.
+
+| | v1 (§6–§7) | re-run |
+|---|---|---|
+| events | 198 on six continents, quotas and size caps; 149 fit, 49 scored | the 170 usable events in Africa, Asia, South America and Oceania (`scope.continents`, ADR 0003) |
+| testing | one split by basin | five folds by HydroBASINS level-4 basin; each event scored once, by rates fitted on the other four folds (`results/event_folds.csv`, ADR 0004) |
+| strata | six (land type × snow season) | three land types; the cubes' code is `landcover × 2 + snow`, land type is `code // 2` (ADR 0005) |
+| cells used for fitting | every labelled footprint cell | labelled cells in the floodable domain only, where fusion makes its calls |
+| days before and after an event | every examined cell dry | cells flooded on any map day of their window get no label; the others stay dry (`gold.dry_window_rule`, ADR 0006). The old rule is run too, as product `fusion_literal_dry` |
+| hit / false-alarm rates | gold; EM for thin strata | gold only, Jeffreys-smoothed; a land type with no observed gold flood for a source stops the run (no EM, no donor) |
+| prior | GFM flood share, all 53 sample blocks, six strata | the same rule on the 30 in-scope blocks, per land type |
+| headline score | CSI | recall, precision and F1; CSI only for criterion (b) |
+| intervals | events resampled from all events | events resampled within each group (continent, land type) |
+
+**Fitting, per fold.** Counts per event, source and land type (`crossval.fit_counts`) are cached once. For fold k, the counts of the events in the other four folds are summed: hit rate = (TP + 0.5) / (TP + FN + 1) from map days (the only days with flood labels), false-alarm rate from map days plus every day before and after. Each land type's row is written to both snow codes so the engine is unchanged (`crossval.fit_table`).
+
+**Scoring.** Every window of a fold's events is run through the engine from its first day (cold start), with that fold's rates. Map-day counts are kept per event, land type and Sentinel-1 flag (`crossval.score_rows`), then summed over all 170 events. The two views of §5 apply. "Non-Sentinel-1" results keep only map days whose gold maps all came from other sensors.
+
+**Reliability** is shown on two label sets: map days only, and map days plus the dry days under the adopted rule.
+
+**Event level** (ADR 0007, `crossval.event_level`, config `event_level`). Per event, the footprint is the floodable cells flooded on any map day in any of its windows (its windows share one day range, so per-day counts add up).
+- **Caught:** on some day from 3 days before the first map to 3 days after the last, the product flags at least 10% of the footprint, and at least 5 cells.
+- **Days to detection:** the first such day, counted from the first map.
+- **False event:** the same rule on days 30 to 10 before the first map.
+- Events with a footprint under 5 cells are listed as not eligible, never dropped silently. The same rules are applied per land type, with the footprint restricted to that land type.
+
+**Outputs:** `results/cv/` (written by `make crossval`; its docstring lists each file).
+
