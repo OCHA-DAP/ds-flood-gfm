@@ -73,12 +73,11 @@ recomputed from source if the feed stops.
 14 September 2026. Every later day is missing from the server, although the
 1997–2026 archive is still downloadable. The GPM component had already
 stopped on 28 February 2026, so from March 2026 the merged product was
-AMSR2 alone. Both stops coincide with upstream changes: NASA moved GMI
-files from HDF5 to NetCDF4 on 4 March 2026, and NOAA ended AMSR2 product
-generation on 2 September 2026 as AMSR3 takes over. The timing fits, but
-the cause is not confirmed. The status evidence is in
-`docs/gdacs-gfds-assessment.md`. What rebuilding the signal from AMSR3
-and GMI would take is in `docs/gfds-rebuild-evaluation.md`.
+AMSR2 alone. The GPM stop coincides with NASA moving GMI files from HDF5
+to NetCDF4 on 4 March 2026. The AMSR2 stop has no matching cause in the
+data: JAXA still publishes AMSR2 today. The status evidence is in
+`docs/gdacs-gfds-assessment.md`. Rebuilding the signal from JAXA's AMSR2
+and AMSR3 data is evaluated in `docs/gfds-rebuild-evaluation.md`.
 
 ## Sensors and methods, side by side
 

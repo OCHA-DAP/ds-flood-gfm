@@ -9,7 +9,7 @@
 > [gfds-rebuild-evaluation.md](gfds-rebuild-evaluation.md). Statements below
 > that the archive runs "to current" describe August 2026. The closing
 > recommendation, a `gfds-ingest` pipeline for a live feed, is superseded:
-> the evaluation recommends archiving instead.
+> the evaluation recommends rebuilding the signal from JAXA's source data.
 
 ## What it is
 
@@ -88,9 +88,12 @@ folders are browsable) and HEAD requests:
   - AMSR2: NOAA's "AMSR2 data and product generation will cease at 00z on
     September 2, 2026, as we transition to AMSR3"
     ([NOAA OSPO](https://www.ospo.noaa.gov/products/suites/gaasp/maps.html)).
-    The link to GFDS is weaker: GFDS's AMSR2 files run 12 days past that
-    date, and we do not know where JRC gets AMSR2 from. JAXA still lists
-    AMSR2 data as open-ended.
+    The link to GFDS is weak:
+    - GFDS's AMSR2 files run 12 days past that date.
+    - **JAXA still publishes AMSR2.** L1B, L1R and L3 files appear on
+      G-Portal through 2026-10-15; we checked by SFTP listing.
+    - NOAA's cutover ended only NOAA's own copy. We do not know where JRC
+      took AMSR2 from.
   - Either way, an unmaintained pipeline (see the 2026-09-04 note) cannot
     absorb upstream format or sensor changes. That is the failure mode any
     rebuild has to plan for.
@@ -136,8 +139,9 @@ folders are browsable) and HEAD requests:
     than writing zeros (branch `feat/flood-fusion-v1`).
 - **A discrepancy to resolve.** The comparison table below lists FloodScan's
   sensors as "AMSR2/SSMIS". Book chapter 05's sensors table lists AMSR2 and
-  GMI. Either way FloodScan depends on AMSR2, which is being retired (see
-  the rebuild evaluation).
+  GMI. Either way FloodScan depends on AMSR2. JAXA still publishes AMSR2,
+  but the satellite is past its design life, and AMSR3 is its successor
+  (see the rebuild evaluation).
 
 ## Products and access (verified)
 

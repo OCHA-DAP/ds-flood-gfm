@@ -519,6 +519,6 @@ AMSR2/GPM brightness temperatures are public, so the whole signal chain can
 be rebuilt from source if GDACS goes dark.
 
 Update (October 2026): it has. The last GFDS raster is 14 September 2026.
-AMSR2 itself is being retired in favour of AMSR3, so a rebuild would run on
-AMSR3 and GMI rather than on the sensors named above
+JAXA still publishes AMSR2, and its successor AMSR3 has data from August
+2025, so a rebuild from JAXA's data is the route being prototyped
 (`docs/gfds-rebuild-evaluation.md`).
