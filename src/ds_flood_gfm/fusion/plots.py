@@ -155,3 +155,31 @@ def precision_recall_by_stratum(skill: pd.DataFrame, out: Path,
     fig.tight_layout(rect=(0, 0.05, 1, 1))
     fig.savefig(out, dpi=150, facecolor=SURFACE)
     plt.close(fig)
+
+
+def f1_by_group(table: pd.DataFrame, group: str, order: list[str], out: Path, title: str) -> None:
+    """F1 with 95% event-bootstrap intervals, one row per group, one marker per product (all-cells view)."""
+    prods = [p for p in ["fusion", "viirs", "microwave", "gfm"] if p in set(table["product"])]
+    t = table.set_index([group, "product"])
+    fig, ax = plt.subplots(figsize=(6.4, 0.55 * len(order) + 1.4), facecolor=SURFACE)
+    _style(ax)
+    ax.grid(axis="y", visible=False)
+    y = np.arange(len(order))[::-1]
+    off = np.linspace(0.27, -0.27, len(prods))
+    for j, p in enumerate(prods):
+        for yi, g in zip(y, order):
+            if (g, p) not in t.index:
+                continue
+            r = t.loc[(g, p)]
+            ax.plot([r.f1_lo, r.f1_hi], [yi + off[j]] * 2, color=COLOR[p], lw=2, solid_capstyle="round")
+            ax.plot(r.f1, yi + off[j], "o", color=COLOR[p], ms=8, mec=SURFACE, mew=1.5,
+                    label=LABEL[p] if yi == y[0] else None)
+    n_ev = table.groupby(group).n_events.max()
+    ax.set_yticks(y, [f"{g}\n({int(n_ev.get(g, 0))} events)" for g in order], fontsize=8, color=INK)
+    ax.set_xlim(0, 1)
+    ax.set_xlabel("F1 on gold-map days (all cells; bars: 95% interval, resampling events)", color=INK2, fontsize=8)
+    ax.set_title(title, color=INK, fontsize=9, loc="left")
+    ax.legend(loc="upper center", bbox_to_anchor=(0.45, -0.16 - 0.25 / len(order)), ncol=len(prods), fontsize=7.5, frameon=False, labelcolor=INK)
+    fig.tight_layout()
+    fig.savefig(out, dpi=150, facecolor=SURFACE, bbox_inches="tight")
+    plt.close(fig)

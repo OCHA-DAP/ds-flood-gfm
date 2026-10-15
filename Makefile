@@ -6,7 +6,7 @@ PY := nice -n 19 uv run python -u
 P1 := scripts/fusion/phase1_feasibility.py
 P2 := scripts/fusion/phase2_cube.py
 
-.PHONY: help setup test phase0 phase1 phase2 phase3 phase4 phase5 phase6 daily
+.PHONY: help setup test phase0 phase1 phase2 phase3 phase4 phase5 phase6 daily folds crossval
 
 help:
 	@grep -E '^[a-z0-9]+:.*##' $(MAKEFILE_LIST) | sed 's/:.*##/\t/'
@@ -44,6 +44,12 @@ phase4: ## engine tests (must pass), then a one-day live run on a small AOI as a
 
 phase5: ## held-out validation, daily outputs for every held-out window, ablation
 	$(PY) scripts/fusion/phase5_validate.py
+
+folds: ## five folds by river basin over every in-scope event (ADR 0004); refuses until all are built
+	$(PY) scripts/fusion/make_folds.py
+
+crossval: ## cross-validated re-run: fit on four folds, score the fifth (ADRs 0003-0007) -> results/cv/
+	$(PY) scripts/fusion/phase5_crossval.py
 
 phase6: ## mirror outputs to blob (dev), write the dataset manifest
 	$(PY) scripts/fusion/phase6_package.py

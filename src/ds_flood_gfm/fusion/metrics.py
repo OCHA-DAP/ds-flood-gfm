@@ -11,6 +11,8 @@ Definitions (docs/decisions.md D-20):
   false-alarm rate (POFD)= FP / (FP + TN) = 1 - specificity
   false-alarm ratio (FAR)= FP / (TP + FP)
   CSI                    = TP / (TP + FP + FN)
+  precision              = TP / (TP + FP) = 1 - FAR
+  F1                     = 2 TP / (2 TP + FP + FN), the headline score from 2026-10-14
 Counts use only cells where both truth and the source are observed
 ("conditional" scores). `*_all` variants treat source NoData as "no flood
 detected" over every truth cell (what a map user sees).
@@ -117,6 +119,8 @@ def add_scores(df: pd.DataFrame) -> pd.DataFrame:
         out["pofd"] = out.fp / (out.fp + out.tn)
         out["far"] = out.fp / (out.tp + out.fp)
         out["csi"] = out.tp / (out.tp + out.fp + out.fn)
+        out["precision"] = out.tp / (out.tp + out.fp)
+        out["f1"] = 2 * out.tp / (2 * out.tp + out.fp + out.fn)
         # all-cells variants: source NoData counted as "not detected"
         out["sens_all"] = out.tp / out.truth_flood
         out["csi_all"] = out.tp / (out.truth_flood + out.fp)
