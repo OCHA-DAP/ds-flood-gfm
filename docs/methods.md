@@ -122,7 +122,7 @@ Yesterday's value carries over with decay 0.9 towards the prior: L = prior + 0.9
 5. **Gold is not perfect truth.**
    - Analysts map what they could see and examine; unmapped water inside the examined area counts as dry.
    - Many CEMS maps are drawn from Sentinel-1, the same satellite as GFM. Results are therefore also reported for events whose gold is not Sentinel-1-derived (`frac_s1_sets == 0`).
-   - The gold maps count seasonal water as flood: 22–26% of gold flood lies on normally-wet cells (D-38).
+   - The gold maps count seasonal water as flood, but not consistently. In the first run 22–26% of gold flood lay on normally-wet cells (D-38); in the 170 cross-validated events it is 38%, on 7% of the labelled cells. On map days gold labels normally-wet cells 52% flooded and 48% dry, so a product that reports water there is "wrong" on about half of them whatever it does. 19% of fusion's flood calls on gold-dry cells are on normally-wet cells. Masking normally-wet cells does not help against this gold: fusion's F1 falls from 0.44 to 0.27 (`scripts/fusion/figure_water_vs_flood.py --count`, `scripts/fusion/cv_normally_wet.py`).
 6. **Pooling favours big events** (§6). A product that does well on a few large floods can look good overall while failing on many small ones.
 
 ## 9. Where it lives in the code
