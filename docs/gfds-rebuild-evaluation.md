@@ -292,7 +292,7 @@ measured against this repo's record: fusion v1's build ran 2026-10-12 to
 
 | gate | test | AI work | calendar |
 |---|---|---|---|
-| **1a. Signal, grid route** | Rebuild AMSR2 s from L3 for 2022-10. Against JRC's AMSR2 files: pixelwise r ≥ 0.95, median \|diff\| < 0.005, and per-pixel temporal r reported. **In progress** (`experiments/gfds_rebuild/02–03`). | hours | ~1 day |
+| **1a. Signal, grid route** | Rebuild AMSR2 s from L3 and test it against JRC's AMSR2 files: pixelwise r ≥ 0.95 and median \|diff\| < 0.005. **Done 2026-10-15** (§7). The pixel replication bar **fails** (r 0.69). The flood-tracking test **passes**: ours ≥ JRC against FloodScan. Proposal: redefine this gate as flood-tracking and repeat it on a second event. | hours | ~1 day (3.6 GB took ~2 h 45 min) |
 | 1b. Swath route | Only if 1a fails: the same test from L1R | ~1 day | ~1 week (~45 GB per month) |
 | 1c. AMSR3 | AMSR3 vs AMSR2 over the overlap (2025-08 →): level step < 0.005 | hours | ~1 day |
 | **2. Flooded fraction** | Per-pixel K, dynamic dry reference, minimum fraction, masks. Fitted on `train` events only. Held-out goals: false-alarm ratio ≤ 0.50 at recall ≥ 0.32, and vegetated CSI ≥ 0.15. | ~1–2 days | ~1 week, plus your review |
@@ -303,9 +303,83 @@ Alongside:
 - ask JRC (cause of the stop), DFO (any continuation) and AER (AMSR3);
 - record the choice as an ADR once made.
 
+## 7. Prototype result: gate 1a (2026-10-15)
+
+**Setup**
+- Input: AMSR2 L3 36 GHz H-pol, 0.1°, daily per pass, from G-Portal,
+  2022-08-15 → 2022-11-30 (216 files, 3.6 GB).
+- Signal: the tech-note method on the grid (`04_signal_from_l3.py`).
+- Reference: JRC's AMSR2-only signal for the same 108 days, none missing
+  upstream.
+- Scripts: `experiments/gfds_rebuild/02`–`06`.
+
+**A. Against JRC, October 2022, land** (`05_compare_jrc.py`):
+
+| measure | result |
+|---|---|
+| level | identical: median difference −0.00002 |
+| land coverage | 95.0% ours vs 94.9% JRC |
+| flood contrast | ours has 97% of JRC's spread; orthogonal slope 0.96 |
+| pixel-day r | 0.69; 0.85 at 0.45°; 0.90 at 0.9° |
+| per-pixel temporal r (median) | 0.29 daily; 0.40 for 4-day means |
+| Niger–Benue confluence, daily AOI mean | r 0.95 |
+
+- The pre-set bar (pixelwise r ≥ 0.95, median |diff| < 0.005) **fails**.
+- The two processing chains carry independent day-to-day noise. They differ
+  in time sampling (JRC averages per orbit; the L3 grid is a day mean) and in
+  window geometry.
+- An early reading that our grid version "flattens" wet pixels was a
+  regression-to-the-mean artefact. With symmetric binning, the bias is
+  ≤ +0.003.
+
+**B. Against FloodScan SFED, Nigeria 2022** (`06_nigeria_lga_vs_floodscan.py`):
+- Window: 15 Aug → 30 Nov, the book chapter 05 window.
+- Each source is scored the same way: the book's anomaly against JRC's
+  static baseline, a 4-day trailing mean, LGA means, and zero-lag r against
+  SFED.
+
+| SFED seasonal max | LGAs | JRC `ALL` (AMSR2+GPM) | JRC AMSR2 only | **ours (AMSR2)** |
+|---|---|---|---|---|
+| 0.02–0.05 | 202 | 0.30 | 0.29 | 0.34 |
+| 0.05–0.10 | 118 | 0.45 | 0.36 | 0.46 |
+| 0.10–0.20 | 58 | 0.88 | 0.86 | 0.90 |
+| > 0.20 | 28 | 0.93 | 0.90 | 0.93 |
+
+- **Reference LGAs:** ours ≥ JRC in all seven. Examples: Kogi 0.95 vs
+  0.92/0.91, Bassa 0.95 vs 0.90/0.93, Ajaokuta 0.86 vs 0.86/0.48, Ekeremor
+  (coastal) 0.58 vs 0.25/0.46.
+- **Flooded pixels** (SFED max > 0.2, n = 853), median r: ours 0.70, JRC
+  `ALL` 0.71, JRC AMSR2 0.60.
+
+**Reading**
+- For tracking floods, the rebuilt single-sensor signal is as good as JRC's
+  two-sensor product, and better than JRC's own AMSR2-only signal.
+- A plausible reason, untested: the L3 day mean averages every overlapping
+  observation, which damps noise.
+- What we need from a rebuild is flood tracking. Replicating JRC's
+  pixel-day values is not the goal.
+
+**Caveats**
+- **One event, one basin, one season.** Repeat on Pakistan 2022 before
+  relying on this.
+- **FloodScan is not independent truth:** it shares the AMSR2 radiometer.
+  This is fair for comparing the three sources against each other, not as
+  absolute skill.
+- All three anomalies used JRC's 2009 baseline.
+- **The flood-tracking criterion was chosen after the pre-set replication bar
+  failed.** Treat it as a proposal to redefine gate 1a, not as a passed
+  pre-registered test.
+
+**Operational, measured**
+- G-Portal delivers ~0.3–0.4 MB/s on one session.
+- With two concurrent sessions on one account, one session was dropped.
+- One session stalled without closing. The fetcher now sets a 120 s read
+  timeout and reconnects at most 3 times per file.
+
 ## Open questions
 
-- Is the grid route close enough to the swath route? Gate 1a answers this.
+- Swath route: needed only if a later gate shows the grid route loses skill.
+  On Nigeria 2022 it did not (§7).
 - Can a team or service account hold G-Portal credentials for a scheduled job?
 - Do the `AQUA` (AMSR-E) and `TRMM` folders give a usable pre-2012 record?
 - Does a GPM-constellation intercalibrated AMSR3 L1C exist?
