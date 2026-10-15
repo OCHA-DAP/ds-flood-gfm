@@ -147,7 +147,7 @@ for k in A:
             rs.append(np.corrcoef(a[ok], s[ok])[0, 1])
     print(f"  {k:10s} median r = {np.median(rs):.3f}  (n px = {len(rs)})")
 
-out = Path("outputs/gfds_rebuild")
+out = Path("results/gfds_rebuild")  # committed, like the fusion results tables
 out.mkdir(parents=True, exist_ok=True)
 df.to_csv(out / "nga2022_lga_r_by_source.csv", index=False)
 print(f"\nwrote {out / 'nga2022_lga_r_by_source.csv'}")

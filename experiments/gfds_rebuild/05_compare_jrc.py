@@ -90,6 +90,24 @@ for k, label in ((5, "0.45 deg"), (10, "0.9 deg")):
     print(f"   {label}: n = {keep.sum():,}  r = {np.corrcoef(ob[keep], jb[keep])[0, 1]:.4f}  "
           f"median |diff| = {np.median(np.abs(db)):.5f}  IQR {np.percentile(db, 25):+.5f}..{np.percentile(db, 75):+.5f}")
 
+# 1c. is the flood contrast preserved? Inland land (>~27 km from ocean), both in 0.7..1.05.
+# Binning on one noisy variable fakes compression (regression to the mean), so use the sd ratio,
+# the orthogonal (total least squares) slope, and bins on the mean of both.
+from scipy.ndimage import binary_dilation
+
+inland = land & ~binary_dilation(~land, iterations=3)
+sel = both & inland[None] & (O > 0.7) & (O < 1.05) & (J > 0.7) & (J < 1.05)
+o1, j1 = O[sel].astype("float64"), J[sel].astype("float64")
+w_, v_ = np.linalg.eigh(np.cov(np.vstack([j1 - j1.mean(), o1 - o1.mean()])))
+print(f"\n1c. flood contrast, inland pixel-days (n = {sel.sum():,}): sd ours / sd JRC = {o1.std() / j1.std():.3f}, "
+      f"orthogonal slope = {v_[1, 1] / v_[0, 1]:.3f}")
+mb = (o1 + j1) / 2
+edges = [0.80, 0.85, 0.90, 0.93, 0.96, 0.98, 1.00]
+for lo, hi in zip(edges[:-1], edges[1:]):
+    m = (mb >= lo) & (mb < hi)
+    print(f"   mean-of-both {lo:.2f}-{hi:.2f}: n = {m.sum():9,d}  mean(ours - JRC) = {np.mean(o1[m] - j1[m]):+.4f}")
+del o1, j1, mb
+
 # 2. per-pixel temporal correlation
 n = both.sum(0)
 ok = n >= MIN_DAYS
@@ -106,7 +124,24 @@ dyn = ok & (jsd >= thr) & np.isfinite(rt)
 print(f"\n2. per-pixel temporal r (land pixels with >= {MIN_DAYS} shared days: {ok.sum():,})")
 print(f"   all pixels:          median {np.median(rt_ok):.3f}  (p25 {np.percentile(rt_ok, 25):.3f}, p75 {np.percentile(rt_ok, 75):.3f})")
 print(f"   top-10% variable px: median {np.median(rt[dyn]):.3f}  (p25 {np.percentile(rt[dyn], 25):.3f}, p75 {np.percentile(rt[dyn], 75):.3f}); "
-      f"JRC temporal sd >= {thr:.4f}, n = {dyn.sum():,}")
+      f"JRC temporal sd >= {thr:.4f}, n = {dyn.sum():,}  (selecting on JRC's sd partly selects JRC noise)")
+
+
+def trail4(x):
+    out = np.full_like(x, np.nan)
+    for i in range(len(x)):
+        w = x[max(0, i - 3) : i + 1]
+        k = np.isfinite(w).sum(0)
+        out[i] = np.where(k > 0, np.nansum(w, 0) / np.maximum(k, 1), np.nan)
+    return out
+
+
+O4, J4 = trail4(Om), trail4(Jm)  # same population as above: shared valid land pixel-days
+with np.errstate(invalid="ignore", divide="ignore"):
+    oa4, ja4 = O4 - np.nanmean(O4, 0), J4 - np.nanmean(J4, 0)
+    rt4 = np.nansum(oa4 * ja4, 0) / np.sqrt(np.nansum(oa4**2, 0) * np.nansum(ja4**2, 0))
+ok4 = ok & np.isfinite(rt4)
+print(f"   4-day trailing means, same pixels: median {np.median(rt4[ok4]):.3f}  (n = {ok4.sum():,})")
 
 # 3. Niger-Benue confluence AOI
 ao = np.array([np.nanmean(np.where(both[k] & aoi, O[k], np.nan)) for k in range(len(used))])

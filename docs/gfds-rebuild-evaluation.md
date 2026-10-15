@@ -292,7 +292,7 @@ measured against this repo's record: fusion v1's build ran 2026-10-12 to
 
 | gate | test | AI work | calendar |
 |---|---|---|---|
-| **1a. Signal, grid route** | Rebuild AMSR2 s from L3 and test it against JRC's AMSR2 files: pixelwise r ≥ 0.95 and median \|diff\| < 0.005. **Done 2026-10-15** (§7). The pixel replication bar **fails** (r 0.69). The flood-tracking test **passes**: ours ≥ JRC against FloodScan. Proposal: redefine this gate as flood-tracking and repeat it on a second event. | hours | ~1 day (3.6 GB took ~2 h 45 min) |
+| **1a. Signal, grid route** | Rebuild AMSR2 s from L3 and test it against JRC's AMSR2 files: pixelwise r ≥ 0.95 and median \|diff\| < 0.005. **Done 2026-10-15** (§7). The pixel replication bar **fails** (r 0.69). Against FloodScan, the flood-tracking test is on par with JRC `ALL` and better than JRC AMSR2-only. Proposal: redefine this gate as flood-tracking and repeat it on a second event. | hours | ~1 day (3.6 GB took ~2 h 45 min) |
 | 1b. Swath route | Only if 1a fails: the same test from L1R | ~1 day | ~1 week (~45 GB per month) |
 | 1c. AMSR3 | AMSR3 vs AMSR2 over the overlap (2025-08 →): level step < 0.005 | hours | ~1 day |
 | **2. Flooded fraction** | Per-pixel K, dynamic dry reference, minimum fraction, masks. Fitted on `train` events only. Held-out goals: false-alarm ratio ≤ 0.50 at recall ≥ 0.32, and vegetated CSI ≥ 0.15. | ~1–2 days | ~1 week, plus your review |
@@ -319,18 +319,20 @@ Alongside:
 |---|---|
 | level | identical: median difference −0.00002 |
 | land coverage | 95.0% ours vs 94.9% JRC |
-| flood contrast | ours has 97% of JRC's spread; orthogonal slope 0.96 |
+| flood contrast (inland pixel-days) | sd ratio 0.971; orthogonal slope 0.961 |
 | pixel-day r | 0.69; 0.85 at 0.45°; 0.90 at 0.9° |
-| per-pixel temporal r (median) | 0.29 daily; 0.40 for 4-day means |
+| per-pixel temporal r (median, same land pixels) | 0.29 daily; 0.41 for 4-day means |
 | Niger–Benue confluence, daily AOI mean | r 0.95 |
+
+All of these numbers come from `05_compare_jrc.py 2022-10-01 2022-10-31`.
 
 - The pre-set bar (pixelwise r ≥ 0.95, median |diff| < 0.005) **fails**.
 - The two processing chains carry independent day-to-day noise. They differ
   in time sampling (JRC averages per orbit; the L3 grid is a day mean) and in
   window geometry.
 - An early reading that our grid version "flattens" wet pixels was a
-  regression-to-the-mean artefact. With symmetric binning, the bias is
-  ≤ +0.003.
+  regression-to-the-mean artefact. Binned on the mean of both signals, the
+  wet classes differ by at most +0.0034.
 
 **B. Against FloodScan SFED, Nigeria 2022** (`06_nigeria_lga_vs_floodscan.py`):
 - Window: 15 Aug → 30 Nov, the book chapter 05 window.
@@ -345,19 +347,33 @@ Alongside:
 | 0.10–0.20 | 58 | 0.88 | 0.86 | 0.90 |
 | > 0.20 | 28 | 0.93 | 0.90 | 0.93 |
 
-- **Reference LGAs:** ours ≥ JRC in all seven. Examples: Kogi 0.95 vs
-  0.92/0.91, Bassa 0.95 vs 0.90/0.93, Ajaokuta 0.86 vs 0.86/0.48, Ekeremor
-  (coastal) 0.58 vs 0.25/0.46.
+- **Reference LGAs** (ours vs JRC `ALL` / JRC AMSR2):
+  - Ours ≥ JRC `ALL` in all seven; Ajaokuta is a tie (0.862 each).
+  - Ours ≥ JRC AMSR2 in six of seven. At Ibaji, JRC AMSR2 scores 0.979
+    against our 0.970.
+  - Examples: Kogi 0.95 vs 0.92/0.91; Lokoja 0.93 vs 0.90/0.89; Ekeremor
+    (coastal) 0.58 vs 0.25/0.46.
 - **Flooded pixels** (SFED max > 0.2, n = 853), median r: ours 0.70, JRC
   `ALL` 0.71, JRC AMSR2 0.60.
+- Per-LGA results: `results/gfds_rebuild/nga2022_lga_r_by_source.csv`.
 
 **Reading**
-- For tracking floods, the rebuilt single-sensor signal is as good as JRC's
-  two-sensor product, and better than JRC's own AMSR2-only signal.
-- A plausible reason, untested: the L3 day mean averages every overlapping
-  observation, which damps noise.
+- **Against JRC's two-sensor product: indistinguishable.** The band
+  differences are 0.00–0.04 on 28–202 LGAs, which is noise.
+- **Against JRC's own AMSR2-only signal: consistently better.** Ours leads by
+  0.03–0.10 in every band, at 6 of 7 reference LGAs, and at pixel level
+  (0.70 vs 0.60).
 - What we need from a rebuild is flood tracking. Replicating JRC's
   pixel-day values is not the goal.
+- **Part of the lead may be smoothness, not more information.**
+  - A 0.1° cell is ~23% larger than a 0.09° cell, and the L3 day mean
+    smooths further.
+  - A smoother signal correlates better with a smooth target (SFED works at
+    ~22 km), especially after LGA averaging.
+  - The pixel-level result is the least affected by this, which makes it the
+    strongest single line.
+  - The untested alternative is that the day mean averages every overlapping
+    observation and so damps noise.
 
 **Caveats**
 - **One event, one basin, one season.** Repeat on Pakistan 2022 before
