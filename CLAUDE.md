@@ -16,8 +16,8 @@ This repo has two parts.
   - a real dry is 0.
 
   No broad `except`. Opt-in exceptions are named flags (`--continue-on-error`, `--cold-start`, `on_missing_asset: drop_scene`) and are recorded in outputs.
-- **Tests before real data.** `make test` (45 synthetic tests) must pass, and `phase4_engine.py` refuses to run if they fail.
-- **Held-out events are sacred.** `results/event_split.csv` is frozen. Phases 1–3 use `split == train` only. Never fit anything on `holdout`.
+- **Tests before real data.** `make test` (69 synthetic tests) must pass, and `phase4_engine.py` refuses to run if they fail.
+- **Held-out events are sacred.** `results/event_split.csv` (first run) and `results/event_folds.csv` (cross-validated run) are frozen. Phases 1–3 use `split == train` only, and `make crossval` fits each fold's rates on the other four folds only. Never fit anything on the events being scored.
 
 ## Data locations
 
@@ -59,12 +59,12 @@ Update this at every commit that changes a phase's state.
 | 2 Data cube | done |
 | 3 Accuracy tables | done: gold table (the model) + agreement table and comparison (`make phase3`). Agreement does not identify flood; every stratum keeps gold (D-36) |
 | 4 Fusion engine | done |
-| 5 Validation | held-out gold done; gauge test not started: candidates in `docs/gauge_sources.md`, choice pending; v2-table comparison not started |
+| 5 Validation | first run: held-out gold done. Cross-validated run on all 170 in-scope events done (`make folds`, `make crossval`, `results/cv/`, ADRs 0003–0007). Gauge test not started: candidates in `docs/gauge_sources.md`, choice pending; v2-table comparison not started |
 | 6 Packaging | done for v1 on dev; prod deploy waits for merge |
 
-## v1 result in one line
+## Result in one line (cross-validated, 2026-10-15)
 
-Fusion as specified is mid-pack. Where a single product observed, it beats fusion. Most of the measured over-confidence was the dry-window labels (D-39). Fixing them is the top proposed step (recall 0.37 → 0.44 at the same precision); see docs/final_report.md §4, §7.
+On the 170 events in Africa, Asia, South America and Oceania (five folds by basin, ADRs 0003–0007), fusion has the highest F1 (0.44 against the microwave vote's 0.38), but the lead is within the uncertainty and leans on one Bangladesh basin that holds 40% of the gold flood (without it: 0.35 against 0.34). Criterion (b) passes on the point estimate in open and vegetated land and fails in urban land; (c) fails everywhere. See the top section of docs/final_report.md. The first run (one split, all continents) is kept below it as a record.
 
 ## Not done in v1 (see docs/final_report.md "Open issues")
 
@@ -72,4 +72,4 @@ Fusion as specified is mid-pack. Where a single product observed, it beats fusio
 - Prior v2 (GloFAS).
 - MODIS (needs an Earthdata login).
 - GSW v1.5.
-- The 5 giant UNOSAT events and the 166 events beyond the v1 quotas.
+- The 5 giant UNOSAT events (never built in the gold catalog). In scope, the 51 events beyond the v1 quotas are built (D-42); Europe and North America beyond the quotas are not.
