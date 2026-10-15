@@ -126,8 +126,8 @@ Coverage: fusion has a value on 99.99% of floodable cell-days, the microwave vot
 
 **Water versus flood** (`scripts/fusion/cv_normally_wet.py`, `results/cv/normally_wet_*.csv`). Every result split by whether a cell is normally wet in that calendar month (the D-38 JRC rule), same models:
 - Normally-wet cells are 7% of labelled cells on map days but hold 38% of the gold flood. Each source's false-alarm rate is 3 to 11 times higher there (GFM 5.6% against 0.5%), so one rate per land type is wrong for both: a normally-wet stratum is justified.
-- Fusion's lead sits there: F1 0.60 against the microwave vote's 0.49; on other cells 0.36 against 0.34. Whether that water is flood or normal cannot be told with these labels.
-- It does not explain the over-confidence: probabilities stay flat above P 0.1 within each group (slopes 0.29 and 0.34). Nor most of the correlated errors: the coincidence lift is larger on other cells (3.7–10) than on normally-wet cells (1.6–2.4).
+- Fusion's lead is larger there: F1 0.60 (0.46–0.66) against the microwave vote's 0.49 (0.42–0.54), a gap of 0.11; on other cells 0.36 against 0.34, a gap of 0.02. The intervals overlap in both. Whether that water is flood or normal cannot be told with these labels.
+- It does not explain the over-confidence: probabilities stay flat above P 0.1 within each group (slopes 0.29 and 0.34), which points to the engine rather than the definition of flood. Nor most of the correlated errors: the coincidence lift is larger on other cells (3.7–10) than on normally-wet cells (1.6–2.4).
 - False events are more frequent on normally-wet footprints (fusion 44% against 30%) but common elsewhere.
 - So the product estimates water outside permanent water on event days (what gold calls flood). A water-first design would make the target explicit but would not by itself fix calibration.
 
