@@ -293,7 +293,7 @@ Moving to v1.5 is an open issue.
   - **vegetated and urban:** about unchanged.
 
   Reliability with corrected labels is still about 0.03. Never-flooded footprint cells reach P ≥ 0.5 on 2–7% of dry-window days and outnumber gold-day cells about 50 to 1. Whether those are false alarms or water the analysts did not map cannot be told with these labels, so criterion (c) cannot be measured cleanly with them.
-- **Status.** Proposed. It changes fixed decision 5, so adoption is the user's call. No intervals yet.
+- **Status.** Proposed on 2026-10-13; adopted for the cross-validated re-run on 2026-10-14 (D-45, ADR 0006).
 
 **D-40 "Super-GFM" (learn GFM's map from daily inputs): first test does not beat GFM persistence.**
 - **Idea (user, 2026-10-13).** Train on GFM's own calls as labels to get a GFM-like map on days without a Sentinel-1 pass.
@@ -349,3 +349,19 @@ Moving to v1.5 is an open issue.
 - **Why flood area first.** A few events dominate the flooded area: five hold 45% of the gold flood in the 119 built in-scope events. Balancing event counts alone gave one fold 34% of the open-land flood and another 6%; placing the big basins first gives 18–22%.
 - **Output.** `scripts/fusion/make_folds.py` writes `results/event_folds.csv` and `results/event_folds_balance.csv`. It runs only once every in-scope event is built, and the fold file is frozen like the split (a different assignment is refused without `--overwrite`).
 - **Discipline.** Anything tuned is tuned inside each fold. No event set stays untouched, so every rule is fixed before the re-run's results are seen. `results/event_split.csv` stays as v1's record.
+
+**D-44 Three land types replace the six strata; the snow split is dropped (user decision, 2026-10-14). ADR 0005.**
+- **Why.** 518 of the 520 gold flooded cell-days in snow strata are in Europe, now out of scope; in scope the snow strata would be donor copies (D-24).
+- **How.** The cubes keep the 6-class code; land type is `code // 2`. Rates are fitted per source and land type and written to both snow codes, so `engine.Model` is unchanged. The prior is the GFM flood share in the 30 in-scope sample blocks, per land type. No EM fallback: a land type with no observed gold flood for a source stops the run.
+- **Not changed.** The operational job still reads v1's six-row table.
+
+**D-45 Dry-window labels: the corrected rule is adopted for the re-run (decided under delegation, 2026-10-14). ADR 0006.**
+- **Rule.** In the 30 days before and 60 after an event, cells flooded on any map day of their window get no label; other examined cells stay dry. `gold.dry_window_rule: corrected`; applied at read time by `gold.corrected_dry_windows`.
+- **Why.** D-39: the literal rule scores draining floodwater as false alarms, inflating false-alarm rates and the measured over-confidence.
+- **Who decided.** The user asked on 2026-10-14 for the work to be finished without further questions; this was decided then, before any cross-validated score existed. The literal rule is reported as one sensitivity row and can be restored in the config.
+- **Also.** The unused `gold.dry_day_step` key was removed: every dry-window day has always been used, despite docs/methods.md saying every 3rd (corrected).
+
+**D-46 Event-level scoring rules (decided under delegation, 2026-10-14). ADR 0007.**
+- **Caught:** on some day from 3 days before the first map to 3 days after the last, at least 10% of the event's gold footprint (floodable cells flooded on any map day), and at least 5 cells, flagged. **Days to detection:** first such day, from the first map. **False event:** the same rule on days 30 to 10 before the first map. Config `event_level`.
+- **Deferred:** false events on the global random sample (no footprint to apply the rule to).
+

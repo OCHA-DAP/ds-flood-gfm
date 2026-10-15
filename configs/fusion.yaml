@@ -63,7 +63,8 @@ gold:
   dry_pre_days: 30                  # dry window: [start - 30, start - 1]
   dry_post_gap_days: 0              # dry window: [end + 1 + gap, end + gap + 60]
   dry_post_days: 60
-  dry_day_step: 3                   # accuracy table uses every 3rd dry-window day (cost); validation uses all
+  dry_window_rule: corrected         # corrected: cells flooded on any map day of their window get no label in the
+                                    # dry windows (ADR 0006, D-45) | literal: every examined cell is dry (v1, D-12)
   holdout_frac: 0.25
   split_seed: 20261012
   n_folds: 5                        # cross-validation: whole basins per fold (D-43)
@@ -74,6 +75,12 @@ gold:
 scope:
   # D-42 (2026-10-14): the analysis covers these continents; Europe and North America are set aside
   continents: [Africa, Asia, South America, Oceania]
+
+event_level:                        # ADR 0007, D-46: was the event caught, how early, false events
+  min_share: 0.10                   # caught: flags >= 10% of the event's gold footprint ...
+  min_cells: 5                      # ... and >= 5 cells, on one day
+  days_around_maps: 3               # caught: from 3 days before the first map to 3 days after the last
+  false_event_days: [-30, -10]      # false event: the same rule on days 30 to 10 before the first map
 
 sources:
   gfm:

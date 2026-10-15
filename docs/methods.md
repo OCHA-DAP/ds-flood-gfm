@@ -103,7 +103,7 @@ Yesterday's value carries over with decay 0.9 towards the prior: L = prior + 0.9
 |---|---|---|---|---|
 | validation recall, precision, CSI (criterion b) | held-out | gold-map days only | labelled cells, all or observed | `scripts/fusion/phase5_validate.py`, `results/phase5_skill_*.csv` |
 | accuracy table: sensitivity | training | gold-map days (flood labels exist only there) | labelled cells the source observed | `fusion/table.py: gold_table` |
-| accuracy table: specificity | training | gold-map days plus dry windows (every 3rd dry-window day, `gold.dry_day_step`) | labelled dry cells the source observed | same |
+| accuracy table: specificity | training | gold-map days plus every day of the dry windows | labelled dry cells the source observed | same |
 | reliability, criterion (c) | held-out | gold-map days plus dry windows | labelled cells | `validate.reliability_rows`; on gold days only in D-39 |
 | prior (base flood rate) | the global random sample (53 places, 2023–2025), not events | every day | GFM-observed cells | `table.build_prior_v1` (D-35) |
 
