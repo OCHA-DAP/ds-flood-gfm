@@ -121,17 +121,19 @@ def event_level_tables(cfg, ev: pd.DataFrame, flags: pd.DataFrame, sizes: dict, 
     for grp, keys in (("overall", ["landtype", "product"]), ("by_continent", ["continent", "landtype", "product"])):
         for key, g in elig.groupby(keys):
             c, f = g.caught.astype(float).to_numpy(), g.false_event.astype(float).to_numpy()
+            # derived from the same two rules: caught, and quiet on the ordinary days before
+            cl = (g.caught.astype(bool) & ~g.false_event.astype(bool)).astype(float).to_numpy()
             draws = rng.integers(0, len(g), size=(reps, len(g)))
-            row = dict(zip(keys, key)) | {"group": grp, "n_events": len(g), "caught": c.mean(), "false_event": f.mean(),
+            row = dict(zip(keys, key)) | {"group": grp, "n_events": len(g), "caught": c.mean(), "false_event": f.mean(), "caught_clean": cl.mean(),
                                           "median_days_to_detection": float(g.days_to_detection.median())}
-            for nm, v in (("caught", c), ("false_event", f)):
+            for nm, v in (("caught", c), ("false_event", f), ("caught_clean", cl)):
                 b = v[draws].mean(axis=1)
                 row[f"{nm}_lo"], row[f"{nm}_hi"] = float(np.quantile(b, 0.025)), float(np.quantile(b, 0.975))
             summ.append(row)
     s = pd.DataFrame(summ)
     s["continent"] = s.get("continent", pd.Series(index=s.index, dtype=object)).fillna("all")
     s = s[["group", "continent", "landtype", "product", "n_events", "caught", "caught_lo", "caught_hi", "false_event",
-           "false_event_lo", "false_event_hi", "median_days_to_detection"]]
+           "false_event_lo", "false_event_hi", "caught_clean", "caught_clean_lo", "caught_clean_hi", "median_days_to_detection"]]
     n_small = per[(~per.eligible) & (per.landtype == "all")].code.nunique()
     log.info("event level: %d of %d events eligible; %d have a footprint under %d cells (%d of them none at all)",
              elig[elig.landtype == "all"].code.nunique(), len(ev), n_small, e["min_cells"], len(none))

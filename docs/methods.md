@@ -166,6 +166,7 @@ The re-run keeps §1–§5 (grid, labels, product values, fusion, one count per 
 - **Caught:** on some day from 3 days before the first map to 3 days after the last, the product flags at least 10% of the footprint, and at least 5 cells.
 - **Days to detection:** the first such day, counted from the first map.
 - **False event:** the same rule on days 30 to 10 before the first map.
+- **Caught cleanly** (derived, not a separate rule): caught and no false event. A product that flags the same cells for weeks counts as caught at day −3; this column separates that from detection.
 - Events with a footprint under 5 cells are listed as not eligible, never dropped silently. The same rules are applied per land type, with the footprint restricted to that land type.
 
 **Outputs:** `results/cv/` (written by `make crossval`; its docstring lists each file).
