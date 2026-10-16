@@ -172,6 +172,65 @@ Section numbers below refer to the ADD.
 should appear in seasonal floodplains and wetlands (the unspecified rules),
 along coasts, and in arid rainy seasons, where MDFF is high.
 
+## Step 0 result (2026-10-16): the core retrieval, Nigeria 2022
+
+**Code**
+- `experiments/floodscan_repro/01_core_l3.py`: the retrieval.
+- `experiments/floodscan_repro/02_compare_floodscan.py`: scoring.
+- Per-LGA table: `results/floodscan_repro/nga2022_core_l3_lga.csv`.
+
+**Setup**
+- Input: AMSR2 L3 36 GHz V and H, 2022-08-15 → 11-30.
+- From AER, as documented:
+  - 22D smoothing, then PRI → Q;
+  - AMSR2 → AMSR-E cross-calibration;
+  - eq. 13 with Q_pow;
+  - 2-day weighting.
+- **Placeholders**, so this is not yet a reproduction:
+  - Q_dry is the in-window 10th percentile of Q per pixel and pass;
+  - f_pow = 0;
+  - no atmospheric correction;
+  - no rain, frozen or flash flags;
+  - no per-pixel MDFF.
+
+**Scored against FloodScan SFED area (300″)**, each product on its own grid.
+LGA bands are the same LGAs as the GFDS test (`results/gfds_rebuild/`).
+
+| SFED seasonal max (LGA) | LGAs | FloodScan core r | GFDS-style r | ours / SFED at the LGA's SFED peak |
+|---|---|---|---|---|
+| 0.02–0.05 | 202 | 0.19 | 0.34 | 0.68 |
+| 0.05–0.10 | 118 | 0.39 | 0.46 | 0.54 |
+| 0.10–0.20 | 58 | 0.86 | 0.90 | 0.54 |
+| > 0.20 | 28 | 0.91 | 0.93 | 0.38 |
+
+- **Timing is right where floods are large.**
+  - Median temporal r is 0.93 in 0.5° blocks with SFED max > 0.2.
+  - Reference LGAs score 0.89–0.94; the exceptions are Ajaokuta (0.73) and
+    coastal Ekeremor (0.28).
+  - This is slightly below the GFDS-style M/C route.
+- **Magnitude and location are wrong.**
+  - Pooled over 0.5° block-days, r = 0.17.
+  - Our total flooded fraction is 3.4× SFED's, but only 0.4–0.7× SFED's at
+    flood peaks.
+  - 63% of our mass sits in blocks SFED never floods (max < 0.02).
+  - The south (below 8°N: forest and coast) holds 52% of our mass against
+    27% of SFED's.
+  - November, as floods recede, has our highest mean (0.049 vs SFED 0.007).
+    That is seasonal dry-land drift, the job of AER's day-of-year Q_dc
+    climatology built with NDVI.
+- A uniform MDFF of 0.06 lowers the excess (2.3×) but removes the small
+  floods. AER's MDFF is per pixel and per day of year, from 3σ noise.
+
+**Reading.** The published core physics tracks real floods over time. What it
+gets wrong is the dry reference and noise, the components that need history:
+- the Q_dc climatology (needs NDVI and tree cover);
+- the expected 61-day median model;
+- a per-pixel MDFF;
+- persistent water f_pow;
+- the rain and flash flags.
+
+That is step 1.
+
 **AER's own skill statement** (Performance Document §4):
 - Best when flooding covers a substantial part of more than one 22 km
   footprint.
