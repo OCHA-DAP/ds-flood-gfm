@@ -84,13 +84,13 @@ def main() -> None:
     ap.add_argument("--limit", type=int, default=None, help="score the first N events only (smoke test; fitting uses all)")
     ap.add_argument("--extended-grid", action="store_true", help="follow-up: thresholds down to 0.001 (outputs *_grid_extended.csv)")
     ap.add_argument("--sweep", action="store_true", help="also score every threshold for every version (results/cv/pattern_model_sweep.csv)")
-    a = ap.parse_args()
-    grid = GRID_EXT if a.extended_grid else GRID_BASE
-    sfx = "_grid_extended" if a.extended_grid else ""
+    args = ap.parse_args()
+    grid = GRID_EXT if args.extended_grid else GRID_BASE
+    sfx = "_grid_extended" if args.extended_grid else ""
     cfg = load_config()
     f, e = cfg["fusion"], cfg["event_level"]
     reps, rule = cfg["accuracy"]["bootstrap_reps"], cfg["gold"]["dry_window_rule"]
-    res = cfg.results_dir / "cv" if not a.limit else cfg.local("metrics", "smoke_pattern")
+    res = cfg.results_dir / "cv" if not args.limit else cfg.local("metrics", "smoke_pattern")
     folds = pd.read_csv(cfg.results_dir / "event_folds.csv")
     ev = pd.read_parquet(cfg.local("gold", "event_table_all.parquet"))
     ev = ev[ev.code.isin(folds.code)].merge(folds[["code", "fold", "basin_id"]], on="code").reset_index(drop=True)
@@ -125,7 +125,7 @@ def main() -> None:
     cas_rows, cas_fp, sizes = [], defaultdict(int), defaultdict(int)
     rel = defaultdict(lambda: np.zeros((3, NB)))  # combo -> n, sum_p, n_flood on map days
     n_done = 0
-    ev_run = ev.head(a.limit) if a.limit else ev
+    ev_run = ev.head(args.limit) if args.limit else ev
     for _, r in ev_run.iterrows():
         for ew in gold.event_windows(r):
             ds = xr.load_dataset(cube.cube_path(cfg, ew.key), engine="netcdf4")
@@ -271,7 +271,7 @@ def main() -> None:
     es.to_csv(res / f"pattern_model_event_level{sfx}.csv", index=False)
     rs.to_csv(res / f"pattern_model_reliability{sfx}.csv", index=False)
 
-    if a.sweep:  # the same threshold in every fold, for every version: the trade-off between F1 and false events
+    if args.sweep:  # the same threshold in every fold, for every version: the trade-off between F1 and false events
         sweep = []
         bw_keep = set(keep.index)
         for evid, decay in COMBOS:
