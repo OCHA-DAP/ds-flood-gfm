@@ -83,6 +83,7 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--limit", type=int, default=None, help="score the first N events only (smoke test; fitting uses all)")
     ap.add_argument("--extended-grid", action="store_true", help="follow-up: thresholds down to 0.001 (outputs *_grid_extended.csv)")
+    ap.add_argument("--sweep", action="store_true", help="also score every threshold for every version (results/cv/pattern_model_sweep.csv)")
     a = ap.parse_args()
     grid = GRID_EXT if a.extended_grid else GRID_BASE
     sfx = "_grid_extended" if a.extended_grid else ""
@@ -269,6 +270,45 @@ def main() -> None:
     rs = pd.concat(rr, ignore_index=True).rename(columns={"stratum": "model"})
     es.to_csv(res / f"pattern_model_event_level{sfx}.csv", index=False)
     rs.to_csv(res / f"pattern_model_reliability{sfx}.csv", index=False)
+
+    if a.sweep:  # the same threshold in every fold, for every version: the trade-off between F1 and false events
+        sweep = []
+        bw_keep = set(keep.index)
+        for evid, decay in COMBOS:
+            for th in GRID_EXT:
+                j = IDX[th]
+                c = pd.DataFrame([{"code": x["code"], "tp": x["hf"][j:].sum(), "fp": x["hd"][j:].sum(), "fn": x["hf"][:j].sum()}
+                                  for x in score if x["evid"] == evid and x["decay"] == decay]).groupby("code").sum()
+                c["basin"] = c.index.map(info.basin_id)
+                b = c[c.basin.isin(bw_keep)]
+                w = b.basin.map(1.0 / keep)
+                ers = []
+                for (code, ev_, dc), ds_ in days_by_code.items():
+                    if ev_ != evid or dc != decay:
+                        continue
+                    ds_ = sorted(set(ds_))
+                    s_ = pd.Series([fp_hist[(code, evid, decay, d)][j:].sum() for d in ds_], index=ds_)
+                    ers.append(crossval.event_level(s_, sizes[code], info.loc[code, "start"], info.loc[code, "end"], e["min_share"],
+                                                    e["min_cells"], e["days_around_maps"], tuple(e["false_event_days"])))
+                er = pd.DataFrame(ers)
+                er = er[er.eligible.astype(bool)]
+                sweep.append({"evidence": evid, "memory": decay, "threshold": th, "pooled_f1": f1(c.tp.sum(), c.fp.sum(), c.fn.sum()),
+                              "pooled_recall": c.tp.sum() / (c.tp.sum() + c.fn.sum()), "pooled_precision": c.tp.sum() / (c.tp.sum() + c.fp.sum()),
+                              "basin_weighted_f1": f1((b.tp * w).sum(), (b.fp * w).sum(), (b.fn * w).sum()),
+                              "caught": er.caught.astype(bool).mean(), "false_event": er.false_event.astype(bool).mean(),
+                              "caught_clean": (er.caught.astype(bool) & ~er.false_event.astype(bool)).mean(), "events": len(er)})
+        cs = sk[sk["product"] == CASCADE].groupby("code")[["tp", "fp", "fn"]].sum()
+        cs["basin"] = cs.index.map(info.basin_id)
+        cb = cs[cs.basin.isin(bw_keep)]
+        wc = cb.basin.map(1.0 / keep)
+        ce = el[el["product"] == CASCADE]
+        sweep.append({"evidence": "cascade", "memory": np.nan, "threshold": np.nan, "pooled_f1": f1(cs.tp.sum(), cs.fp.sum(), cs.fn.sum()),
+                      "pooled_recall": cs.tp.sum() / (cs.tp.sum() + cs.fn.sum()), "pooled_precision": cs.tp.sum() / (cs.tp.sum() + cs.fp.sum()),
+                      "basin_weighted_f1": f1((cb.tp * wc).sum(), (cb.fp * wc).sum(), (cb.fn * wc).sum()),
+                      "caught": ce.caught.astype(bool).mean(), "false_event": ce.false_event.astype(bool).mean(),
+                      "caught_clean": ce.caught_clean.mean(), "events": len(ce)})
+        pd.DataFrame(sweep).to_csv(cfg.results_dir / "cv" / "pattern_model_sweep.csv", index=False)
+        print(pd.DataFrame(sweep).round(3).to_string(index=False))
 
     pd.set_option("display.width", 250)
     print(thr.round(3).to_string(index=False), "\n")
