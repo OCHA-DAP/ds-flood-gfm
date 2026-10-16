@@ -137,11 +137,13 @@ folders are browsable) and HEAD requests:
     1997–2026 if the server goes.
   - The fusion daily job already records GFDS as absent each day rather
     than writing zeros (branch `feat/flood-fusion-v1`).
-- **A discrepancy to resolve.** The comparison table below lists FloodScan's
-  sensors as "AMSR2/SSMIS". Book chapter 05's sensors table lists AMSR2 and
-  GMI. Either way FloodScan depends on AMSR2. JAXA still publishes AMSR2,
-  but the satellite is past its design life, and AMSR3 is its successor
-  (see the rebuild evaluation).
+- **Resolved (2026-10-16): FloodScan's sensors are AMSR2 and GMI.** AER's
+  Algorithm Description Document says so; SSM/I was used only for
+  1992–1997, and TMI for 1998–2014 (see
+  [floodscan-algorithm-notes.md](floodscan-algorithm-notes.md)). The
+  "AMSR2/SSMIS" in the comparison table below was wrong. FloodScan still
+  depends on AMSR2. JAXA still publishes AMSR2, but the satellite is past its
+  design life, and AMSR3 is its successor.
 
 ## Products and access (verified)
 
@@ -192,7 +194,7 @@ mix, which likely contributes to the drift.
 
 | | **GFM (this repo)** | **FloodScan (team ingest)** | **GFDS** |
 |---|---|---|---|
-| Basis | Sentinel-1 SAR | Passive microwave (AMSR2/SSMIS) | Passive microwave (AMSR2/GPM) |
+| Basis | Sentinel-1 SAR | Passive microwave (AMSR2 + GMI; corrected 2026-10-16, previously "AMSR2/SSMIS") | Passive microwave (AMSR2/GPM) |
 | Output | 20 m flood extent | ~8.3 km fractional flooded area (SFED/MFED) | ~10 km signal/σ-anomaly |
 | Cadence | 1–3 day revisit gaps | Daily | Daily, 3 h latency |
 | Archive | 2015→ | 1998→ | 1997→ |

@@ -220,8 +220,9 @@ days have swath gaps: use the 4-day mean or accept NoData.
 - **DFO/Colorado:** ask Kettner whether they run or plan an AMSR3/GMI
   continuation of GFDS. The DFO station pages we found end in October 2025.
 - **AER:** ask how FloodScan handles the AMSR2→AMSR3 transition. We found no
-  public statement. The repo docs also disagree on FloodScan's sensors:
-  AMSR2+GMI in book chapter 05, AMSR2/SSMIS in the assessment.
+  public statement. FloodScan's current inputs are AMSR2 and GMI, from AER's
+  Algorithm Description Document
+  ([floodscan-algorithm-notes.md](floodscan-algorithm-notes.md)).
 - **Our FloodScan outside Africa** stops at 2026-03-31 only because of an
   ingest gap. AER 90-day zips and the AER API exist; fusion's `final_report.md`
   §7 covers this.
