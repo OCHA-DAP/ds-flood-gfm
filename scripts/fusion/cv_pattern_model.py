@@ -43,8 +43,14 @@ from ds_flood_gfm.fusion.metrics import MODEL_SOURCES
 from ds_flood_gfm.fusion.sources import NODATA
 
 ALPHA = 100
-GRID = [2, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90]  # thresholds in hundredths
-NB = 100
+GRID_BASE = [0.02, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]  # the pre-registered grid
+# follow-up (2026-10-16, after the run): every fold chose 0.02, the grid's floor, and the check below failed,
+# the pre-registered sign that the grid was wrong. --extended-grid adds lower thresholds; labelled as such.
+GRID_EXT = [0.001, 0.002, 0.005, 0.01, *GRID_BASE]
+EDGES = np.array([0, 0.0005, *GRID_EXT, 1.0 + 1e-9])  # histogram bins: every threshold is a bin edge
+NB = len(EDGES) - 1
+IDX = {th: int(np.where(np.isclose(EDGES, th))[0][0]) for th in GRID_EXT}
+DECILE = np.minimum((EDGES[:-1] * 10 + 1e-9).astype(int), 9)  # bin -> reliability decile
 COMBOS = [("independent", 0.9), ("independent", 0.0), ("pattern", 0.9), ("pattern", 0.0)]
 MIN_BASIN_FLOOD = 50
 CASCADE = "cascade: VIIRS, else GFM, else microwave"
@@ -56,7 +62,7 @@ def vname(evid, decay, thr):
 
 
 def hist(p, w=None):
-    b = np.clip((p * NB).astype(int), 0, NB - 1)
+    b = np.clip(np.searchsorted(EDGES, p, side="right") - 1, 0, NB - 1)
     return np.bincount(b, weights=w, minlength=NB)
 
 
@@ -76,7 +82,10 @@ def main() -> None:
 
     ap = argparse.ArgumentParser()
     ap.add_argument("--limit", type=int, default=None, help="score the first N events only (smoke test; fitting uses all)")
+    ap.add_argument("--extended-grid", action="store_true", help="follow-up: thresholds down to 0.001 (outputs *_grid_extended.csv)")
     a = ap.parse_args()
+    grid = GRID_EXT if a.extended_grid else GRID_BASE
+    sfx = "_grid_extended" if a.extended_grid else ""
     cfg = load_config()
     f, e = cfg["fusion"], cfg["event_level"]
     reps, rule = cfg["accuracy"]["bootstrap_reps"], cfg["gold"]["dry_window_rule"]
@@ -172,20 +181,20 @@ def main() -> None:
     for evid, decay in COMBOS:
         for k in K:
             hf, hd = train_h[(evid, decay, k)]
-            f1s = {j: f1(hf[j:].sum(), hd[j:].sum(), hf[:j].sum()) for j in GRID}
-            j = max(f1s, key=f1s.get)
-            chosen[(evid, decay, k)] = j
-            thr_rows.append({"evidence": evid, "memory": decay, "fold": int(k), "threshold": j / 100, "training_f1": f1s[j],
-                             "training_f1_at_0.5": f1s[50], "cascade_training_f1": f1(*cas_train[k])})
+            f1s = {th: f1(hf[IDX[th]:].sum(), hd[IDX[th]:].sum(), hf[:IDX[th]].sum()) for th in grid}
+            th = max(f1s, key=f1s.get)
+            chosen[(evid, decay, k)] = IDX[th]
+            thr_rows.append({"evidence": evid, "memory": decay, "fold": int(k), "threshold": th, "training_f1": f1s[th],
+                             "training_f1_at_0.5": f1s[0.5], "cascade_training_f1": f1(*cas_train[k])})
     thr = pd.DataFrame(thr_rows)
-    thr.to_csv(res / "pattern_model_thresholds.csv", index=False)
+    thr.to_csv(res / f"pattern_model_thresholds{sfx}.csv", index=False)
 
     # per-event counts for every variant
     fold_of = ev.set_index("code").fold
     rows = []
     for s in score:
         for tk in ("fixed", "fold"):
-            j = 50 if tk == "fixed" else chosen[(s["evid"], s["decay"], fold_of[s["code"]])]
+            j = IDX[0.5] if tk == "fixed" else chosen[(s["evid"], s["decay"], fold_of[s["code"]])]
             rows.append({"code": s["code"], "group": s["group"], "landtype": s["landtype"], "product": vname(s["evid"], s["decay"], tk),
                          "tp": s["hf"][j:].sum(), "fp": s["hd"][j:].sum(), "fn": s["hf"][:j].sum()})
     sk = pd.concat([pd.DataFrame(rows), pd.DataFrame(cas_rows).assign(product=CASCADE)], ignore_index=True)
@@ -226,7 +235,7 @@ def main() -> None:
     for ltn in crossval.LANDTYPES.values():
         out += view(f"{ltn} land", sk[sk.landtype == ltn])
     tab = pd.DataFrame(out)
-    tab.to_csv(res / "pattern_model_skill.csv", index=False)
+    tab.to_csv(res / f"pattern_model_skill{sfx}.csv", index=False)
 
     # event level and reliability
     erows = []
@@ -236,7 +245,7 @@ def main() -> None:
     for (code, evid, decay), ds_ in days_by_code.items():
         ds_ = sorted(set(ds_))
         for tk in ("fixed", "fold"):
-            j = 50 if tk == "fixed" else chosen[(evid, decay, fold_of[code])]
+            j = IDX[0.5] if tk == "fixed" else chosen[(evid, decay, fold_of[code])]
             s = pd.Series([fp_hist[(code, evid, decay, d)][j:].sum() for d in ds_], index=ds_)
             o = crossval.event_level(s, sizes[code], info.loc[code, "start"], info.loc[code, "end"], e["min_share"], e["min_cells"],
                                      e["days_around_maps"], tuple(e["false_event_days"]))
@@ -254,12 +263,12 @@ def main() -> None:
                                    caught_clean=("caught_clean", "mean"), median_days=("days_to_detection", "median")).reset_index()
     rr = []
     for (evid, decay), a in rel.items():
-        n10 = a.reshape(3, 10, 10).sum(axis=2)
+        n10 = np.stack([np.bincount(DECILE, weights=a[i], minlength=10) for i in range(3)])
         df = pd.DataFrame({"stratum": vname(evid, decay, "fixed").split(", threshold")[0], "bin": range(10), "n": n10[0], "sum_p": n10[1], "n_flood": n10[2]})
         rr.append(validate.summarise_reliability(df[df.n > 0], 10))
     rs = pd.concat(rr, ignore_index=True).rename(columns={"stratum": "model"})
-    es.to_csv(res / "pattern_model_event_level.csv", index=False)
-    rs.to_csv(res / "pattern_model_reliability.csv", index=False)
+    es.to_csv(res / f"pattern_model_event_level{sfx}.csv", index=False)
+    rs.to_csv(res / f"pattern_model_reliability{sfx}.csv", index=False)
 
     pd.set_option("display.width", 250)
     print(thr.round(3).to_string(index=False), "\n")
