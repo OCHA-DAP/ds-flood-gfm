@@ -64,7 +64,7 @@ Update this at every commit that changes a phase's state.
 
 ## Result in one line (cross-validated, 2026-10-15)
 
-On the 170 events in Africa, Asia, South America and Oceania (five folds by basin, ADRs 0003–0007), fusion has the highest F1 (0.44 against the microwave vote's 0.38), but the lead is within the uncertainty and leans on one Bangladesh basin that holds 40% of the gold flood (without it: 0.35 against 0.34). Criterion (b) passes on the point estimate in open and vegetated land and fails in urban land; (c) fails everywhere. See the top section of docs/final_report.md. The first run (one split, all continents) is kept below it as a record.
+On the 170 events in Africa, Asia, South America and Oceania (five folds by basin, ADRs 0003–0007), fusion has the highest F1 (0.44 against the microwave vote's 0.38), but the lead is within the uncertainty and leans on one Bangladesh basin that holds 40% of the gold flood (without it: 0.35 against 0.34). Criterion (b) passes on the point estimate in open and vegetated land and fails in urban land; (c) fails everywhere. A no-fitting cascade (VIIRS, else GFM, else microwave) matches fusion pooled (0.46 vs 0.44) and beats it basin-weighted (0.40 vs 0.31); fusion's edge is fewer false events (34% vs 64%). See the top section of docs/final_report.md. The first run (one split, all continents) is kept below it as a record.
 
 ## Not done in v1 (see docs/final_report.md "Open issues")
 
