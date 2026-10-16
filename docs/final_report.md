@@ -124,6 +124,17 @@ Coverage: fusion has a value on 99.99% of floodable cell-days, the microwave vot
 | VIIRS | 148 | 53% (45%–61%) | 39% (31%–47%) | 16% (10%–23%) | -2 |
 | GFM | 148 | 49% (41%–57%) | 13% (8%–19%) | 39% (32%–47%) | 0 |
 
+**Which microwave product does the work** (`scripts/fusion/cv_microwave_components.py`, `results/cv/microwave_components_*.csv`). Fusion re-run with the microwave slot filled by FloodScan alone, GFDS alone, or nothing; same folds, GFM and VIIRS rates and prior, each component with its own fitted rates. F1 change from fusion as built (paired 95% interval):
+
+| microwave slot | F1 | change | events caught / false | reliability slope |
+|---|---|---|---|---|
+| microwave vote (as built) | 0.44 | – | 68% / 34% | 0.43 |
+| FloodScan only | 0.43 | −0.011 (−0.019 to −0.002) | 61% / 32% | 0.43 |
+| GFDS only | 0.39 | −0.056 (−0.097 to −0.012) | 61% / 28% | 0.52 |
+| no microwave | 0.34 | −0.106 (−0.172 to −0.043) | 50% / 24% | 0.65 |
+
+FloodScan does almost all of the microwave work (no loss at all in Africa or in the VIIRS gap); GFDS alone is weaker, mostly in recall, and 0.125 lower in the VIIRS gap. Microwave input brings recall and false alarms together: GFDS alone, or no microwave, gives fewer false events and better-calibrated probabilities at a cost in F1.
+
 **Water versus flood** (`scripts/fusion/cv_normally_wet.py`, `results/cv/normally_wet_*.csv`). Every result split by whether a cell is normally wet in that calendar month (the D-38 JRC rule), same models:
 - Normally-wet cells are 7% of labelled cells on map days but hold 38% of the gold flood. Each source's false-alarm rate is 3 to 11 times higher there (GFM 5.6% against 0.5%), so one rate per land type is wrong for both: a normally-wet stratum is justified.
 - Fusion's lead is larger there: F1 0.60 (0.46–0.66) against the microwave vote's 0.49 (0.42–0.54), a gap of 0.11; on other cells 0.36 against 0.34, a gap of 0.02. The intervals overlap in both. Whether that water is flood or normal cannot be told with these labels.

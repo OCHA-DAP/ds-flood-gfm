@@ -53,10 +53,11 @@ def dry_truth(ds: xr.Dataset, rule: str) -> np.ndarray:
     raise ValueError(f"unknown dry-window rule {rule!r}: expected 'corrected' or 'literal'")
 
 
-def fit_counts(ds: xr.Dataset, truth: np.ndarray, code: str) -> pd.DataFrame:
+def fit_counts(ds: xr.Dataset, truth: np.ndarray, code: str, sources=MODEL_SOURCES) -> pd.DataFrame:
     """Counts per (day type, land type, source) over labelled floodable cells the source observed.
 
-    Only floodable-domain cells count: the model is fitted where it predicts.
+    Only floodable-domain cells count: the model is fitted where it predicts. `sources` defaults to the
+    model's three; ablations pass others (e.g. FloodScan or GFDS alone in the microwave slot).
     """
     gd = gold_day_mask(ds)
     dom = ds.domain.values.astype(bool)[None]
@@ -67,7 +68,7 @@ def fit_counts(ds: xr.Dataset, truth: np.ndarray, code: str) -> pd.DataFrame:
             continue
         t, ll = truth[sel], lt[sel]
         lab = ((t == gold.DRY) | (t == gold.FLOOD)) & dom & (ll != NODATA)
-        for s in MODEL_SOURCES:
+        for s in sources:
             v = ds[s].values[sel]
             obs = lab & (v != NODATA)
             for k, name in LANDTYPES.items():
