@@ -3,7 +3,7 @@
 This repo has two parts.
 
 1. **GFM exposure pipeline** (`scripts/01..04`, `src/ds_flood_gfm/*.py` outside `fusion/`). It turns Copernicus GFM flood extents into affected-population maps per country. See README "Quick Start".
-2. **Flood fusion v1** (`src/ds_flood_gfm/fusion/`, `scripts/fusion/`, `configs/fusion.yaml`, `tests/`). This is a daily 0.01° P(flooded) product combining GFM (SAR), FloodScan or GFDS (microwave) and VIIRS (optical), validated against Copernicus EMS and UNOSAT maps. Start with `docs/final_report.md`, then `docs/methods.md` (how scoring works, from pixels to scores), then `docs/decisions.md`.
+2. **Flood fusion v1** (`src/ds_flood_gfm/fusion/`, `scripts/fusion/`, `configs/fusion.yaml`, `tests/`). This is a daily 0.01° P(flooded) product combining GFM (SAR), FloodScan or GFDS (microwave) and VIIRS (optical), validated against Copernicus EMS and UNOSAT maps. Start with `docs/log.md` (every step in order, with the command that reproduces it), then `docs/final_report.md`, `docs/methods.md` (how scoring works, from pixels to scores) and `docs/decisions.md`.
 
 ## Flood fusion: how to work in it
 
