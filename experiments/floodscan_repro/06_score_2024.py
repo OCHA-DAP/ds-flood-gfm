@@ -1,4 +1,4 @@
-"""Step 1c: score the 2024 flooded fraction (05) against FloodScan SFED area, West Africa box and Nigeria LGAs.
+"""Step 1c: score every 2024 flooded-fraction variant (05) against FloodScan SFED area, West Africa box and Nigeria LGAs.
 
 FloodScan: the fusion work's local cache of the Africa daily COGs (band SFED, 1/12 deg, origin -30E 40N),
 main checkout data/fusion/raw/floodscan/africa_daily/. Our box 0-20E, 0-20N is rows 240-480, cols 360-600,
@@ -6,12 +6,15 @@ which nests 3x3 into our 0.25-deg cells.
 SFED area is a fraction of unmasked (non-water) area, so ours is compared as ff / (1 - f_pow)
 (cells with f_pow > 0.5 dropped, as in 04-05).
 
-Per variant (full, noflash, placeholder):
-- 0.25-deg cell-days: pooled r, orthogonal slope, mean ours / mean SFED; per-cell temporal r for cells
-  with SFED max > 0.05 and > 0.2; share of our total where SFED never floods (max < 0.02); monthly means
-- 0.5-deg blocks: pooled r; per-block temporal r where SFED max > 0.2
-- Nigeria LGAs (each product on its own grid, all_touched): median r by SFED seasonal-max band and
-  median ours / SFED at each LGA's SFED peak; the ten LGAs with the largest SFED peak.
+Cell-level metrics use one common population: cell-days valid in every variant (the flash filter
+turns cells into NaN, so per-variant populations would differ). Per variant:
+  ratio    total ours / total SFED
+  never    share of our total in cells SFED never floods (max < 0.02)
+  r_pool   pooled r over 0.25-deg cell-days
+  r_cell   median per-cell temporal r, cells with SFED max > 0.2
+  r_blk    median per-block temporal r, 0.5-deg blocks with SFED max > 0.2
+  r_lga1/2 median LGA temporal r, SFED seasonal max 0.10-0.20 / > 0.20 (small n: see counts)
+  peak     median ours / SFED at each LGA's SFED peak, LGAs with SFED max > 0.10
 
     uv run python experiments/floodscan_repro/06_score_2024.py
 """
@@ -30,12 +33,11 @@ from rasterio.windows import Window
 FS = Path("/Users/zackarno/Documents/CHD/repos/ds-flood-gfm/data/fusion/raw/floodscan/africa_daily")  # main checkout cache
 FF = Path("data/floodscan_repro/ff_2024.npz")
 OUT = Path("results/floodscan_repro")
-BANDS = [(0.02, 0.05), (0.05, 0.10), (0.10, 0.20), (0.20, 9)]
-VARIANTS = ("full", "noflash", "placeholder")
 
 z = np.load(FF)
 days = [dt.date.fromisoformat(s) for s in z["days"]]
 fpow = z["fpow"]
+VARIANTS = [k for k in z.files if k not in ("days", "fpow", "focean")]
 
 sf_native = []
 for d in days:
@@ -48,12 +50,15 @@ for d in days:
         sf_native.append(ds.read(list(ds.descriptions).index("SFED") + 1, window=Window(360, 240, 240, 240)).astype("float64"))
 SFN = np.stack(sf_native)
 SF = SFN.reshape(len(days), 80, 3, 80, 3).mean((2, 4))
-print(f"FloodScan: {len(days)} days ({days[0]}..{days[-1]}), box mean SFED {SF.mean():.4f}")
 
-
-def orth_slope(x, y):
-    _, v = np.linalg.eigh(np.cov(np.vstack([x - x.mean(), y - y.mean()])))
-    return v[1, 1] / v[0, 1]
+ours = {}
+for v in VARIANTS:
+    with np.errstate(invalid="ignore", divide="ignore"):
+        ours[v] = np.where(fpow <= 0.5, z[v] / (1 - fpow), np.nan)
+common = np.isfinite(SF) & np.logical_and.reduce([np.isfinite(o) for o in ours.values()])
+smax = np.nanmax(np.where(common, SF, np.nan), 0)
+print(f"FloodScan {days[0]}..{days[-1]}; common cell-days {common.sum():,} of {SF.size:,} "
+      f"({common.mean():.2f}); variants: {', '.join(VARIANTS)}")
 
 
 def temporal_r(a, b, sel, min_n=60):
@@ -63,14 +68,12 @@ def temporal_r(a, b, sel, min_n=60):
         ok = np.isfinite(x) & np.isfinite(y)
         if ok.sum() >= min_n and np.std(x[ok]) > 0 and np.std(y[ok]) > 0:
             rs.append(np.corrcoef(x[ok], y[ok])[0, 1])
-    return np.median(rs) if rs else np.nan, len(rs)
+    return (np.median(rs) if rs else np.nan), len(rs)
 
 
 adm2 = stratus.codab.load_codab_from_blob("nga", admin_level=2)
-aff_ours = Affine(0.25, 0, 0, 0, -0.25, 20)
-aff_sf = Affine(1 / 12, 0, 0, 0, -1 / 12, 20)
-m_ours = [~geometry_mask([g], (80, 80), aff_ours, all_touched=True) for g in adm2.geometry]
-m_sf = [~geometry_mask([g], (240, 240), aff_sf, all_touched=True) for g in adm2.geometry]
+m_ours = [~geometry_mask([g], (80, 80), Affine(0.25, 0, 0, 0, -0.25, 20), all_touched=True) for g in adm2.geometry]
+m_sf = [~geometry_mask([g], (240, 240), Affine(1 / 12, 0, 0, 0, -1 / 12, 20), all_touched=True) for g in adm2.geometry]
 
 
 def lga(x, masks):
@@ -79,49 +82,59 @@ def lga(x, masks):
 
 sf_l = lga(SFN, m_sf)
 smax_l = np.nanmax(sf_l, 0)
-rows = []
-for var in VARIANTS:
-    with np.errstate(invalid="ignore", divide="ignore"):
-        ours = np.where(fpow <= 0.5, z[var] / (1 - fpow), np.nan)
-    both = np.isfinite(ours) & np.isfinite(SF)
-    o1, s1 = ours[both], SF[both]
-    smax = np.nanmax(SF, 0)
-    print(f"\n===== {var} =====")
-    print(f"0.25-deg cell-days (n {both.sum():,}): r {np.corrcoef(o1, s1)[0, 1]:.3f}, orthogonal slope {orth_slope(s1, o1):.2f}, "
-          f"mean ours / SFED {o1.mean() / s1.mean():.2f}")
-    for thr in (0.05, 0.2):
-        r, n = temporal_r(ours, SF, smax > thr)
-        print(f"   per-cell temporal r, SFED max > {thr}: median {r:.3f} (n {n})")
-    never = smax < 0.02
-    print(f"   share of our total where SFED never floods (max < 0.02, {never.mean():.2f} of cells): "
-          f"{np.nansum(np.where(both & never[None], ours, 0)) / np.nansum(np.where(both, ours, 0)):.2f}")
-    print("   monthly mean ours / SFED: " + ", ".join(
-        f"{m}: {np.nanmean(np.where(both[t], ours[t], np.nan)):.4f}/{np.nanmean(SF[t]):.4f}"
-        for m in (8, 9, 10, 11) for t in [np.array([d.month == m for d in days])]))
-    ob = ours.reshape(len(days), 40, 2, 40, 2)
-    ob = np.where(np.isfinite(ob).sum((2, 4)) >= 2, np.nanmean(ob, (2, 4)), np.nan)
-    sb = SF.reshape(len(days), 40, 2, 40, 2).mean((2, 4))
-    bb = np.isfinite(ob)
-    r, n = temporal_r(ob, sb, np.nanmax(sb, 0) > 0.2)
-    print(f"0.5-deg blocks: pooled r {np.corrcoef(ob[bb], sb[bb])[0, 1]:.3f}; per-block temporal r (SFED max > 0.2) median {r:.3f} (n {n})")
-
-    o_l = lga(ours, m_ours)
-    for j, (name, pc) in enumerate(zip(adm2["ADM2_EN"], adm2["ADM2_PCODE"])):
+summary, rows = [], []
+for v in VARIANTS:
+    o = np.where(common, ours[v], np.nan)
+    s = np.where(common, SF, np.nan)
+    ok = np.isfinite(o)
+    rc, nc = temporal_r(o, s, smax > 0.2)
+    ob = np.nanmean(o.reshape(len(days), 40, 2, 40, 2), (2, 4))
+    sb = np.nanmean(s.reshape(len(days), 40, 2, 40, 2), (2, 4))
+    rb, nb = temporal_r(ob, sb, np.nanmax(sb, 0) > 0.2)
+    o_l = lga(ours[v], m_ours)
+    lr = []
+    for j, pc in enumerate(adm2["ADM2_PCODE"]):
         x, y = o_l[:, j], sf_l[:, j]
-        ok = np.isfinite(x) & np.isfinite(y)
-        r = np.corrcoef(x[ok], y[ok])[0, 1] if ok.sum() >= 60 and np.std(y[ok]) > 0 and np.std(x[ok]) > 0 else np.nan
+        okl = np.isfinite(x) & np.isfinite(y)
+        r = np.corrcoef(x[okl], y[okl])[0, 1] if okl.sum() >= 60 and np.std(y[okl]) > 0 and np.std(x[okl]) > 0 else np.nan
         pk = int(np.nanargmax(y)) if np.isfinite(y).any() else None
         ratio = x[pk] / y[pk] if pk is not None and y[pk] > 0 else np.nan
-        rows.append({"variant": var, "lga": name, "pcode": pc, "state": adm2["ADM1_EN"].iloc[j],
+        lr.append((r, ratio))
+        rows.append({"variant": v, "lga": adm2["ADM2_EN"].iloc[j], "pcode": pc, "state": adm2["ADM1_EN"].iloc[j],
                      "sfed_max": smax_l[j], "r": r, "peak_ratio": ratio})
-    df = pd.DataFrame([r for r in rows if r["variant"] == var])
-    print("Nigeria LGAs, median r / median peak ratio (ours/SFED) by SFED seasonal max:")
-    for lo, hi in BANDS:
-        s = df[(df.sfed_max >= lo) & (df.sfed_max < hi)]
-        print(f"   {lo:.2f}-{'' if hi == 9 else f'{hi:.2f}':5s} n {s.r.notna().sum():3d}: r {s.r.median():.3f}, peak ratio {s.peak_ratio.median():.2f}")
-    top = df.sort_values("sfed_max", ascending=False).head(10)
-    print("   top-10 SFED LGAs: " + "; ".join(f"{t.lga} ({t.state}) {t.r:.2f}" for t in top.itertuples()))
+    lr = np.array(lr)
+    b1 = (smax_l >= 0.10) & (smax_l < 0.20)
+    b2 = smax_l >= 0.20
+    summary.append({
+        "variant": v,
+        "ratio": o[ok].sum() / s[ok].sum(),
+        "never": np.nansum(np.where((smax < 0.02)[None], o, 0)) / np.nansum(o),
+        "r_pool": np.corrcoef(o[ok], s[ok])[0, 1],
+        "r_cell": rc, "r_blk": rb,
+        "r_lga1": np.nanmedian(lr[b1, 0]), "r_lga2": np.nanmedian(lr[b2, 0]),
+        "peak": np.nanmedian(lr[smax_l >= 0.10, 1]),
+    })
+tab = pd.DataFrame(summary).set_index("variant")
+print(f"\ncounts: cells with SFED max > 0.2: {nc}; 0.5-deg blocks: {nb}; LGAs 0.10-0.20: {int(b1.sum())}, > 0.20: {int(b2.sum())}")
+print(tab.round(3).to_string())
 
+# Inland cells only (no ocean in the footprint): the coast holds most of our false mass, and FloodScan's
+# users guide says floods "within 5-10 km of coastlines" are usually not depicted.
+inland = z["focean"] <= 0.001
+summary_in = []
+for v in VARIANTS:
+    o = np.where(common & inland[None], ours[v], np.nan)
+    s = np.where(common & inland[None], SF, np.nan)
+    ok = np.isfinite(o)
+    rc, nci = temporal_r(o, s, (smax > 0.2) & inland)
+    summary_in.append({"variant": v, "ratio": o[ok].sum() / s[ok].sum(),
+                       "never": np.nansum(np.where((smax < 0.02)[None], o, 0)) / np.nansum(o),
+                       "r_pool": np.corrcoef(o[ok], s[ok])[0, 1], "r_cell": rc})
+tab_in = pd.DataFrame(summary_in).set_index("variant")
+print(f"\ninland cells only ({inland.mean():.2f} of cells; cells with SFED max > 0.2: {nci}):")
+print(tab_in.round(3).to_string())
 OUT.mkdir(parents=True, exist_ok=True)
+tab.round(4).to_csv(OUT / "nga2024_variant_summary.csv")
+tab_in.round(4).to_csv(OUT / "nga2024_variant_summary_inland.csv")
 pd.DataFrame(rows).to_csv(OUT / "nga2024_lga_by_variant.csv", index=False)
-print(f"\nwrote {OUT / 'nga2024_lga_by_variant.csv'}")
+print(f"wrote {OUT / 'nga2024_variant_summary.csv'} and {OUT / 'nga2024_lga_by_variant.csv'}")

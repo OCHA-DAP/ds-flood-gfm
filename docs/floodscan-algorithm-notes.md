@@ -289,6 +289,67 @@ That is step 1.
 - **November is still too high** (0.0076 vs SFED 0.0040): seasonal drift that
   two training years do not fully capture.
 
+### Step 1 diagnostics (2026-10-21): what each part costs
+
+**Setup**
+- All variants are scored on one common population: 659,328 cell-days valid
+  in every variant.
+- Code: `05_ff_chain.py` (variants) and `06_score_2024.py`.
+- Tables: `results/floodscan_repro/nga2024_variant_summary*.csv`.
+
+**Column key**
+- ratio: total ours / total SFED.
+- never: share of our total in cells SFED never floods.
+- r_pool: pooled r over cell-days.
+- r_cell: median per-cell temporal r, 86 cells with SFED max > 0.2.
+- r_blk: the same for 16 blocks at 0.5°.
+- LGA r: for SFED max bands 0.10–0.20 (43 LGAs) and > 0.20 (8 LGAs).
+- peak: ours / SFED at LGA peaks.
+
+| variant | ratio | never | r_pool | r_cell | r_blk | LGA r 0.10–0.20 / > 0.20 | peak |
+|---|---|---|---|---|---|---|---|
+| climatology Q_dry only (no MDFF, no flash) | 2.81 | 0.58 | 0.48 | 0.70 | 0.81 | 0.81 / 0.84 | 0.57 |
+| + MDFF ×0.5 | 1.91 | 0.50 | 0.48 | 0.71 | 0.80 | 0.77 / 0.83 | 0.56 |
+| + MDFF capped at 0.06 | 1.83 | 0.53 | 0.47 | 0.67 | 0.79 | 0.71 / 0.81 | 0.52 |
+| + MDFF (AER rule) | 1.36 | 0.47 | 0.48 | 0.66 | 0.77 | 0.64 / 0.80 | 0.38 |
+| + MDFF + simplified flash filter | 1.34 | 0.47 | 0.47 | 0.58 | 0.75 | 0.55 / 0.80 | 0.38 |
+| var61 floored at 0.005² | ≈ as without the floor | | | | | | |
+| placeholder (in-window minimum) | 14.5 | 0.84 | 0.25 | 0.84 | 0.90 | 0.84 / 0.90 | 0.86 |
+
+**Inland cells only** (no ocean in the footprint; 86% of cells):
+
+| variant | ratio | never | r_pool | r_cell |
+|---|---|---|---|---|
+| + MDFF (AER rule) | 0.83 | 0.15 | 0.68 | 0.66 |
+| + MDFF ×0.5 | 1.24 | 0.25 | 0.69 | 0.71 |
+| climatology only | 2.11 | 0.45 | 0.67 | 0.70 |
+| placeholder | 13.8 | 0.83 | 0.27 | 0.84 |
+
+**Reading**
+- **The coast is the main residual: 63% of the false mass sits in the 14% of
+  cells with ocean in the footprint.**
+  - This is the gap between the 0.25° grid and the footprint-weighted f_pow,
+    plus geolocation error.
+  - AER addresses it with its geolocation correction and coastal MDFF logic.
+    FloodScan itself says floods "within 5–10 km of coastlines" are usually
+    not depicted.
+- **Inland, the chain matches FloodScan in size** (0.83–1.24×) **and spatial
+  pattern** (pooled r ≈ 0.68). Its false mass there is 15–25%.
+- **MDFF as built costs timing and peaks:** LGA r 0.81 → 0.64, peak
+  0.57 → 0.38. Halving it recovers most of that. This fits MDFF being
+  inflated by unflagged rain noise, which is the case for the 23/89 GHz rain
+  flags.
+- **The simplified flash filter is net harmful.** Leave it off until it is
+  implemented properly.
+- **Peaks stay at ~0.55× SFED even without MDFF.** The likely causes are the
+  0.25° grid (wider than AER's 22 km composite, so narrow floodplains are
+  diluted) and the missing atmospheric correction. Neither is tested.
+- **The placeholder's temporal scores are not a fair benchmark.** Its
+  in-window-minimum reference makes anything above the driest moment read as
+  flood. That is also why it is 14× too large with 84% false mass.
+- **Small n:** the top LGA band has 8 LGAs and the 0.5° test 16 blocks. Rely
+  on r_pool and r_cell.
+
 **AER's own skill statement** (Performance Document §4):
 - Best when flooding covers a substantial part of more than one 22 km
   footprint.

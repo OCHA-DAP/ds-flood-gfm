@@ -79,7 +79,8 @@ for f in ("36", "18"):
         Q[(f, p)] = arr
 
 dcs = np.array([clim_doy(d) for d in days])
-FF, FFPH = {}, {}
+VAR_FLOOR_ALT = 0.005 ** 2  # sensitivity: lets this year's expected 61-day median carry weight
+FF, FFPH, FFV = {}, {}, {}
 for (f, p), q in Q.items():
     key = f"{f}_{p}"
     qpow = float(t[f"Qpow_{key}"])
@@ -95,8 +96,11 @@ for (f, p), q in Q.items():
         FF[(f, p)] = (q - qpow * fpow - qdry * (1 - fpow)) / (qpow - qdry)
         qph = np.nanpercentile(q, 10, axis=0)
         FFPH[(f, p)] = (q - qph) / (qpow - qph)
-    FF[(f, p)][:, fpow > 0.5] = np.nan  # mostly-water cells, excluded as in 04
-    FFPH[(f, p)][:, fpow > 0.5] = np.nan
+        var_alt = np.maximum(var61, VAR_FLOOR_ALT)
+        qdry_v = np.where(wet, qdc, (qdc / var_alt + W_EXP * q61epw) / (1 / var_alt + W_EXP))
+        FFV[(f, p)] = (q - qpow * fpow - qdry_v * (1 - fpow)) / (qpow - qdry_v)
+    for d_ in (FF, FFPH, FFV):
+        d_[(f, p)][:, fpow > 0.5] = np.nan  # mostly-water cells, excluded as in 04
 
 mdff = (t["MDFF_36_asc"] + t["MDFF_36_dsc"]) / 2
 wet36 = t["wet_36_asc"] | t["wet_36_dsc"]
@@ -127,7 +131,7 @@ for i in range(len(days)):
 print(f"flash detection flagged {n_flash} pass-cells over {len(days)} days")
 
 
-def daily(ffd, use_flags, apply_mdff):
+def daily(ffd, use_flags, mdff_scale=1.0, mdff_cap=None):
     out = []
     for i, d in enumerate(days):
         if not (T0 <= d <= T1):
@@ -147,14 +151,26 @@ def daily(ffd, use_flags, apply_mdff):
         m = np.where(W > 0, np.sum(vals, 0) / np.where(W > 0, W, 1), np.nan)
         m[(n_all == 1) & (today_n == 0)] = np.nan
         m = np.clip(m, 0, 1 - fpow)
-        if apply_mdff:
-            m = np.where(m < mdff[dcs[i] - 1], 0.0, m)
+        if mdff_scale:
+            thr = mdff[dcs[i] - 1] * mdff_scale
+            if mdff_cap is not None:
+                thr = np.minimum(thr, mdff_cap)
+            m = np.where(m < thr, 0.0, m)
         out.append(m)
     return np.stack(out).astype("float32")
 
 
 test_days = [d for d in days if T0 <= d <= T1]
-out = {"full": daily(FF, True, True), "noflash": daily(FF, False, True), "placeholder": daily(FFPH, False, False)}
+out = {
+    "full": daily(FF, True),                        # AER chain as built here
+    "noflash": daily(FF, False),                    # ... without the simplified flash filter
+    "clim_raw": daily(FF, False, mdff_scale=0),     # climatology Q_dry only: no MDFF, no flash
+    "mdff_half": daily(FF, False, mdff_scale=0.5),  # MDFF sensitivity
+    "mdff_cap06": daily(FF, False, mdff_cap=0.06),  # MDFF capped at AER's worked example
+    "varfloor": daily(FFV, False),                  # var61 floor 0.005^2: this year's median counts
+    "varfloor_raw": daily(FFV, False, mdff_scale=0),
+    "placeholder": daily(FFPH, False, mdff_scale=0),
+}
 OUT.parent.mkdir(parents=True, exist_ok=True)
 np.savez_compressed(OUT, days=np.array([d.isoformat() for d in test_days]), fpow=fpow, focean=t["focean"], **out)
 for k, v in out.items():
