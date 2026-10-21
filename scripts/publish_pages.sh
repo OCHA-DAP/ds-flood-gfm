@@ -36,7 +36,8 @@ rsync -a --delete --exclude .DS_Store "$root/docs/book/_book/" fusion/
 touch .nojekyll
 git add -A -f -- index.html assets fusion gfm-exploration .nojekyll
 git add -A -f -- $(ls "$root/pages/_redirects") 2>/dev/null || true
-outside="$(git status --porcelain --untracked-files=all | grep -v -E '^.. (index\.html|assets/|fusion/|gfm-exploration/|\.nojekyll|[0-9A-Z][0-9A-Za-z_]*\.html)' || true)"
+# judge every changed file by its (destination) path; renames print as "R old -> new"
+outside="$(git status --porcelain --untracked-files=all | sed -E 's/^.. //; s/.* -> //' | grep -v -E '^(index\.html|assets/|fusion/|gfm-exploration/|\.nojekyll|[0-9A-Z][0-9A-Za-z_]*\.html)$' | grep -v -E '^(assets|fusion|gfm-exploration)/' || true)"
 if [ -n "$outside" ]; then echo "error: refusing to publish, unexpected changes:" >&2; echo "$outside" >&2; exit 1; fi
 if git diff --cached --quiet; then echo "Nothing to publish."; exit 0; fi
 git diff --cached --stat | tail -1
