@@ -80,6 +80,9 @@ uv run --with h5py --with fsspec --with aiohttp python scripts/fusion/experiment
 ### 2026-10-21: basics section in the review doc; this ledger
 - Review doc (Claude Docs, https://claude.ai/artifact/EzpeTJ8mnRVPaw6rAE7Xop): "The basics" section added up front (cell vs event level; what is classified; 12% = 355,927/2,856,112 flooded share of labelled open-land cell-days on map days; 0.2% = 1,493/647,443 GFM flood share on ordinary days in the random sample).
 
+### 2026-10-21: published
+- GitHub Pages site restructured under the team's landing-page convention (KB `methods/static-data-apps.md`): landing page at <https://ocha-dap.github.io/ds-flood-gfm/>, the fusion book at `/fusion/`, the 2024 GFM exploration book moved from the root to `/gfm-exploration/` with forwarding stubs for its old URLs. `scripts/publish_pages.sh` (gh-pages worktree; only its own paths; refuses otherwise). KB: `surfaces:` on `pipelines/flood-fusion.md` and `flood-gfm.md`, in PR OCHA-DAP/ds-knowledge-base#757. Commits 4a69b75, f6c9936; gh-pages 4ac0c97.
+
 ## Open decisions and next steps (as of 2026-10-21)
 1. Operating point: catch floods (low threshold / no memory ≈ cascade) or avoid false alarms (fusion as built or higher threshold). User's call.
 2. Ordinary-day precision: false-alarm rates on pre/post days cross-validated (minutes), then the global random sample with GFM as referee (`sample` cubes exist). Doc Next steps 6.
