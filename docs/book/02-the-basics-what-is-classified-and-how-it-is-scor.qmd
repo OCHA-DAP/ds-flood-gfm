@@ -31,3 +31,26 @@
 - **0.2% on ordinary days** = 1,493 ÷ 647,443: in 30 random places with no mapped event, over every day of 2023–2025, the share of open-land cell-days GFM saw on which GFM called flood. There are no gold maps there, so GFM stands in. Fusion uses this as the starting probability for every cell (the base rate).
 
 **Why the gap between them matters.** Precision depends on how common flood is where you score. With the same false-alarm rate, a flood 60 times rarer gives far lower precision. Every precision on this page is from map days inside mapped floods; precision on ordinary days has not been measured yet (Next steps, 6).
+
+## From pixels to cells: how every layer lands on one grid
+
+Nothing is compared at a product's own resolution. Every layer, from 20 m radar to 9 km microwave, is first put onto the same grid of 0.01° **cells** (about 1.1 km). "Pixel" always means a product's own native pixel; "cell" always means our grid square. The rules below are the whole resampling; each lives in `configs/fusion.yaml` under the key shown.
+
+| layer | native pixel | how it reaches a cell | cell is observed when | cell is positive when | config |
+|---|---|---|---|---|---|
+| GFM flood | 20 m, read at 80 m (every 4th pixel) | each pixel goes to the cell holding its centre; about 190 pixels per cell | at least 50% of the expected pixels were evaluated (not excluded, not flagged) | at least 30% of the observed pixels are flood | `sources.gfm` |
+| VIIRS flood map | 375 m | same: pixel centre to cell; about 9 pixels per cell | at least 50% of its pixels observed (not cloud, shadow, snow or no data) | at least 30% of the observed pixels are flood | `sources.viirs` |
+| FloodScan SFED | about 9 km (300 arcsec): one value, the flooded fraction | each cell takes the FloodScan pixel that contains the cell's centre; about 81 cells share one pixel | the region's file exists for that day | that pixel's flooded fraction is at least 30% | `sources.floodscan` |
+| GFDS | about 9 km | same containing-pixel rule; the signal is turned into a flooded fraction against GFDS's long-term mean | the day's file exists | that fraction is at least 30% | `sources.gfds` |
+| CYGNSS watermask (experiment) | 0.01°, but offset by half a cell | each cell is the average of the four CYGNSS pixels at its corners, a quarter each | at least 50% of that area has data | at least 30% of the observed area is water | `experiment_cygnss.py` |
+| gold map (flood polygons and examined area) | vector | drawn onto a 0.001° grid: 10 × 10 = 100 sub-pixels per cell | at least 50% of the sub-pixels are inside the examined area (otherwise no label) | at least 30% of the examined sub-pixels are flood; "flood possible" above 30% gives no label | `gold` |
+| HAND (floodable) | 30 m, read at every 4th pixel | fraction of samples per cell | always | at least 30% of the cell is under 15 m above the nearest stream | `static.hand` |
+| permanent water (JRC occurrence) | 30 m, every 4th pixel | fraction per cell | always | removed from the domain if at least 50% of the cell is water at least 90% of the time | `static.gsw` |
+| land type (ESA WorldCover) | 10 m, every 4th pixel | fraction per cell | always | urban if built-up is at least 20%; else vegetated if trees at least 30%; else open | `static.worldcover` |
+| normally wet (JRC monthly recurrence) | 30 m: exactly 40 × 40 pixels per cell | fraction per cell and calendar month | always | at least 30% of the pixels were water in that month in at least half the years | `baseline` |
+
+**Why the same 50% and 30% everywhere.** Half observed before a cell counts as seen, and 30% flooded before it counts as flood, are applied to every product and to gold alike, so no product is held to a different standard than the answer key. The cost is that a flood covering less than 30% of a cell is invisible to everyone, gold included.
+
+**What this means for the coarse products.** One FloodScan or GFDS pixel sets about 81 of our cells at once, so their hits and false alarms come in 9 km blocks (visible as squares in the maps in this book). They are scored cell by cell like everything else, which is fair to them where a flood is large and harsh where it is narrow.
+
+**Days.** Every layer is daily except the static ones (HAND, permanent water, land type: fixed) and normally wet (one map per calendar month). A product that has no file for a day gives "couldn't see" on every cell, never dry.
