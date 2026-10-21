@@ -231,6 +231,64 @@ gets wrong is the dry reference and noise, the components that need history:
 
 That is step 1.
 
+## Step 1 result (2026-10-21): AER's history tables, West Africa 2024
+
+**Code**
+- `experiments/floodscan_repro/00`, `03`–`06`.
+- Per-LGA table: `results/floodscan_repro/nga2024_lga_by_variant.csv`.
+
+**Inputs**
+- **AMSR2:** NOAA's CSU microwave CDR on AWS, daily 0.25° grids, 36 and
+  18 GHz V/H, June–December of 2023, 2024 and 2025.
+  - 638 days; 50 MB kept on disk.
+  - 2024-12-17 to 12-20 are absent upstream.
+  - CSU calibrates to GMI, not to JAXA.
+- **Box:** West Africa, 0–20°E, 0–20°N.
+- **Earth Engine layers:** NDVI climatology (MODIS 2013–2022), tree cover
+  (MODIS VCF), persistent water (MOD44W 2011–2015), ocean (LSIB).
+  Footprint-weighted at 27 km.
+- **Training years** for the static tables: 2023 and 2025. **Test year:**
+  2024, Aug–Nov.
+- **Reference:** FloodScan SFED, from the fusion work's local cache.
+
+**Departures from AER**, beyond step 0's:
+- **Q_pow is the median Q over open sea.** The box has no inland water the
+  radiometer sees as water. Lake Chad, which MOD44W calls 90% water, shows
+  dry-land Q, so the inland fit extrapolated below dry land.
+- **Cells with f_pow > 0.5 are excluded** (essentially Lake Chad).
+- **var61** is the 9×9 spatial median, with a 1e-6 floor; 61–72% of cells sit
+  at the floor. Dry-land Q61 really is stable from 2023 to 2025.
+- **Wetlands** use our heuristic (Q61c − QdLUT > 0.02), not AER's unpublished
+  rules.
+- **Time-shift model:** a61 is fixed at 1.
+- **No rain or frozen flags**, because the stage-1 data has no 23 or 89 GHz.
+- **Flash detection is simplified**, with no t_flash/f_hop screen.
+- **No atmospheric correction**, as in step 0.
+
+**Scores against SFED, 2024-08-01 → 11-30** (ours as ff / (1 − f_pow)):
+
+| | placeholder (in-window Q_dry) | full chain, no flash | full chain |
+|---|---|---|---|
+| total vs SFED | 11.9× | 1.29× | 1.34× |
+| share of ours where SFED never floods | 0.81 | 0.40 | 0.47 |
+| pooled r, 0.25° cell-days | 0.27 | 0.51 | 0.47 |
+| temporal r, cells with SFED max > 0.2 | 0.85 | 0.71 | 0.56 |
+| temporal r, 0.5° blocks with SFED max > 0.2 | 0.93 | 0.81 | 0.79 |
+| LGA r, SFED max > 0.2 (8 LGAs) | 0.90 | 0.80 | 0.80 |
+| ours / SFED at LGA peaks (SFED max > 0.2) | 0.78 | 0.56 | 0.54 |
+
+**Reading**
+- **The history tables fix magnitude and location:** the total falls from
+  11.9× to 1.3× SFED, and pooled r roughly doubles.
+- **They cost temporal skill where floods are large.**
+  - Our simplified flash filter is net harmful: the full chain is worse than
+    no-flash on every measure.
+  - MDFF (~0.10 in mid-July) is probably inflated by rain noise, since nothing
+    is rain-flagged. That would zero moderate flooding, and it fits peaks at
+    ~0.55× SFED.
+- **November is still too high** (0.0076 vs SFED 0.0040): seasonal drift that
+  two training years do not fully capture.
+
 **AER's own skill statement** (Performance Document §4):
 - Best when flooding covers a substantial part of more than one 22 km
   footprint.
