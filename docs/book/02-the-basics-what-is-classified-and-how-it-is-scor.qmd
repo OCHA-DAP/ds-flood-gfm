@@ -1,0 +1,33 @@
+# The basics: what is classified, and how it is scored
+
+**The unit is one cell on one day.** A cell is a 0.01° square, about 1.1 km across. For every cell on every day, each satellite product says one of three things: **flood**, **dry**, or **couldn't see**. Fusion turns the three products' reports into a probability P, and calls the cell flooded when P ≥ 0.5. A gold map, on the day it was made, labels each cell it examined **flooded** or **dry**; cells it did not examine have **no label**.
+
+**Only labelled cells on map days are scored.** A map day is a day with a gold map. Scoring compares the product's call with the gold label, cell by cell, on those days only:
+
+|  | gold: flooded | gold: dry |
+|---|---|---|
+| product: flood | hit | false alarm |
+| product: dry or couldn't see | miss | correct dry |
+
+**Cell level: counts, summed.** Hits, misses and false alarms are counted over every labelled cell, every map day and every event, then:
+
+- **recall** = hits ÷ (hits + misses): the share of gold-flooded cells the product flagged. The denominator is all 404,014 gold flooded cell-days in the 170 events.
+- **precision** = hits ÷ (hits + false alarms): the share of the product's flood calls that gold confirms. The denominator is the product's own flood calls on labelled cells.
+- **F1** combines the two. Because counts are summed, a flood of 80,000 cells weighs 800 times a flood of 100.
+
+**Event level: one verdict per event.** An event is **caught** if, on some day from 3 days before its first map to 3 days after its last, the product flags at least 10% of the cells gold flooded (and at least 5). It is a **false event** if the same rule fires on days 30 to 10 before the first map, when no flood was mapped. Both are reported as shares of the 148 events with at least 5 flooded cells. Here every event counts once, whatever its size.
+
+**Which days are used for what:**
+
+| days | what they give |
+|---|---|
+| map days | the gold labels; all recall, precision and F1 |
+| 30 days before and 60 after each event | dry labels for fitting each product's false-alarm rate (cells flooded on a map day get no label); the false-event check |
+| ordinary days, anywhere else | no gold, so not scored. Only the base flood rate comes from them, from a random sample of places with no mapped event |
+
+**Two rates that come up often, with their denominators:**
+
+- **12% of open-land cells are flooded on map days** = 355,927 gold-flooded ÷ 2,856,112 labelled floodable open-land cell-days on map days (all land types: 404,014 ÷ 4,387,050 = 9.2%). This is the flood rate inside mapped floods, on the days they were mapped.
+- **0.2% on ordinary days** = 1,493 ÷ 647,443: in 30 random places with no mapped event, over every day of 2023–2025, the share of open-land cell-days GFM saw on which GFM called flood. There are no gold maps there, so GFM stands in. Fusion uses this as the starting probability for every cell (the base rate).
+
+**Why the gap between them matters.** Precision depends on how common flood is where you score. With the same false-alarm rate, a flood 60 times rarer gives far lower precision. Every precision on this page is from map days inside mapped floods; precision on ordinary days has not been measured yet (Next steps, 6).

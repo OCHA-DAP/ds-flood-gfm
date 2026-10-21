@@ -1,0 +1,10 @@
+# From counts to totals
+
+Every score on this page is built from the same counts, in these steps:
+
+1. **One count per labelled cell, per day, per product:** hit, miss, false alarm or correct dry. Every product, and fusion, is scored on the same labelled cells.
+2. **Per event.** Counts are summed over each window's cells and days, then over the event's windows, and kept per event, land type and kind of day. Every number below is a sum of these.
+3. **Fitting, per fold.** The counts of the four folds not being scored, per land type, give each source's hit rate (map days, the only days with flood labels) and false-alarm rate (map days plus every day before and after), counted on floodable cells only, where fusion makes its calls.
+4. **Scoring.** Each fold's events are scored with the rates fitted on the other four folds. The map-day counts of all 170 events, each tested once, are summed, and recall, precision and F1 are computed from the sums: overall, per continent, per land type and per product.
+5. **Pooled, not averaged.** A large flood has more cell-days, so it weighs more; five events hold 47% of all gold flooded cell-days, and one basin's four Bangladesh floods 40% (named under Testing). That is why results are also shown per continent and land type, with intervals from resampling whole events (a bootstrap: the scores are recomputed on many random re-draws of the events, and their spread shows how much they depend on which events happened to be mapped).
+6. **Event level****.** One yes or no per event (caught or not) and one number (days to detection), reported as shares of events. There every event counts equally.

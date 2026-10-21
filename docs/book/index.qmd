@@ -1,0 +1,7 @@
+# Flood fusion: analysis and results {.unnumbered}
+
+*Checkpoint 2026-10-21, exported from the review doc (https://claude.ai/artifact/EzpeTJ8mnRVPaw6rAE7Xop) by `scripts/fusion/doc_to_book.py`. The doc is where the analysis is developed; this book is the record. Every number comes from a file under `results/`; `log.md` lists the command behind each one.*
+
+2026-10-15 · Zack Arno
+
+Flood fusion combines GFM (radar), FloodScan and GFDS (microwave) and VIIRS (optical) into one daily probability of flooding on a 0.01° grid. This page sets out how it is tested and what the test found: scope, inputs, how each cell is classified, how scoring works, how events are split for testing, and the results. All 170 usable flood events in Africa, Asia, South America and Oceania are each scored once, by a model fitted only on events in other river basins. Every term is defined in the Glossary tab. `docs/methods.md` in the repo describes the same mechanics with the code that does each step, and docs/log.md is the ledger: every step so far in order, with the command that reproduces it, its output files and its commit.

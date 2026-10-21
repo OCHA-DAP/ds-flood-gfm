@@ -8,6 +8,10 @@ Conventions used throughout:
 - Scripts are resumable (outputs that exist are skipped) and fail loudly (a missing input raises; no event is dropped silently).
 - Long runs on a laptop: `nice -n 19`, 1–2 workers.
 
+## Checkpoints (stock-takes)
+
+The review doc is where the analysis is developed; `docs/book/` (a Quarto book) is the record. A stock-take is: read the doc's tabs through the assistant, save the XML, run `scripts/fusion/doc_to_book.py`, `cd docs/book && quarto render`, commit, and tag `checkpoint-YYYY-MM-DD`. Render locally with `quarto preview docs/book`. Tags so far: `checkpoint-2026-10-21`.
+
 ## Reproduce from scratch
 
 Inputs needed: blob credentials (`DSCI_AZ_BLOB_DEV_SAS`), the Earthdata token in `EARTHDATA_TOKEN` (MODIS and CYGNSS only), `~/.cdsapirc` (snow climatology only). Everything downloads into `data/fusion/` (gitignored, ~10 GB).

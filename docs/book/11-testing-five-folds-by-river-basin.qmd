@@ -1,0 +1,20 @@
+# Testing: five folds by river basin
+
+Every event is tested once, by a model fitted without it. A model scored on the events it was fitted on looks better than it is, because it has already seen them. The events are split into five folds. For each fold, the hit and false-alarm rates are fitted on the other four folds, and the fold's events are scored. The scores are then pooled over all five folds.
+
+- **Whole river basins stay in one fold** (HydroBASINS level 4), so a neighbouring flood on the same river never helps score its neighbour.
+- **Folds are balanced on flooded area first:** the basins with the most gold flood are spread across folds, then the rest are placed to even out each continent's events. A basin cannot be split, and one dominates: four UNOSAT floods in Bangladesh (2017, 2018, 2020 and 2022) share one HydroBASINS level-4 basin and hold 40% of all gold flooded cell-days. Their fold holds 43% of the open-land flood and 62% of the vegetated flood; each other fold holds 8–17%. When that fold is scored, its rates are fitted on the remaining 57% of the open-land flood and 38% of the vegetated flood.
+- **It is cheap.** Fitting is counting, so five fits cost little. Scoring all events once took about two minutes on the laptop, under both rules for the days before and after.
+- **Anything tuned is tuned inside each fold,** never on the fold being scored.
+
+Balance of the five folds over the 170 events (99 basins). `scripts/fusion/make_folds.py` wrote the fold file, `results/event_folds.csv`, once, and it is frozen. Flood columns are each fold's share of that land type's gold flooded cell-days:
+
+| fold | Africa | Asia | Oceania | South America | open-land flood | vegetated flood | urban flood |
+|---|---|---|---|---|---|---|---|
+| 1 | 16 | 12 | 4 | 4 | 43% | 62% | 14% |
+| 2 | 16 | 13 | 2 | 3 | 17% | 11% | 26% |
+| 3 | 16 | 12 | 3 | 3 | 14% | 10% | 12% |
+| 4 | 16 | 12 | 2 | 3 | 15% | 10% | 32% |
+| 5 | 16 | 12 | 2 | 3 | 11% | 8% | 16% |
+
+No event set stays completely untouched: the first run's 49 test events have already been used to compare variants. To limit the effect, every rule on this page was fixed before the results were computed.

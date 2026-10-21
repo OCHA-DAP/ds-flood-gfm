@@ -1,0 +1,12 @@
+# Was the event caught?
+
+Cell-level scores say how well a product maps a flood. Many uses only need to know whether it noticed the flood at all, and how early. These rules *were fixed on 14 October, before any re**sult existed (ADR 0007)*:
+
+| measure | rule | why |
+|---|---|---|
+| **caught** | on some day from 3 days before the event's first map to 3 days after its last, the product flags at least 10% of the cells flooded on any map day of the window, and at least 5 cells | a product need not match the outline to have seen the flood; 10% with a floor of 5 cells is the rule the first run used |
+| **days to detection** | the first day the "caught" rule holds, counted from the first gold map | early warning value |
+| **false event** | the same rule applied to the same cells on ordinary days: days 30 to 10 before the first map, which leaves a buffer in case flooding began before mapping | without it, a product that always says flood would catch everything |
+| **false events away from floods** | the same rule on the global random sample blocks (no gold, ordinary days). Deferred: a sample block has no gold footprint for the rule to count against, so it joins the ordinary-day precision work (Next steps, 6) | catches products that fire everywhere, not just near floods |
+
+Reported per product and for fusion (P ≥ 0.5), per continent and per land type: the share of events caught, the false-event rate, and the median days to detection.

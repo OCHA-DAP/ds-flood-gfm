@@ -1,0 +1,30 @@
+# Grid, domain and strata
+
+Every cell gets three fixed attributes before any satellite data is read: whether it can flood (the domain), its land type (the stratum), and, through its event, a continent and a river basin. Only the land type changes the model. Continent and basin are used for scope, for building the test folds and for reporting.
+
+Land type matters because each source's accuracy depends on what covers the ground. Radar and optical sensors cannot see water under trees, and buildings confuse radar. So the model learns its hit and false-alarm rates separately for open, vegetated and urban cells. Each group of cells with one land type is a stratum.
+
+| layer | data, file | rule | used for |
+|---|---|---|---|
+| grid |  | 0.01° cells (about 1.1 km at the equator), EPSG:4326 | everything |
+| floodable | GLO-30 HAND (height above nearest drainage), 30 m; AWS `glo-30-hand`, 1° tiles | at least 30% of the cell lies less than 15 m above the nearest stream | domain |
+| permanent water | JRC Global Surface Water v1.4 occurrence (1984–2021), 30 m; Google Cloud `global-surface-water`, 10° tiles | removed if at least half the cell is water at least 90% of the time | domain |
+| **domain** |  | floodable and not permanent water; nothing outside it is predicted or scored | everything |
+| land type | ESA WorldCover 2021 v200, 10 m; AWS `esa-worldcover`, 3° tiles | **urban** if built-up (class 50) covers at least 20% of the cell; else **vegetated** if tree cover (class 10) covers at least 30%; else **open**. Cropland, grassland, shrubs, bare ground, wetland and mangroves all count as open | **strata** |
+| snow season (not used) | ERA5-Land monthly snow cover, 2014–2023, 0.25°; Copernicus CDS | a calendar month is snow season if its mean snow cover is at least 50% | dropped: 518 of the 520 snow-season gold flood cell-days are in Europe |
+| continent | Natural Earth 1:50m countries, field `CONTINENT` | the country at the event's centre (nearest country if offshore) | scope, fold balance, reporting |
+| river basin | HydroBASINS level 4 (v1c) | the basin nearest the event's centre | folds: a basin's events stay together |
+| climate zone | Köppen main groups (Beck et al. 2018), 0.083° |  | only to draw the global random sample: 53 blocks with no gold maps, with every day of 2023–2025 prepared. 30 are random 0.25° blocks, one per climate zone × continent; 12 are 0.5° blocks centred on cities, because urban cells are rare; 11 are reserves added to reach enough cells in every land type. The sample gives the base flood rate (the prior), and ordinary-day precision will be measured on it |
+
+The fine layers are read at every 4th pixel, so each cell's fractions rest on 80–900 samples. The rules and thresholds live in `configs/fusion.yaml` under `static`, and the code in `src/ds_flood_gfm/fusion/static.py`.
+
+![How each cell is classified: HAND, permanent water, WorldCover land type and the resulting domain and strata, for one window of Typhoon Yagi, northern Viet Nam, 2024](figures/strata_example.png)
+
+*How to read it.* One window of Typhoon Yagi (northern Viet Nam, September 2024):
+
+1. The delta's low ground (dark purple) is floodable: at least 30% of each cell lies less than 15 m above the nearest stream (GLO-30 HAND). The hills to the west and north are not.
+2. Permanent water is mostly the sea in the south-east, plus the river channels.
+3. WorldCover sorts every cell into open, vegetated or urban, before any domain rule is applied.
+4. Keeping only floodable cells that are not permanent water leaves 24,859 cells: 7,329 open, 13,206 vegetated and 4,324 urban.
+
+The white corner at the bottom right of panels 2–4 is open sea with no data. Elsewhere in panel 2, white means the cell is almost never water. Drawn from the pipeline's cached layers by `scripts/fusion/figure_event_layers.py`.
