@@ -2,6 +2,8 @@
 
 Global Flood Monitoring (GFM) analysis pipeline for generating flood extent maps and affected population estimates.
 
+**Site:** <https://ocha-dap.github.io/ds-flood-gfm/> — landing page with the flood fusion book (`/fusion/`) and the 2024 GFM exploration book (`/gfm-exploration/`).
+
 ## Quick Start
 
 ### Prerequisites
@@ -250,3 +252,8 @@ Detailed documentation available in:
 - **Flood data:** GFM STAC API (https://services.eodc.eu/browser/#/v1/collections/GFM)
 - **Population:** GHSL 2025 (100m resolution, stored in Azure blob)
 - **Admin boundaries:** COD-AB via HDX (stored in Azure blob)
+
+## Pages site
+
+Served from the `gh-pages` branch (legacy branch mode) under the team's one-site-per-repo convention: a landing page at `/` (`pages/`), the flood fusion book at `/fusion/` (rendered from `docs/book/`), and the 2024 exploration book at `/gfm-exploration/` (rendered html kept on the branch; source `book_gfm/` on the `arbitrary-admin` branch). Publish with `scripts/publish_pages.sh` (`--dry-run` to preview); it touches only those paths and refuses to push if anything else on the branch changed. Never run `quarto publish gh-pages`: it wipes the branch.
+

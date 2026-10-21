@@ -36,5 +36,7 @@ book:
 format:
   html:
     theme: cosmo
+    include-before-body:
+      - home-link.html  # back-link to the landing page (team convention)
     toc: true
     number-sections: true
