@@ -10,18 +10,20 @@ Per frequency (36, 18 GHz) and pass (asc, dsc), on the 0.25-deg grid, north-up:
   cells with f_pow > 0.5 (essentially Lake Chad) are excluded throughout
   Q61c, Q31c  s. 4.12: mean over years of the time-centred 61-/31-day median of land Q,
               Q_land = (Q - f_pow Q_pow) / (1 - f_pow)
-  var61       s. 4.13: year-to-year variance of Q61, 9x9 spatial median ("smooth2") everywhere
+  var61       s. 4.13: year-to-year variance of Q61, spatial median ("smooth2") everywhere
               (AER: smooth2 only in floodplains and on coasts; with two years the point-wise value is unusable)
-  b31         s. 4.15: Q31c(d) - Q31c(d-15), 7x7 median
-  b61         s. 4.14 with a61 = 1: mean over years of (centred Q61 - retrospective Q61), 7x7 median
+  b31         s. 4.15: Q31c(d) - Q31c(d-15), spatial median
+  b61         s. 4.14 with a61 = 1: mean over years of (centred Q61 - retrospective Q61), spatial median
               (AER fits a61 per day by regression; two years cannot support it)
+  Spatial windows are AER's rescaled from 5-arcminute to 0.25-deg cells (W_VAR, W_B, W_MDFF below).
   QdLUT       s. 4.16: 75th percentile of land Q in NDVI x f_tree bins of 0.05 (20% subsample)
   wetland     OUR HEURISTIC, not AER's (its seven rule groups are not published):
               Q61c - QdLUT > WET_THR on that day
   Qdc         s. 4.18 eq. 25 with Qdci = QdLUT (no local-extremes step); wetland rules as in (a) and (d)
-  MDFF        s. 4.20: sigma_Q from the 7-day variance climatology (3x3 mean, 11x11 median away from coasts,
-              31-day average), ff(sigma) = sigma / (Q_pow - Qdc), MDFF0 = 3 ff, capped 0.25 where f_pow < 0.49,
-              MDFF = (MDFF0 + max over available days) / 2
+  MDFF        s. 4.20: sigma_Q from the 7-day variance climatology (spatial median away from the near-coast
+              cells, 31-day average), ff(sigma) = sigma / (Q_pow - Qdc), MDFF0 = 3 ff, capped 0.25 where
+              f_pow < 0.49, MDFF = (MDFF0 + max over available days) / 2
+  near_coast  s. 4.20 rule: f_pow > 0.01 and >= 3 cells with f_pow > 0.75 in the MDFF window (saved for 05)
 No rain, frozen or flash flags are applied to the training data (stage-1 data has no 23/89 GHz).
 
     uv run --no-project --with numpy --with scipy --with rasterio python experiments/floodscan_repro/04_static_tables.py
@@ -45,6 +47,11 @@ if len(sys.argv) > 1:  # dry run on other years, e.g. `... 04_static_tables.py 2
 FREQS, PASSES = ("36", "18"), ("asc", "dsc")
 WET_THR = 0.02
 Q0 = 0.32  # eq. 25 constant, AMSR-E scale (kept as published; our calibration differs)
+# AER's spatial windows are counted in 5-arcminute cells; one 0.25-deg cell is 3 of them. Until 2026-10-21
+# the same cell counts were applied here, i.e. windows three times wider on the ground than AER's.
+# Rescaled to the nearest odd width: 9x9 -> 3x3 (var61), 7x7 -> 3x3 (b31, b61), 11x11 -> 5x5 (MDFF median
+# and the near-coast test); AER's 3x3 mean before the MDFF median is one cell here and is dropped.
+W_VAR, W_B, W_MDFF = 3, 3, 5
 
 
 def clim_doy(d):  # day of year on a 365-day calendar
@@ -94,13 +101,15 @@ fpow, ftree, focean = st["fpow"], st["ftree"], st["focean"]
 ndvi_slots = np.stack([st[f"ndvi_s{k:02d}"] for k in range(1, 24)])
 slot_doy = 16 * np.arange(23) + 8.5
 inland = focean < 0.01
-coast = ~inland
+# AER s. 4.20 near-coastline test: f_pow > 0.01 and at least three cells with f_pow > 0.75 in the MDFF window
+# (f_pow here includes sea, as in AER's land-water mask). No spatial filtering of the MDFF variance there.
+near_coast = (fpow > 0.01) & (uniform_filter((fpow > 0.75).astype(float), W_MDFF, mode="constant") * W_MDFF ** 2 >= 3)
 DOYS = np.arange(1, 366)
 ndvi_doy = np.stack([np.array([np.interp(d, slot_doy, ndvi_slots[:, i, j], period=365)
                                for d in DOYS]).reshape(-1) for i, j in np.ndindex(80, 80)], 1).reshape(365, 80, 80)
 
 data = {y: load_q(y) for y in YEARS}
-tables = {"fpow": fpow, "ftree": ftree, "focean": focean, "ndvi_doy": ndvi_doy, "years": np.array(YEARS)}
+tables = {"fpow": fpow, "ftree": ftree, "focean": focean, "near_coast": near_coast, "ndvi_doy": ndvi_doy, "years": np.array(YEARS)}
 
 for f in FREQS:
     for p in PASSES:
@@ -144,12 +153,12 @@ for f in FREQS:
             q31c = np.nanmean(q31c_y, 0)
             var_pw = np.nanvar(q61c_y, 0, ddof=1)
             b61 = np.nanmean(np.array(q61c_y) - np.array(q61r_y), 0)
-        var61 = np.stack([median_filter(np.nan_to_num(v, nan=np.nanmedian(v) if np.isfinite(v).any() else 0), 9) for v in var_pw])
+        var61 = np.stack([median_filter(np.nan_to_num(v, nan=np.nanmedian(v) if np.isfinite(v).any() else 0), W_VAR) for v in var_pw])
         var61 = np.maximum(var61, 1e-6)
         b31 = np.full_like(q31c, np.nan)
         b31[15:] = q31c[15:] - q31c[:-15]
-        b31 = np.stack([median_filter(np.nan_to_num(v), 7) if np.isfinite(v).any() else v for v in b31])
-        b61 = np.stack([median_filter(np.nan_to_num(v), 7) if np.isfinite(v).any() else v for v in b61])
+        b31 = np.stack([median_filter(np.nan_to_num(v), W_B) if np.isfinite(v).any() else v for v in b31])
+        b61 = np.stack([median_filter(np.nan_to_num(v), W_B) if np.isfinite(v).any() else v for v in b61])
 
         # --- QdLUT(NDVI, f_tree): 75th percentile of land Q in 0.05 bins, 20% subsample (s. 4.16)
         rng = np.random.default_rng(0)
@@ -197,8 +206,8 @@ for f in FREQS:
             if not np.isfinite(v).any():
                 continue
             fill = np.nan_to_num(v, nan=np.nanmedian(v))
-            sm = median_filter(uniform_filter(fill, 3), 11)
-            v7f[k] = np.where(coast, fill, sm)
+            sm = median_filter(fill, W_MDFF)
+            v7f[k] = np.where(near_coast, fill, sm)
         sig = np.sqrt(np.stack([np.nanmean(v7f[max(0, k - 15) : k + 16], 0) if np.isfinite(v7f[max(0, k - 15) : k + 16]).any() else np.full((80, 80), np.nan) for k in range(365)]))
         with np.errstate(all="ignore"):
             mdff0 = 3 * sig / (qpow - qdc)

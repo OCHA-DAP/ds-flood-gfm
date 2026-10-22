@@ -9,11 +9,13 @@ calibration to GPM GMI, not JAXA's, so AER's AMSR2->AMSR-E constants do not appl
 
 Each variable is a single zlib chunk (about 1.5 MB compressed), so HTTP range reads fetch only the
 channels asked for. Only the region box is kept: data/floodscan_repro/csu_amsr2_grid/YYYY/YYYYMMDD.npz.
-Resumable (existing days skipped). A day with no file in either product is recorded in missing.txt
-(listed absence); any read error raises.
+Resumable: a day whose file already holds every requested variable is skipped; a day fetched earlier
+with fewer bands gets the missing ones added from the same upstream file (a changed upstream key
+raises). A day with no file in either product is recorded in missing.txt (listed absence); any read
+error raises.
 
     uv run --no-project --with h5py --with fsspec --with aiohttp --with numpy \
-        python experiments/floodscan_repro/03_fetch_csu_amsr2_grid.py 2023-06-01 2023-12-31 36,18
+        python experiments/floodscan_repro/03_fetch_csu_amsr2_grid.py 2023-06-01 2023-12-31 36,18,23,89
 """
 
 import datetime as dt
@@ -80,7 +82,7 @@ for year in range(start.year, end.year + 1):
             index[day_of(k)] = (kind, k)
 
 
-def read_day(key):
+def read_day(key, variables):
     """Header through a small block cache, then one exact range request per variable chunk.
 
     Reading the data through h5py with a single-block read-ahead cache re-downloaded 2 MB blocks on
@@ -94,7 +96,7 @@ def read_day(key):
         lat, lon = h["lat"][:], h["lon"][:]
         if not (np.isclose(lat[R0], LAT0 + 0.125) and np.isclose(lon[C0], LON0 + 0.125)):
             raise ValueError(f"{key}: unexpected grid origin lat {lat[R0]} lon {lon[C0]}")
-        for v in VARS:
+        for v in variables:
             ds = h[v]
             if ds.id.get_num_chunks() != 1 or tuple(ds.chunks) != ds.shape or set(ds._filters) != {"gzip"}:
                 raise ValueError(f"{key}:{v}: expected one zlib chunk, got chunks {ds.chunks}, filters {ds._filters}")
@@ -122,16 +124,26 @@ def read_day(key):
 
 def fetch(day):
     out = OUT / f"{day:%Y}" / f"{day:%Y%m%d}.npz"
+    have = {}
     if out.exists():
-        return "skipped"
+        with np.load(out) as z:
+            have = {k: z[k] for k in z.files}
+        if all(v in have for v in VARS):
+            return "skipped"
+        # a day fetched earlier with fewer bands: add the missing ones, keep what is there
     if day not in index:
+        if have:
+            raise RuntimeError(f"{day}: have a local file but the day is no longer listed upstream")
         with open(OUT / "missing.txt", "a") as fh:
             fh.write(f"{day} not listed in FCDR-GRID or ICDR-GRID\n")
         return "absent"
     kind, key = index[day]
+    if have and str(have["key"]) != key:
+        raise RuntimeError(f"{day}: local file came from {have['key']}, upstream now lists {key}; delete the local file to refetch")
+    need = [v for v in VARS if v not in have]
     for attempt in range(3):  # network drops only; a bad grid or file still raises at once
         try:
-            arrays = read_day(key)
+            arrays = read_day(key, need)
             break
         except (OSError, TimeoutError, http.client.HTTPException, aiohttp.ClientError, fsspec.exceptions.FSTimeoutError) as e:
             if attempt == 2:
@@ -140,9 +152,10 @@ def fetch(day):
             time.sleep(30)
     out.parent.mkdir(parents=True, exist_ok=True)
     tmp = out.with_suffix(".part.npz")
-    np.savez_compressed(tmp, source=np.array(kind), key=np.array(key), **arrays)
+    have.update(arrays)
+    np.savez_compressed(tmp, source=np.array(kind), key=np.array(key), **{k: v for k, v in have.items() if k not in ("source", "key")})
     tmp.rename(out)
-    return kind
+    return kind if len(need) == len(VARS) else "extended"
 
 
 OUT.mkdir(parents=True, exist_ok=True)
