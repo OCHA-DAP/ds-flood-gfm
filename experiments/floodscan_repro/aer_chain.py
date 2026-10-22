@@ -63,6 +63,9 @@ def load_merra2(atmos_dir, days):
         if not path.exists():
             raise FileNotFoundError(f"{path}: run 09_gee_merra2.py for {ym[:4]} first")
         z = np.load(path)
+        filled = [s for s in z["filled"]] if "filled" in z.files else []
+        if filled:
+            print(f"  MERRA-2 {ym}: {len(filled)} slots interpolated by 09 ({', '.join(filled[:4])}{', ...' if len(filled) > 4 else ''})")
         for j, ds in enumerate(z["days"]):
             if ds in want:
                 for (f, p) in out:
