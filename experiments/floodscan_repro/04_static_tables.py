@@ -51,8 +51,13 @@ SRC = Path("data/floodscan_repro/csu_amsr2_grid")
 STATIC = Path("data/floodscan_repro/static_0p25.tif")
 OUT = Path("data/floodscan_repro/static_tables.npz")
 YEARS = (2023, 2025)
-if len(sys.argv) > 1:  # dry run on other years, e.g. `... 04_static_tables.py 2023 /tmp/out.npz`
-    YEARS, OUT = tuple(int(y) for y in sys.argv[1].split(",")), Path(sys.argv[2])
+ATMOS = None  # a MERRA-2 directory (09) switches on the earth-leaving correction (atmos.py) before Q
+if len(sys.argv) > 1:  # `... 04_static_tables.py 2023,2025 /path/out.npz [atmos]`; years 'default' keeps the defaults
+    if sys.argv[1] != "default":
+        YEARS = tuple(int(y) for y in sys.argv[1].split(","))
+    OUT = Path(sys.argv[2])
+    if len(sys.argv) > 3 and sys.argv[3] == "atmos":
+        ATMOS = Path("data/floodscan_repro/merra2")
 WET_THR = 0.02
 Q0 = 0.32  # eq. 25 constant, AMSR-E scale (kept as published; our calibration differs)
 # AER's spatial windows are counted in 5-arcminute cells; one 0.25-deg cell is 3 of them. Until 2026-10-21
@@ -75,7 +80,8 @@ DOYS = np.arange(1, 366)
 ndvi_doy = np.stack([np.array([np.interp(d, slot_doy, ndvi_slots[:, i, j], period=365)
                                for d in DOYS]).reshape(-1) for i, j in np.ndindex(80, 80)], 1).reshape(365, 80, 80)
 
-data = {y: load_year(SRC / str(y), dt.date(y, 6, 1), dt.date(y, 12, 31)) for y in YEARS}
+data = {y: load_year(SRC / str(y), dt.date(y, 6, 1), dt.date(y, 12, 31), atmos_dir=ATMOS) for y in YEARS}
+print(f"training years {YEARS}; atmospheric correction {'on' if ATMOS else 'off'}; output {OUT}")
 tables = {"fpow": fpow, "ftree": ftree, "focean": focean, "near_coast": near_coast, "ndvi_doy": ndvi_doy, "years": np.array(YEARS)}
 
 

@@ -112,10 +112,13 @@ for v in VARIANTS:
     lr = np.array(lr)
     b1 = (smax_l >= 0.10) & (smax_l < 0.20)
     b2 = smax_l >= 0.20
+    own = np.isfinite(ours[v]) & np.isfinite(SF)  # the variant's own population (rain flags shrink 'common')
     summary.append({
         "variant": v,
         "ratio": o[ok].sum() / s[ok].sum(),
         "never": np.nansum(np.where((smax < 0.02)[None], o, 0)) / np.nansum(o),
+        "ratio_own": ours[v][own].sum() / SF[own].sum(),
+        "never_own": np.nansum(np.where((smax < 0.02)[None] & own, ours[v], 0)) / np.nansum(np.where(own, ours[v], 0)),
         "r_pool": np.corrcoef(o[ok], s[ok])[0, 1],
         "r_cell": rc, "r_blk": rb,
         "r_lga1": np.nanmedian(lr[b1, 0]), "r_lga2": np.nanmedian(lr[b2, 0]),

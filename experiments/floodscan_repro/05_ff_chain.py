@@ -54,7 +54,8 @@ if len(sys.argv) > 1:  # e.g. an in-sample code test: `... 05_ff_chain.py /tmp/t
 D0, D1 = dt.date(2024, 6, 1), dt.date(2024, 12, 31)
 T0, T1 = dt.date(2024, 8, 1), dt.date(2024, 11, 30)
 # Fit knobs (07): a JSON file as argv[3] with any of w_exp, qpow_offset, mdff_scale, outlier_dev, variants.
-P = {"w_exp": 1 / 0.0012, "qpow_offset": 0.0, "mdff_scale": 1.0, "outlier_dev": 0.10, "variants": None}
+P = {"w_exp": 1 / 0.0012, "qpow_offset": 0.0, "mdff_scale": 1.0, "outlier_dev": 0.10, "variants": None,
+     "atmos": False}  # atmos: earth-leaving correction (atmos.py, MERRA-2 from 09); use tables built with it
 if len(sys.argv) > 3:
     overrides = json.loads(Path(sys.argv[3]).read_text())
     unknown = set(overrides) - set(P)
@@ -65,7 +66,8 @@ OUTLIER_DEV = P["outlier_dev"]
 
 t = np.load(TAB)
 fpow, near_coast = t["fpow"], t["near_coast"]
-days, Q, TB = load_year(SRC, D0, D1)
+days, Q, TB = load_year(SRC, D0, D1, atmos_dir=Path("data/floodscan_repro/merra2") if P["atmos"] else None)
+print(f"tables {TAB}; atmospheric correction {'on' if P['atmos'] else 'off'}")
 dcs = np.array([clim_doy(d) for d in days])
 NT = len(days)
 
@@ -134,6 +136,7 @@ def neighbour_min_above(x, thr):
 def finish(ffsets, use_flash=True, mdff_scale=1.0, use_merge=True, use_fhop=True, coastal=True):
     """Daily final FF (s. 3.8.3) for the test window. ffsets: {'pw' | '61' | 'sp': {(f, p): ...}}."""
     hist = deque(maxlen=15)  # final FF above MDFF, per day
+    n_trigger = [0, 0, 0]  # merge diagnostics: land cell-days triggered (>= 12 of 15), in a merge region, raised
     f1, f2, t1 = np.full((80, 80), np.nan), np.full((80, 80), np.nan), np.full((80, 80), np.nan)
     last_inst, last_inst_i = np.full((80, 80), np.nan), np.full((80, 80), -1)
     out = []
@@ -185,6 +188,7 @@ def finish(ffsets, use_flash=True, mdff_scale=1.0, use_merge=True, use_fhop=True
             trig = nff >= 12
             with np.errstate(invalid="ignore"):
                 region = (avg["sp"] > thr) & (avg["61"] > thr)
+            n_trigger[0] += int((trig & (fpow <= 0.5)).sum())
             if (trig & region).any():
                 lab, n = label(region)
                 wsp = np.zeros((80, 80))
@@ -193,6 +197,8 @@ def finish(ffsets, use_flash=True, mdff_scale=1.0, use_merge=True, use_fhop=True
                         wsp[lab == r] = np.clip((nff[trig & (lab == r)].max() - 11) / 3, 0, 1)
                 with np.errstate(invalid="ignore"):
                     merged = np.fmax(wsp * avg["sp"] + (1 - wsp) * avg["pw"], avg["pw"])
+                n_trigger[1] += int((wsp > 0).sum())
+                n_trigger[2] += int(((wsp > 0) & (merged > avg["pw"] + 1e-6)).sum())
                 final = np.where(wsp > 0, merged, final)
         # fill-in from the last two valid 3-day averages
         gap = ~np.isfinite(final) & np.isfinite(f1)
@@ -220,6 +226,8 @@ def finish(ffsets, use_flash=True, mdff_scale=1.0, use_merge=True, use_fhop=True
         t1 = np.where(valid_avg, i, t1)
         if T0 <= days[i] <= T1:
             out.append(final)
+    if use_merge and mdff_scale:
+        print(f"  merge: land cell-days triggered {n_trigger[0]}, in a merge region {n_trigger[1]}, raised {n_trigger[2]}")
     return np.stack(out).astype("float32")
 
 
@@ -231,7 +239,7 @@ recipes = {
     "nofhop": lambda: finish(FF, use_fhop=False),
     "nocoast": lambda: finish(FF, coastal=False),
     "clim_raw": lambda: finish(FF, mdff_scale=0),
-    "mdff_half": lambda: finish(FF, mdff_scale=0.5),
+    "mdff_half": lambda: finish(FF, mdff_scale=0.5),  # relative to P["mdff_scale"], which is already in `mdff`
     "norain": lambda: finish(FF_NR, use_flash=False),
 }
 wanted = P["variants"] or list(recipes)

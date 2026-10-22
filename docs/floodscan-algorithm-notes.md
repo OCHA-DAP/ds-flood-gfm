@@ -436,3 +436,26 @@ Our readings where the ADD is silent or its text is garbled (marked in code):
 - So the swath route reproduces the grid where both exist, at 9× finer
   cells, with no account needed. What it costs is bandwidth (above) and the
   chain's run time at 240×240 cells.
+
+### Atmospheric correction (2026-10-22): built, pending results (`atmos.py`, `09_gee_merra2.py`)
+
+- AER (§3.6) corrects two terms, transmittance and upwelling emission, from
+  an RT model on NCEP/GFS profiles; it deliberately leaves reflected
+  downwelling and surface temperature alone. Same two terms here from the RSS
+  AMSR model (Wentz & Meissner 2000, ATBD v2, eqs. 22–29, Table 4): oxygen
+  absorption A_O = aO1 + aO2·(T_D − 270), vapour A_V = aV1·V + aV2·V²,
+  τ = exp(−secθ·(A_O + A_V)), effective temperatures T_D(V, T_S) and
+  T_U = T_D + b6 + b7·V; TB_EL = (TB − (1 − τ)·T_U)/τ at θ = 55°.
+- Inputs: MERRA-2 hourly TQV, T2M, PS from Earth Engine
+  (`NASA/GSFC/MERRA/slv/2`), sampled at the 00 UTC (descending) and 12 UTC
+  (ascending) hours on the 0.25° box. No new account. Over land T2M stands in
+  for the sea-surface temperature in the small b5 term (our choice).
+- Why it should matter: at 36.5 GHz a 50 mm atmosphere has τ 0.79 and
+  TB_up 59 K, and compresses a land PRI of 0.071 to 0.056; a 15 mm Sahel
+  atmosphere compresses it to 0.063. The flood signal is the PRI rise, and
+  the flood season is the humid season, so uncorrected Tb damp the peaks in
+  exactly the Benue-valley months. October TQV over the box is ~45 mm,
+  December ~18 mm, so the dry reference drifts with humidity as well.
+- Switch: `04 default <out> atmos` builds corrected tables;
+  `05` with `{"atmos": true}` runs on them. The rain-flag channels stay
+  top-of-atmosphere, as in AER.

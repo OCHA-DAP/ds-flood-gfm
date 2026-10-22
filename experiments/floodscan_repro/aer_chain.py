@@ -9,6 +9,7 @@ from pathlib import Path
 
 import numpy as np
 
+from atmos import earth_leaving
 from rainflags import final_rain, scattering_index
 
 FREQS, PASSES = ("36", "18"), ("asc", "dsc")
@@ -52,15 +53,38 @@ def running_mean(x, half):
     return out
 
 
-def load_year(src, d0, d1):
+def load_merra2(atmos_dir, days):
+    """MERRA-2 TQV (mm) and T2M (K) per pass for the given days, from 09's monthly files. A missing day raises."""
+    atmos_dir = Path(atmos_dir)
+    want = {d.isoformat(): i for i, d in enumerate(days)}
+    out = {(f, p): np.full((len(days), 80, 80), np.nan) for f in ("TQV", "T2M") for p in PASSES}
+    for ym in sorted({f"{d:%Y%m}" for d in days}):
+        path = atmos_dir / f"{ym}.npz"
+        if not path.exists():
+            raise FileNotFoundError(f"{path}: run 09_gee_merra2.py for {ym[:4]} first")
+        z = np.load(path)
+        for j, ds in enumerate(z["days"]):
+            if ds in want:
+                for (f, p) in out:
+                    out[(f, p)][want[ds]] = z[f"{f}_{p}"][j]
+    gaps = [d for d in days if not np.isfinite(out[("TQV", "asc")][want[d.isoformat()]]).all()]
+    if gaps:
+        raise ValueError(f"MERRA-2 missing for {len(gaps)} days, first {gaps[0]}")
+    return out
+
+
+def load_year(src, d0, d1, atmos_dir=None):
     """Q (36, 18 GHz) and the rain-flag channels per pass for days d0..d1 from 03's npz files.
-    Days listed in missing.txt stay NaN (upstream absence); any other missing day raises."""
+    Days listed in missing.txt stay NaN (upstream absence); any other missing day raises.
+    atmos_dir: apply the earth-leaving correction (atmos.py, MERRA-2 from 09) to the 36/18 GHz V/H before Q.
+    The rain-flag channels stay top-of-atmosphere, as in AER (s. 3.7)."""
     src = Path(src)
     days = [d0 + dt.timedelta(k) for k in range((d1 - d0).days + 1)]
     miss_file = src.parent / "missing.txt"
     absent = {line.split()[0] for line in miss_file.read_text().splitlines()} if miss_file.exists() else set()
     q = {(f, p): np.full((len(days), 80, 80), np.nan) for f in FREQS for p in PASSES}
     tb = {(c, p): np.full((len(days), 80, 80), np.nan) for c in FLAG_CHANNELS for p in PASSES}
+    met = load_merra2(atmos_dir, days) if atmos_dir else None
     for i, d in enumerate(days):
         path = src / f"{d:%Y%m%d}.npz"
         if not path.exists():
@@ -71,6 +95,9 @@ def load_year(src, d0, d1):
         for p in PASSES:
             for f in FREQS:
                 v, h = np.flipud(z[f"fcdr_tb{f}v_{p}"]), np.flipud(z[f"fcdr_tb{f}h_{p}"])  # CSU rows run south->north
+                if met is not None:
+                    v = earth_leaving(v, f, met[("TQV", p)][i], met[("T2M", p)][i])
+                    h = earth_leaving(h, f, met[("TQV", p)][i], met[("T2M", p)][i])
                 pri = (v - h) / (v + h)
                 with np.errstate(invalid="ignore"):
                     q[(f, p)][i] = np.sqrt(pri + 0.11) - 0.58 * pri
