@@ -134,22 +134,27 @@ def fetch(day):
     if day not in index:
         if have:
             raise RuntimeError(f"{day}: have a local file but the day is no longer listed upstream")
-        with open(OUT / "missing.txt", "a") as fh:
-            fh.write(f"{day} not listed in FCDR-GRID or ICDR-GRID\n")
+        miss = OUT / "missing.txt"
+        line = f"{day} not listed in FCDR-GRID or ICDR-GRID\n"
+        if not miss.exists() or line not in miss.read_text():
+            with open(miss, "a") as fh:
+                fh.write(line)
         return "absent"
     kind, key = index[day]
     if have and str(have["key"]) != key:
         raise RuntimeError(f"{day}: local file came from {have['key']}, upstream now lists {key}; delete the local file to refetch")
     need = [v for v in VARS if v not in have]
-    for attempt in range(3):  # network drops only; a bad grid or file still raises at once
+    for attempt in range(8):  # network drops only; a bad grid or file still raises at once
         try:
             arrays = read_day(key, need)
             break
         except (OSError, TimeoutError, http.client.HTTPException, aiohttp.ClientError, fsspec.exceptions.FSTimeoutError) as e:
-            if attempt == 2:
+            # fsspec turns a failed HEAD into FileNotFoundError (an OSError) even for a listed key: an outage of
+            # a few minutes killed the 2023 run on 2026-10-22 after 3 tries, so wait longer and try more often
+            if attempt == 7:
                 raise
-            print(f"  {day}: network error ({type(e).__name__}); retrying in 30 s", flush=True)
-            time.sleep(30)
+            print(f"  {day}: network error ({type(e).__name__}); retrying in {60 * (attempt + 1)} s", flush=True)
+            time.sleep(60 * (attempt + 1))
     out.parent.mkdir(parents=True, exist_ok=True)
     tmp = out.with_suffix(".part.npz")
     have.update(arrays)

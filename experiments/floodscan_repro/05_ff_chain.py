@@ -1,175 +1,229 @@
 """Step 1b: AER's flooded-fraction chain (ADD s. 3.8) for 2024, on the CSU AMSR2 0.25-deg grid.
 
-Uses the static tables from 04 (built from 2023 and 2025; 2024 is the test year).
-Per pass (dsc then asc each day, AMSR2 ~01:30 and ~13:30 local) and frequency (36, 18 GHz):
-  Q_land            = (Q - f_pow Q_pow) / (1 - f_pow)
-  Q31R, Q61R        retrospective medians of Q_land (d-30..d, d-60..d)
-  Q31E, Q61E        Q31R + b31(dc), Q61R + b61(dc)                      (eqs. 14-15, a61 = 1)
-  Q61Epw            (Q31E + Q61E) / 2                                    (eq. 16)
-  Q_dry             (Qdc / var61 + Q61Epw / 0.0012) / (1 / var61 + 1 / 0.0012); wetland: Q_dry = Qdc   (eq. 17)
-  ff                (Q - Q_pow f_pow - Q_dry (1 - f_pow)) / (Q_pow - Q_dry)                          (eq. 13)
-Flash false positives (s. 3.8.2), simplified:
-  newly flooded = ff18 > 0.05 where the previous pass's ff36 < 0.05; candidates where > 75% of a
-  4-cell-diameter circle (~93 km, AER's 10 px at 5') is newly flooded; drop wetland cells, cells with
-  ff36 below MDFF, and isolated cells; dilate over connected cells with ff36 > 0.025; drop those values.
-  (No t_flash/f_hop screen: f_hop is not built, so it is 0.)
-Daily (s. 3.8.3): today's passes weight 0.67, yesterday's 0.33 (f_hop = 0); a lone value only if it is
-today's; clip to [0, 1 - f_pow]; ff < MDFF(dc) -> 0 (mean of asc/dsc MDFF). No fill-in, no outlier
-test, no spatial (11x11) variant, no rain/frozen flags (stage-1 data has no 23/89 GHz).
+Uses the static tables from 04 (built from 2023 and 2025; 2024 is the test year) and aer_chain.py.
+Per pass (dsc then asc each day, AMSR2 ~01:30 and ~13:30 local):
+  rain flags (s. 3.7)        rainflags.py with the SI0 climatology; flagged cells carry no Q for that pass
+  initial FF (s. 3.8.1)      aer_chain.initial_ff: ff_pw, ff_61, ff_sp per frequency from Q_dry built on
+                             Q61Epw, Q61E and the spatial Q61Esp (5x5 window minus its 3x3 centre)
+Flash false positives (s. 3.8.2), on ff_pw: newly flooded = ff18 > 0.05 where the previous pass's ff36 < 0.05;
+  candidates where > 75% of a 4-cell-diameter circle (~93 km, AER's 10 px at 5') is newly flooded; screens:
+  a valid prior FF within t_flash = 1.5 + 4.75 fhop days, not wetland, ff36 >= MDFF, not isolated; dilation
+  over connected cells with ff36 > 0.025 or rain-flagged cells whose last test was flash- or rain-flagged.
+Daily finishing (s. 3.8.3), 36 GHz only, per FF type:
+  weights today 0.67 - 0.33 fhop, 1 day prior 0.33, 2 days prior 0.33 fhop; group outliers (OUR TEST: more
+  than OUTLIER_DEV from the group median) at half weight; no prior-day data: the last earlier instantaneous
+  value at half the prior-day weight; a lone value only if it is today's.
+  merge (eq. 18): where the final FF was above MDFF on >= 12 of the last 15 days, a contiguous region with
+  ff_sp and ff_61 above MDFF takes ff = max(w ff_sp + (1 - w) ff_pw, ff_pw), w = clip((N - 11) / 3, 0, 1).
+  fill-in for days without input: f0 = f-1 - a max(T0 - T-1, 0) (f-1 - f_floor), a = 0.05 if f-1 < f-2 + 0.015
+  else 0.2, f_floor = f-2 if f-1 > f-2 + 0.015 else 0 (OUR READING: the ADD's typeset formula is garbled in
+  extraction; this is the form that matches its stated behaviour).
+  clip to [0, 1 - f_pow]; ff < MDFF -> 0, except (s. 3.8.3) near-coast cells next to a cell above MDFF, which
+  take min(ff, half the lowest such neighbour) (OUR READING of "interpolation between zero and the neighbour").
+MDFF is the mean of the asc/dsc tables.
 
-Variants written alongside, for before/after: 'placeholder' (step-0 dry reference: per-pixel 10th
-percentile of Q in Jun-Dec 2024, no MDFF, no flash) and 'noflash' (full chain without flash detection).
+Variants written for before/after (06 scores every key):
+  full        everything above
+  noflash     no flash filter
+  nomerge     no spatial merge (point-wise FF only)
+  nofhop      fhop = 0 (fixed 0.67/0.33 weights, no 2-day term)
+  nocoast     no coastal MDFF exception
+  clim_raw    no MDFF at all (and so no merge)
+  mdff_half   MDFF halved
+  norain      no daily rain flags (the training tables keep theirs), no flash filter
 
     uv run --no-project --with numpy --with scipy python experiments/floodscan_repro/05_ff_chain.py
 """
 
 import datetime as dt
+import sys
+from collections import deque
 from pathlib import Path
 
 import numpy as np
-from scipy.ndimage import binary_dilation, convolve, label
+from scipy.ndimage import convolve, label
+
+from aer_chain import PASSES, clim_doy, initial_ff, load_year, rain_flags
 
 SRC = Path("data/floodscan_repro/csu_amsr2_grid/2024")
 TAB = Path("data/floodscan_repro/static_tables.npz")
 OUT = Path("data/floodscan_repro/ff_2024.npz")
+if len(sys.argv) > 1:  # e.g. an in-sample code test: `... 05_ff_chain.py /tmp/tables_2024.npz /tmp/ff.npz`
+    TAB, OUT = Path(sys.argv[1]), Path(sys.argv[2])
 D0, D1 = dt.date(2024, 6, 1), dt.date(2024, 12, 31)
 T0, T1 = dt.date(2024, 8, 1), dt.date(2024, 11, 30)
-W_EXP = 1 / 0.0012
+OUTLIER_DEV = 0.10
 
 t = np.load(TAB)
-fpow = t["fpow"]
-
-
-def clim_doy(d):
-    return dt.date(2023, d.month, d.day).timetuple().tm_yday
-
-
-def running_median(x, lo, hi, min_frac=0.5):
-    out = np.full_like(x, np.nan)
-    n = hi - lo + 1
-    for i in range(len(x)):
-        a, b = i + lo, i + hi
-        if a < 0 or b >= len(x):
-            continue
-        w = x[a : b + 1]
-        ok = np.isfinite(w).sum(0) >= min_frac * n
-        with np.errstate(all="ignore"):
-            out[i] = np.where(ok, np.nanmedian(w, 0), np.nan)
-    return out
-
-
-days = [D0 + dt.timedelta(k) for k in range((D1 - D0).days + 1)]
-miss_file = SRC.parent / "missing.txt"  # days 03 found absent upstream: no data, not an error
-ABSENT = {line.split()[0] for line in miss_file.read_text().splitlines()} if miss_file.exists() else set()
-Q = {}
-for f in ("36", "18"):
-    for p in ("asc", "dsc"):
-        arr = np.full((len(days), 80, 80), np.nan)
-        for i, d in enumerate(days):
-            path = SRC / f"{d:%Y%m%d}.npz"
-            if not path.exists():
-                if d.isoformat() in ABSENT:
-                    continue
-                raise FileNotFoundError(f"{path} missing and not recorded absent: run 03 for 2024 first")
-            z = np.load(path)
-            v, h = np.flipud(z[f"fcdr_tb{f}v_{p}"]), np.flipud(z[f"fcdr_tb{f}h_{p}"])
-            pri = (v - h) / (v + h)
-            with np.errstate(invalid="ignore"):
-                arr[i] = np.sqrt(pri + 0.11) - 0.58 * pri
-        Q[(f, p)] = arr
-
+fpow, near_coast = t["fpow"], t["near_coast"]
+days, Q, TB = load_year(SRC, D0, D1)
 dcs = np.array([clim_doy(d) for d in days])
-VAR_FLOOR_ALT = 0.005 ** 2  # sensitivity: lets this year's expected 61-day median carry weight
-FF, FFPH, FFV = {}, {}, {}
-for (f, p), q in Q.items():
-    key = f"{f}_{p}"
-    qpow = float(t[f"Qpow_{key}"])
-    with np.errstate(invalid="ignore", divide="ignore"):
-        ql = (q - fpow * qpow) / (1 - fpow)
-    q31r, q61r = running_median(ql, -30, 0), running_median(ql, -60, 0)
-    b31, b61 = t[f"b31_{key}"][dcs - 1], t[f"b61_{key}"][dcs - 1]
-    qdc, var61, wet = t[f"Qdc_{key}"][dcs - 1], t[f"var61_{key}"][dcs - 1], t[f"wet_{key}"][dcs - 1]
-    q61epw = ((q31r + b31) + (q61r + b61)) / 2
-    with np.errstate(invalid="ignore", divide="ignore"):
-        qdry = (qdc / var61 + W_EXP * q61epw) / (1 / var61 + W_EXP)
-        qdry = np.where(wet, qdc, qdry)
-        FF[(f, p)] = (q - qpow * fpow - qdry * (1 - fpow)) / (qpow - qdry)
-        qph = np.nanpercentile(q, 10, axis=0)
-        FFPH[(f, p)] = (q - qph) / (qpow - qph)
-        var_alt = np.maximum(var61, VAR_FLOOR_ALT)
-        qdry_v = np.where(wet, qdc, (qdc / var_alt + W_EXP * q61epw) / (1 / var_alt + W_EXP))
-        FFV[(f, p)] = (q - qpow * fpow - qdry_v * (1 - fpow)) / (qpow - qdry_v)
-    for d_ in (FF, FFPH, FFV):
-        d_[(f, p)][:, fpow > 0.5] = np.nan  # mostly-water cells, excluded as in 04
+NT = len(days)
+
+# --- rain flags per pass (s. 3.7)
+RAIN = rain_flags(TB, {p: t[f"SI0_{p}"] for p in PASSES}, dcs)
+for p in PASSES:
+    valid = np.isfinite(TB[("18v", p)]) & (t["focean"] <= 0.001)[None]
+    print(f"2024 {p}: rain-flagged {RAIN[p][valid].mean():.3f} of valid inland cell-days")
+Q_flagged = {k: np.where(RAIN[k[1]], np.nan, q) for k, q in Q.items()}
+
+FF = initial_ff(Q_flagged, t, dcs, fpow)  # {'pw' | '61' | 'sp': {(f, p): (NT, 80, 80)}}
+FF_NR = initial_ff(Q, t, dcs, fpow)
 
 mdff = (t["MDFF_36_asc"] + t["MDFF_36_dsc"]) / 2
+fhop_tab = t["fhop"]
+if not np.isfinite(fhop_tab[dcs[(days.index(T0)) : (days.index(T1) + 1)] - 1][:, fpow <= 0.5]).all():
+    raise ValueError("fhop table has gaps inside the test window")
 wet36 = t["wet_36_asc"] | t["wet_36_dsc"]
 yy, xx = np.mgrid[-2:3, -2:3]
 circle = ((yy ** 2 + xx ** 2) <= 2.0 ** 2).astype(float)
 circle /= circle.sum()
 neigh8 = np.ones((3, 3)); neigh8[1, 1] = 0
 
-# flash detection over passes in time order (dsc then asc each day)
-flagged = {k: np.zeros(FF[k].shape, bool) for k in (("36", "asc"), ("36", "dsc"))}
+# --- flash detection over passes in time order (dsc then asc each day), s. 3.8.2
+flagged = {p: np.zeros((NT, 80, 80), bool) for p in PASSES}
 prev36 = np.full((80, 80), np.nan)
+last_valid_t = np.full((80, 80), -np.inf)  # time (days) of the last valid ff36
+prev_flash_or_rain = np.zeros((80, 80), bool)  # last test result at each cell (step 3b)
 n_flash = 0
-for i in range(len(days)):
+for i in range(NT):
     dc = dcs[i] - 1
-    for p in ("dsc", "asc"):
-        ff36, ff18 = FF[("36", p)][i], FF[("18", p)][i]
+    t_flash = 1.5 + 4.75 * np.nan_to_num(fhop_tab[dc], nan=0.0)
+    for p, tnow in (("dsc", i + 0.0), ("asc", i + 0.5)):
+        ff36, ff18, rain = FF["pw"][("36", p)][i], FF["pw"][("18", p)][i], RAIN[p][i]
         newly = (ff18 > 0.05) & (prev36 < 0.05)
         frac = convolve(newly.astype(float), circle, mode="constant")
-        cand = newly & (frac > 0.75) & ~wet36[dc] & ~(ff36 < mdff[dc])
+        cand = newly & (frac > 0.75) & (tnow - last_valid_t <= t_flash) & ~wet36[dc] & ~(ff36 < mdff[dc])
         cand &= convolve(cand.astype(float), neigh8, mode="constant") > 0  # drop isolated
+        flash = np.zeros((80, 80), bool)
         if cand.any():
-            lab, _ = label(ff36 > 0.025)
+            lab, _ = label((ff36 > 0.025) | (rain & prev_flash_or_rain))
             keep = np.isin(lab, np.unique(lab[cand & (lab > 0)]))
             flash = (cand | keep) & np.isfinite(ff36)
-            flagged[("36", p)][i] = flash
+            flagged[p][i] = flash
             n_flash += int(flash.sum())
-        prev36 = np.where(np.isfinite(ff36) & ~flagged[("36", p)][i], ff36, prev36)
-print(f"flash detection flagged {n_flash} pass-cells over {len(days)} days")
+        observed = np.isfinite(TB[("18v", p)][i])
+        prev_flash_or_rain = np.where(observed, flash | rain, prev_flash_or_rain)
+        good = np.isfinite(ff36) & ~flash
+        prev36 = np.where(good, ff36, prev36)
+        last_valid_t = np.where(good, tnow, last_valid_t)
+print(f"flash detection flagged {n_flash} pass-cells over {NT} days")
 
 
-def daily(ffd, use_flags, mdff_scale=1.0, mdff_cap=None):
+def neighbour_min_above(x, thr):
+    """Lowest 8-neighbour value that is >= thr (inf where none)."""
+    y = np.where(x >= thr, x, np.inf)
+    pad = np.pad(y, 1, constant_values=np.inf)
+    out = np.full_like(x, np.inf)
+    for dy in (-1, 0, 1):
+        for dx in (-1, 0, 1):
+            if dy or dx:
+                out = np.minimum(out, pad[1 + dy : 81 + dy, 1 + dx : 81 + dx])
+    return out
+
+
+def finish(ffsets, use_flash=True, mdff_scale=1.0, use_merge=True, use_fhop=True, coastal=True):
+    """Daily final FF (s. 3.8.3) for the test window. ffsets: {'pw' | '61' | 'sp': {(f, p): ...}}."""
+    hist = deque(maxlen=15)  # final FF above MDFF, per day
+    f1, f2, t1 = np.full((80, 80), np.nan), np.full((80, 80), np.nan), np.full((80, 80), np.nan)
+    last_inst, last_inst_i = np.full((80, 80), np.nan), np.full((80, 80), -1)
     out = []
-    for i, d in enumerate(days):
-        if not (T0 <= d <= T1):
-            continue
-        vals, wts, today_n = [], [], np.zeros((80, 80))
-        for k, w in ((i, 0.67), (i - 1, 0.33)):
-            for p in ("asc", "dsc"):
-                x = ffd[("36", p)][k].copy()
-                if use_flags:
-                    x[flagged[("36", p)][k]] = np.nan
-                vals.append(np.where(np.isfinite(x), x, 0.0) * w)
-                wts.append(np.isfinite(x) * w)
-                if k == i:
-                    today_n += np.isfinite(x)
-        W = np.sum(wts, 0)
-        n_all = np.sum([wt > 0 for wt in wts], 0)
-        m = np.where(W > 0, np.sum(vals, 0) / np.where(W > 0, W, 1), np.nan)
-        m[(n_all == 1) & (today_n == 0)] = np.nan
-        m = np.clip(m, 0, 1 - fpow)
-        if mdff_scale:
-            thr = mdff[dcs[i] - 1] * mdff_scale
-            if mdff_cap is not None:
-                thr = np.minimum(thr, mdff_cap)
-            m = np.where(m < thr, 0.0, m)
-        out.append(m)
+    for i in range(NT):
+        dc = dcs[i] - 1
+        fh = np.nan_to_num(fhop_tab[dc], nan=0.0) if use_fhop else np.zeros((80, 80))
+        w_day = {0: 0.67 - 0.33 * fh, 1: np.full((80, 80), 0.33), 2: 0.33 * fh}
+        avg = {}
+        for kind in ("pw", "61", "sp"):
+            vals, wts = [], []
+            for back in (0, 1, 2):
+                k = i - back
+                if k < 0 or (back == 2 and not use_fhop):
+                    continue
+                for p in PASSES:
+                    x = ffsets[kind][("36", p)][k].copy()
+                    if use_flash:
+                        x[flagged[p][k]] = np.nan
+                    vals.append(x)
+                    wts.append(np.where(np.isfinite(x), w_day[back], 0.0))
+            if kind == "pw":
+                today_valid = np.isfinite(vals[0]) | np.isfinite(vals[1])
+                prior_valid = (np.isfinite(vals[2]) | np.isfinite(vals[3])) if len(vals) > 3 else np.zeros((80, 80), bool)
+            # no prior-day data: the last earlier instantaneous value at half the prior-day weight
+            if i >= 1:
+                fallback = ~prior_valid & np.isfinite(last_inst) & (last_inst_i < i - 1)
+                vals.append(np.where(fallback, last_inst, np.nan))
+                wts.append(np.where(fallback, 0.33 / 2, 0.0))
+            V, Wt = np.stack(vals), np.stack(wts)
+            with np.errstate(all="ignore"):
+                med = np.nanmedian(V, 0)
+                outlier = np.abs(V - med) > OUTLIER_DEV
+                Wt = np.where(outlier, Wt / 2, Wt)
+                W = Wt.sum(0)
+                m = np.where(W > 0, np.nansum(np.nan_to_num(V) * Wt, 0) / np.where(W > 0, W, 1), np.nan)
+            n_valid = np.isfinite(V).sum(0)
+            m[(n_valid == 1) & ~today_valid] = np.nan
+            avg[kind] = m
+        if i >= 1:  # instantaneous record for the fallback (the previous day's passes, in order)
+            for p in ("dsc", "asc"):
+                x = ffsets["pw"][("36", p)][i - 1]
+                ok = np.isfinite(x) & (~flagged[p][i - 1] if use_flash else True)
+                last_inst = np.where(ok, x, last_inst)
+                last_inst_i = np.where(ok, i - 1, last_inst_i)
+        thr = mdff[dc] * mdff_scale if mdff_scale else None
+        final = avg["pw"].copy()
+        if use_merge and thr is not None and len(hist) == 15:
+            nff = np.sum(hist, 0)
+            trig = nff >= 12
+            with np.errstate(invalid="ignore"):
+                region = (avg["sp"] > thr) & (avg["61"] > thr)
+            if (trig & region).any():
+                lab, n = label(region)
+                wsp = np.zeros((80, 80))
+                for r in np.unique(lab[trig & region]):
+                    if r > 0:
+                        wsp[lab == r] = np.clip((nff[trig & (lab == r)].max() - 11) / 3, 0, 1)
+                with np.errstate(invalid="ignore"):
+                    merged = np.fmax(wsp * avg["sp"] + (1 - wsp) * avg["pw"], avg["pw"])
+                final = np.where(wsp > 0, merged, final)
+        # fill-in from the last two valid 3-day averages
+        gap = ~np.isfinite(final) & np.isfinite(f1)
+        if gap.any():
+            with np.errstate(invalid="ignore"):
+                a = np.where(f1 < f2 + 0.015, 0.05, 0.2)
+                floor = np.where(f1 > f2 + 0.015, f2, 0.0)
+                a, floor = np.where(np.isfinite(f2), a, 0.2), np.where(np.isfinite(f2), floor, 0.0)
+                fill = f1 - a * np.maximum(i - t1, 0) * (f1 - floor)
+                final = np.where(gap, np.maximum(fill, floor), final)
+        final = np.clip(final, 0, 1 - fpow)
+        if thr is not None:
+            with np.errstate(invalid="ignore"):
+                below = final < thr
+                if coastal:
+                    nmin = neighbour_min_above(np.nan_to_num(final, nan=-1.0), thr)
+                    excepted = below & near_coast & np.isfinite(nmin)
+                    final = np.where(excepted, np.minimum(final, 0.5 * nmin), final)
+                    below &= ~excepted
+            final = np.where(below, 0.0, final)
+            hist.append(np.nan_to_num(final, nan=0.0) >= thr)
+        valid_avg = np.isfinite(avg["pw"])
+        f2 = np.where(valid_avg, f1, f2)
+        f1 = np.where(valid_avg, avg["pw"], f1)
+        t1 = np.where(valid_avg, i, t1)
+        if T0 <= days[i] <= T1:
+            out.append(final)
     return np.stack(out).astype("float32")
 
 
 test_days = [d for d in days if T0 <= d <= T1]
 out = {
-    "full": daily(FF, True),                        # AER chain as built here
-    "noflash": daily(FF, False),                    # ... without the simplified flash filter
-    "clim_raw": daily(FF, False, mdff_scale=0),     # climatology Q_dry only: no MDFF, no flash
-    "mdff_half": daily(FF, False, mdff_scale=0.5),  # MDFF sensitivity
-    "mdff_cap06": daily(FF, False, mdff_cap=0.06),  # MDFF capped at AER's worked example
-    "varfloor": daily(FFV, False),                  # var61 floor 0.005^2: this year's median counts
-    "varfloor_raw": daily(FFV, False, mdff_scale=0),
-    "placeholder": daily(FFPH, False, mdff_scale=0),
+    "full": finish(FF),
+    "noflash": finish(FF, use_flash=False),
+    "nomerge": finish(FF, use_merge=False),
+    "nofhop": finish(FF, use_fhop=False),
+    "nocoast": finish(FF, coastal=False),
+    "clim_raw": finish(FF, mdff_scale=0),
+    "mdff_half": finish(FF, mdff_scale=0.5),
+    "norain": finish(FF_NR, use_flash=False),
 }
 OUT.parent.mkdir(parents=True, exist_ok=True)
 np.savez_compressed(OUT, days=np.array([d.isoformat() for d in test_days]), fpow=fpow, focean=t["focean"], **out)

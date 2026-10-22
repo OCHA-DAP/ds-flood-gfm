@@ -1,10 +1,13 @@
 """Step 1a: AER's static tables (ADD s. 4.11-4.20) for the West Africa box, from CSU AMSR2 grids.
 
 Training years: 2023 and 2025, June-December (2024 is the test year and is left out).
-Inputs: data/floodscan_repro/csu_amsr2_grid/YYYY/YYYYMMDD.npz (03), data/floodscan_repro/static_0p25.tif (00).
+Inputs: data/floodscan_repro/csu_amsr2_grid/YYYY/YYYYMMDD.npz (03, bands 36,18,23,89),
+        data/floodscan_repro/static_0p25.tif (00).
 Output: data/floodscan_repro/static_tables.npz.
 
 Per frequency (36, 18 GHz) and pass (asc, dsc), on the 0.25-deg grid, north-up:
+  SI0         s. 3.7: rain-flag scattering threshold climatology (rainflags.py), from the same years.
+              Rain-flagged passes carry no Q into any table. Frozen flags do not apply at 0-20 N; no flash flags.
   Q_pow       s. 4.11 DEPARTURE: median Q over open sea (the box has no inland water the radiometer sees
               as water; see the comment at the fit). Re-derived because the CSU calibration differs.
   cells with f_pow > 0.5 (essentially Lake Chad) are excluded throughout
@@ -15,7 +18,6 @@ Per frequency (36, 18 GHz) and pass (asc, dsc), on the 0.25-deg grid, north-up:
   b31         s. 4.15: Q31c(d) - Q31c(d-15), spatial median
   b61         s. 4.14 with a61 = 1: mean over years of (centred Q61 - retrospective Q61), spatial median
               (AER fits a61 per day by regression; two years cannot support it)
-  Spatial windows are AER's rescaled from 5-arcminute to 0.25-deg cells (W_VAR, W_B, W_MDFF below).
   QdLUT       s. 4.16: 75th percentile of land Q in NDVI x f_tree bins of 0.05 (20% subsample)
   wetland     OUR HEURISTIC, not AER's (its seven rule groups are not published):
               Q61c - QdLUT > WET_THR on that day
@@ -24,19 +26,26 @@ Per frequency (36, 18 GHz) and pass (asc, dsc), on the 0.25-deg grid, north-up:
               cells, 31-day average), ff(sigma) = sigma / (Q_pow - Qdc), MDFF0 = 3 ff, capped 0.25 where
               f_pow < 0.49, MDFF = (MDFF0 + max over available days) / 2
   near_coast  s. 4.20 rule: f_pow > 0.01 and >= 3 cells with f_pow > 0.75 in the MDFF window (saved for 05)
-No rain, frozen or flash flags are applied to the training data (stage-1 data has no 23/89 GHz).
+  fhop        s. 4.19 (one table, 36 GHz): in-sample initial point-wise FF per pass minus its 15-day running
+              mean, negatives to 0, time derivative; Pearson kurtosis k of the derivatives per day-of-year over
+              a 61-day window across years and passes; fhop = clip((log10 k - 0.75) / 0.75, 0, 1);
+              near-coast cells: fhop = min(5 f_pow, 1)
+Spatial windows are AER's rescaled from 5-arcminute to 0.25-deg cells (W_VAR, W_B, W_MDFF below).
 
     uv run --no-project --with numpy --with scipy --with rasterio python experiments/floodscan_repro/04_static_tables.py
 """
 
 import datetime as dt
+import sys
 from pathlib import Path
 
 import numpy as np
 import rasterio
 from scipy.ndimage import median_filter, uniform_filter
+from scipy.stats import kurtosis
 
-import sys
+from aer_chain import FREQS, PASSES, clim_doy, initial_ff, load_year, rain_flags, running_mean, running_median
+from rainflags import scattering_index, si0_from_training
 
 SRC = Path("data/floodscan_repro/csu_amsr2_grid")
 STATIC = Path("data/floodscan_repro/static_0p25.tif")
@@ -44,7 +53,6 @@ OUT = Path("data/floodscan_repro/static_tables.npz")
 YEARS = (2023, 2025)
 if len(sys.argv) > 1:  # dry run on other years, e.g. `... 04_static_tables.py 2023 /tmp/out.npz`
     YEARS, OUT = tuple(int(y) for y in sys.argv[1].split(",")), Path(sys.argv[2])
-FREQS, PASSES = ("36", "18"), ("asc", "dsc")
 WET_THR = 0.02
 Q0 = 0.32  # eq. 25 constant, AMSR-E scale (kept as published; our calibration differs)
 # AER's spatial windows are counted in 5-arcminute cells; one 0.25-deg cell is 3 of them. Until 2026-10-21
@@ -52,47 +60,6 @@ Q0 = 0.32  # eq. 25 constant, AMSR-E scale (kept as published; our calibration d
 # Rescaled to the nearest odd width: 9x9 -> 3x3 (var61), 7x7 -> 3x3 (b31, b61), 11x11 -> 5x5 (MDFF median
 # and the near-coast test); AER's 3x3 mean before the MDFF median is one cell here and is dropped.
 W_VAR, W_B, W_MDFF = 3, 3, 5
-
-
-def clim_doy(d):  # day of year on a 365-day calendar
-    return dt.date(2023, d.month, d.day).timetuple().tm_yday
-
-
-def load_q(year):
-    days = [dt.date(year, 6, 1) + dt.timedelta(k) for k in range((dt.date(year, 12, 31) - dt.date(year, 6, 1)).days + 1)]
-    q = {(f, p): np.full((len(days), 80, 80), np.nan) for f in FREQS for p in PASSES}
-    miss_file = SRC / "missing.txt"  # days 03 found absent upstream: no data, not an error
-    absent = {line.split()[0] for line in miss_file.read_text().splitlines()} if miss_file.exists() else set()
-    for i, d in enumerate(days):
-        path = SRC / f"{year}" / f"{d:%Y%m%d}.npz"
-        if not path.exists():
-            if d.isoformat() in absent:
-                continue
-            raise FileNotFoundError(f"{path} missing and not recorded absent: run 03 for {year} first")
-        z = np.load(path)
-        for f in FREQS:
-            for p in PASSES:
-                v, h = np.flipud(z[f"fcdr_tb{f}v_{p}"]), np.flipud(z[f"fcdr_tb{f}h_{p}"])  # CSU rows run south->north
-                pri = (v - h) / (v + h)
-                with np.errstate(invalid="ignore"):
-                    q[(f, p)][i] = np.sqrt(pri + 0.11) - 0.58 * pri
-    return days, q
-
-
-def running_median(x, lo, hi, min_frac=0.5):
-    """nanmedian over days [i+lo, i+hi]; NaN where the window leaves the record or < min_frac is valid."""
-    out = np.full_like(x, np.nan)
-    n = hi - lo + 1
-    for i in range(len(x)):
-        a, b = i + lo, i + hi
-        if a < 0 or b >= len(x):
-            continue
-        w = x[a : b + 1]
-        ok = np.isfinite(w).sum(0) >= min_frac * n
-        with np.errstate(all="ignore"):
-            out[i] = np.where(ok, np.nanmedian(w, 0), np.nan)
-    return out
-
 
 with rasterio.open(STATIC) as ds:
     names = list(ds.descriptions)
@@ -108,8 +75,32 @@ DOYS = np.arange(1, 366)
 ndvi_doy = np.stack([np.array([np.interp(d, slot_doy, ndvi_slots[:, i, j], period=365)
                                for d in DOYS]).reshape(-1) for i, j in np.ndindex(80, 80)], 1).reshape(365, 80, 80)
 
-data = {y: load_q(y) for y in YEARS}
+data = {y: load_year(SRC / str(y), dt.date(y, 6, 1), dt.date(y, 12, 31)) for y in YEARS}
 tables = {"fpow": fpow, "ftree": ftree, "focean": focean, "near_coast": near_coast, "ndvi_doy": ndvi_doy, "years": np.array(YEARS)}
+
+
+def on_doy_of(days):
+    doy = np.array([clim_doy(d) for d in days])
+    return lambda a: np.stack([a[np.where(doy == dc)[0][0]] if dc in doy else np.full((80, 80), np.nan) for dc in DOYS])
+
+
+# --- rain flags (s. 3.7; rainflags.py). SI0 is built from these same training years; the 61-day SI median
+# is clipped at the record's ends so June and December get a threshold too (31+ days in the window).
+si = {y: {p: scattering_index(data[y][2][("18v", p)], data[y][2][("23v", p)], data[y][2][("89va", p)]) for p in PASSES} for y in YEARS}
+si0 = si0_from_training({p: np.stack([on_doy_of(data[y][0])(running_median(si[y][p], -30, 30, clip=True)) for y in YEARS]) for p in PASSES})
+for p in PASSES:
+    tables[f"SI0_{p}"] = si0[p]
+for y in YEARS:
+    days, q, tb = data[y]
+    doy = np.array([clim_doy(d) for d in days])
+    flags = rain_flags(tb, si0, doy)
+    for p in PASSES:
+        for f in FREQS:
+            q[(f, p)][flags[p]] = np.nan
+        valid = np.isfinite(tb[("18v", p)]) & inland[None]
+        in_season = (doy >= 213) & (doy <= 334)
+        print(f"{y} {p}: rain-flagged {flags[p][valid].mean():.3f} of valid inland cell-days "
+              f"(Aug-Nov {flags[p][in_season][:, inland].mean():.3f})")
 
 for f in FREQS:
     for p in PASSES:
@@ -133,12 +124,11 @@ for f in FREQS:
         # --- land Q, centred and retrospective medians per year (s. 4.12)
         q61c_y, q31c_y, q61r_y, var7_y = [], [], [], []
         for y in YEARS:
-            days, q = data[y]
+            days, q, _ = data[y]
             with np.errstate(invalid="ignore", divide="ignore"):
                 ql = (q[(f, p)] - fpow * qpow) / (1 - fpow)
             ql[:, fpow > 0.5] = np.nan  # mostly-water cells (Lake Chad): the land correction is meaningless there
-            doy = np.array([clim_doy(d) for d in days])
-            on_doy = lambda a: np.stack([a[np.where(doy == dc)[0][0]] if dc in doy else np.full((80, 80), np.nan) for dc in DOYS])
+            on_doy = on_doy_of(days)
             q61c_y.append(on_doy(running_median(ql, -30, 30)))
             q31c_y.append(on_doy(running_median(ql, -15, 15)))
             q61r_y.append(on_doy(running_median(ql, -60, 0)))
@@ -164,18 +154,18 @@ for f in FREQS:
         rng = np.random.default_rng(0)
         qs, ns, ts = [], [], []
         for y in YEARS:
-            days, q = data[y]
+            days, q, _ = data[y]
             with np.errstate(invalid="ignore", divide="ignore"):
                 ql = (q[(f, p)] - fpow * qpow) / (1 - fpow)
             for i, d in enumerate(days):
                 m = np.isfinite(ql[i]) & inland & (fpow < 0.2) & (rng.random((80, 80)) < 0.2)
                 qs.append(ql[i][m]); ns.append(ndvi_doy[clim_doy(d) - 1][m]); ts.append(ftree[m])
         qs, ns, ts = map(np.concatenate, (qs, ns, ts))
-        nb = np.clip((ns / 0.05).astype(int), 0, 19); tb = np.clip((ts / 0.05).astype(int), 0, 19)
+        nb = np.clip((ns / 0.05).astype(int), 0, 19); tb_ = np.clip((ts / 0.05).astype(int), 0, 19)
         lut = np.full((20, 20), np.nan)
         for a in range(20):
             for b in range(20):
-                m = (nb == a) & (tb == b)
+                m = (nb == a) & (tb_ == b)
                 if m.sum() >= 50:
                     lut[a, b] = np.percentile(qs[m], 75)
         # fill empty bins from the nearest filled bin in NDVI, then in f_tree
@@ -220,6 +210,47 @@ for f in FREQS:
         ok = np.isfinite(mdff[200])
         print(f"   DOY 200 (Jul 19): median Qdc {np.nanmedian(qdc[200]):.4f}, wet share {wet[200][inland].mean():.3f}, "
               f"median MDFF {np.nanmedian(mdff[200][ok]):.3f}, sqrt(var61) median {np.sqrt(np.nanmedian(var61[200])):.4f}")
+
+# --- f_hop (s. 4.19): kurtosis of the derivatives of the in-sample initial point-wise FF, 36 GHz, both passes
+series = []  # (day-of-year per sample, FF derivative per sample) for each year and pass
+for y in YEARS:
+    days, q, _ = data[y]
+    doy = np.array([clim_doy(d) for d in days])
+    ff = initial_ff(q, tables, doy, fpow, freqs=("36",))["pw"]
+    for p in PASSES:
+        x = ff[("36", p)]
+        x = np.maximum(x - running_mean(x, 7), 0)  # 15-day running mean removed, negatives to zero
+        # derivative between successive valid observations of each cell (a pass sees a cell every ~2 days
+        # at these latitudes, so consecutive-day differences would discard most of the record)
+        d = np.full_like(x, np.nan)
+        last, t_last = np.full((80, 80), np.nan), np.full((80, 80), np.nan)
+        for i in range(len(days)):
+            ok = np.isfinite(x[i])
+            with np.errstate(invalid="ignore"):
+                d[i] = np.where(ok & np.isfinite(last), (x[i] - last) / (i - t_last), np.nan)
+            last, t_last = np.where(ok, x[i], last), np.where(ok, i, t_last)
+        series.append((doy, d))
+fhop = np.full((365, 80, 80), np.nan)
+FHOP_MIN_N = 8  # fewer derivative samples than this in a cell's 61-day window: fhop 0 (AER's typical value)
+fhop_defaulted = 0  # worst day-of-year count of such land cells, printed below
+for dc in DOYS:
+    parts = [d[(doy >= dc - 30) & (doy <= dc + 30)] for doy, d in series]
+    sample = np.concatenate(parts)
+    if np.median(np.isfinite(sample).sum(0)[fpow <= 0.5]) < 20:
+        continue  # day-of-year outside the training season: no table (05 raises if it needs it)
+    with np.errstate(all="ignore"):
+        k = kurtosis(sample, axis=0, fisher=False, nan_policy="omit")
+        k = np.where(np.nanvar(sample, 0) > 0, k, 1.0)  # a flat series has no outliers: fhop 0
+        k = np.where(np.isfinite(sample).sum(0) >= FHOP_MIN_N, k, 1.0)  # too few samples: fhop 0 (counted below)
+        fhop[dc - 1] = np.clip((np.log10(k) - 0.75) / 0.75, 0, 1)
+    few = (np.isfinite(sample).sum(0) < FHOP_MIN_N) & (fpow <= 0.5) & ~near_coast
+    fhop_defaulted = max(fhop_defaulted, int(few.sum()))
+fhop = np.where(near_coast[None], np.minimum(5 * fpow, 1)[None], fhop)
+tables["fhop"] = fhop
+in_season = slice(212, 334)
+print(f"fhop Aug-Nov: inland median {np.nanmedian(fhop[in_season][:, inland]):.3f}, share > 0: "
+      f"{np.nanmean(fhop[in_season][:, inland] > 0):.3f}, share = 1: {np.nanmean(fhop[in_season][:, inland] >= 1):.3f}; "
+      f"land cells defaulted to 0 for lack of samples (worst day): {fhop_defaulted}")
 
 OUT.parent.mkdir(parents=True, exist_ok=True)
 np.savez_compressed(OUT, **tables)

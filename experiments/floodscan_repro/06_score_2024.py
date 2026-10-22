@@ -15,11 +15,14 @@ turns cells into NaN, so per-variant populations would differ). Per variant:
   r_blk    median per-block temporal r, 0.5-deg blocks with SFED max > 0.2
   r_lga1/2 median LGA temporal r, SFED seasonal max 0.10-0.20 / > 0.20 (small n: see counts)
   peak     median ours / SFED at each LGA's SFED peak, LGAs with SFED max > 0.10
+  peak_mm  median max(ours) / max(SFED) over the window, same LGAs (height regardless of day)
+  lag      median (day of our max - day of SFED max), same LGAs; positive = ours later
 
     uv run python experiments/floodscan_repro/06_score_2024.py
 """
 
 import datetime as dt
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -33,6 +36,8 @@ from rasterio.windows import Window
 FS = Path("/Users/zackarno/Documents/CHD/repos/ds-flood-gfm/data/fusion/raw/floodscan/africa_daily")  # main checkout cache
 FF = Path("data/floodscan_repro/ff_2024.npz")
 OUT = Path("results/floodscan_repro")
+if len(sys.argv) > 1:  # e.g. an in-sample code test: `... 06_score_2024.py /tmp/ff.npz /tmp/results_dir`
+    FF, OUT = Path(sys.argv[1]), Path(sys.argv[2])
 
 z = np.load(FF)
 days = [dt.date.fromisoformat(s) for s in z["days"]]
@@ -99,9 +104,11 @@ for v in VARIANTS:
         r = np.corrcoef(x[okl], y[okl])[0, 1] if okl.sum() >= 60 and np.std(y[okl]) > 0 and np.std(x[okl]) > 0 else np.nan
         pk = int(np.nanargmax(y)) if np.isfinite(y).any() else None
         ratio = x[pk] / y[pk] if pk is not None and y[pk] > 0 else np.nan
-        lr.append((r, ratio))
+        mm = np.nanmax(x) / y[pk] if pk is not None and y[pk] > 0 and np.isfinite(x).any() else np.nan
+        lag = int(np.nanargmax(x)) - pk if pk is not None and np.isfinite(x).any() else np.nan
+        lr.append((r, ratio, mm, lag))
         rows.append({"variant": v, "lga": adm2["ADM2_EN"].iloc[j], "pcode": pc, "state": adm2["ADM1_EN"].iloc[j],
-                     "sfed_max": smax_l[j], "r": r, "peak_ratio": ratio})
+                     "sfed_max": smax_l[j], "r": r, "peak_ratio": ratio, "max_over_max": mm, "lag_days": lag})
     lr = np.array(lr)
     b1 = (smax_l >= 0.10) & (smax_l < 0.20)
     b2 = smax_l >= 0.20
@@ -113,6 +120,8 @@ for v in VARIANTS:
         "r_cell": rc, "r_blk": rb,
         "r_lga1": np.nanmedian(lr[b1, 0]), "r_lga2": np.nanmedian(lr[b2, 0]),
         "peak": np.nanmedian(lr[smax_l >= 0.10, 1]),
+        "peak_mm": np.nanmedian(lr[smax_l >= 0.10, 2]),
+        "lag": np.nanmedian(lr[smax_l >= 0.10, 3]),
     })
 tab = pd.DataFrame(summary).set_index("variant")
 print(f"\ncounts: cells with SFED max > 0.2: {nc}; 0.5-deg blocks: {nb}; LGAs 0.10-0.20: {int(b1.sum())}, > 0.20: {int(b2.sum())}")
