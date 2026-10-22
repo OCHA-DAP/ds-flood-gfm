@@ -36,6 +36,7 @@ Variants written for before/after (06 scores every key):
 """
 
 import datetime as dt
+import json
 import sys
 from collections import deque
 from pathlib import Path
@@ -52,7 +53,15 @@ if len(sys.argv) > 1:  # e.g. an in-sample code test: `... 05_ff_chain.py /tmp/t
     TAB, OUT = Path(sys.argv[1]), Path(sys.argv[2])
 D0, D1 = dt.date(2024, 6, 1), dt.date(2024, 12, 31)
 T0, T1 = dt.date(2024, 8, 1), dt.date(2024, 11, 30)
-OUTLIER_DEV = 0.10
+# Fit knobs (07): a JSON file as argv[3] with any of w_exp, qpow_offset, mdff_scale, outlier_dev, variants.
+P = {"w_exp": 1 / 0.0012, "qpow_offset": 0.0, "mdff_scale": 1.0, "outlier_dev": 0.10, "variants": None}
+if len(sys.argv) > 3:
+    overrides = json.loads(Path(sys.argv[3]).read_text())
+    unknown = set(overrides) - set(P)
+    if unknown:
+        raise KeyError(f"unknown fit parameters {sorted(unknown)}")
+    P.update(overrides)
+OUTLIER_DEV = P["outlier_dev"]
 
 t = np.load(TAB)
 fpow, near_coast = t["fpow"], t["near_coast"]
@@ -67,10 +76,10 @@ for p in PASSES:
     print(f"2024 {p}: rain-flagged {RAIN[p][valid].mean():.3f} of valid inland cell-days")
 Q_flagged = {k: np.where(RAIN[k[1]], np.nan, q) for k, q in Q.items()}
 
-FF = initial_ff(Q_flagged, t, dcs, fpow)  # {'pw' | '61' | 'sp': {(f, p): (NT, 80, 80)}}
-FF_NR = initial_ff(Q, t, dcs, fpow)
+FF = initial_ff(Q_flagged, t, dcs, fpow, w_exp=P["w_exp"], qpow_offset=P["qpow_offset"])  # {'pw' | '61' | 'sp': {(f, p): ...}}
+FF_NR = initial_ff(Q, t, dcs, fpow, w_exp=P["w_exp"], qpow_offset=P["qpow_offset"])
 
-mdff = (t["MDFF_36_asc"] + t["MDFF_36_dsc"]) / 2
+mdff = (t["MDFF_36_asc"] + t["MDFF_36_dsc"]) / 2 * P["mdff_scale"]
 fhop_tab = t["fhop"]
 if not np.isfinite(fhop_tab[dcs[(days.index(T0)) : (days.index(T1) + 1)] - 1][:, fpow <= 0.5]).all():
     raise ValueError("fhop table has gaps inside the test window")
@@ -215,16 +224,21 @@ def finish(ffsets, use_flash=True, mdff_scale=1.0, use_merge=True, use_fhop=True
 
 
 test_days = [d for d in days if T0 <= d <= T1]
-out = {
-    "full": finish(FF),
-    "noflash": finish(FF, use_flash=False),
-    "nomerge": finish(FF, use_merge=False),
-    "nofhop": finish(FF, use_fhop=False),
-    "nocoast": finish(FF, coastal=False),
-    "clim_raw": finish(FF, mdff_scale=0),
-    "mdff_half": finish(FF, mdff_scale=0.5),
-    "norain": finish(FF_NR, use_flash=False),
+recipes = {
+    "full": lambda: finish(FF),
+    "noflash": lambda: finish(FF, use_flash=False),
+    "nomerge": lambda: finish(FF, use_merge=False),
+    "nofhop": lambda: finish(FF, use_fhop=False),
+    "nocoast": lambda: finish(FF, coastal=False),
+    "clim_raw": lambda: finish(FF, mdff_scale=0),
+    "mdff_half": lambda: finish(FF, mdff_scale=0.5),
+    "norain": lambda: finish(FF_NR, use_flash=False),
 }
+wanted = P["variants"] or list(recipes)
+unknown = set(wanted) - set(recipes)
+if unknown:
+    raise KeyError(f"unknown variants {sorted(unknown)}")
+out = {k: recipes[k]() for k in wanted}
 OUT.parent.mkdir(parents=True, exist_ok=True)
 np.savez_compressed(OUT, days=np.array([d.isoformat() for d in test_days]), fpow=fpow, focean=t["focean"], **out)
 for k, v in out.items():

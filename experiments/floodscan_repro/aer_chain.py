@@ -107,14 +107,15 @@ def spatial_departure(q61epw, q61c):
         return np.nanmedian(np.stack(shifts), 0)
 
 
-def initial_ff(q, tables, dcs, fpow, freqs=FREQS):
+def initial_ff(q, tables, dcs, fpow, freqs=FREQS, w_exp=W_EXP, qpow_offset=0.0):
     """Initial flooded fractions per frequency and pass (s. 3.8.1): {'pw': ff_pw, '61': ff_61, 'sp': ff_sp}.
-    q: {(f, p): (ndays, ny, nx)} with rain-flagged passes already NaN."""
+    q: {(f, p): (ndays, ny, nx)} with rain-flagged passes already NaN.
+    w_exp and qpow_offset are the fit knobs of 07 (AER: 1/0.0012 and the table value)."""
     out = {k: {} for k in ("pw", "61", "sp")}
     for f in freqs:
         for p in PASSES:
             key = f"{f}_{p}"
-            qpow = float(tables[f"Qpow_{key}"])
+            qpow = float(tables[f"Qpow_{key}"]) + qpow_offset
             x = q[(f, p)]
             with np.errstate(invalid="ignore", divide="ignore"):
                 ql = (x - fpow * qpow) / (1 - fpow)
@@ -127,7 +128,7 @@ def initial_ff(q, tables, dcs, fpow, freqs=FREQS):
             q61esp = q61c + np.nan_to_num(spatial_departure(q61epw, q61c), nan=0.0)  # no qualifying neighbour: Q61c
             for name, qexp in (("61", q61e), ("pw", q61epw), ("sp", q61esp)):
                 with np.errstate(invalid="ignore", divide="ignore"):
-                    qdry = (qdc / var61 + W_EXP * qexp) / (1 / var61 + W_EXP)  # eq. 17
+                    qdry = (qdc / var61 + w_exp * qexp) / (1 / var61 + w_exp)  # eq. 17
                     qdry = np.where(wet, qdc, qdry)
                     ff = (x - qpow * fpow - qdry * (1 - fpow)) / (qpow - qdry)  # eq. 13
                 ff[:, fpow > 0.5] = np.nan  # mostly-water cells, excluded as in 04

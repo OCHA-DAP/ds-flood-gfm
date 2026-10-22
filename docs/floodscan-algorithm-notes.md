@@ -361,3 +361,78 @@ That is step 1.
 - AER validated with MODIS case studies; the document gives no pooled
   POD/FAR. Fusion v1 measured FloodScan at a false-alarm ratio of 0.47
   against CEMS/UNOSAT gold (branch `feat/flood-fusion-v1`).
+
+## Step 2 (2026-10-22): the rest of the specified chain, before results
+
+Pre-checks that changed the plan (all in the session transcript, numbers from
+`06` and scratch scripts):
+- **The spatial windows were never rescaled.** AER counts 9×9, 7×7 and 11×11 in
+  5′ cells; the same counts had been applied on the 0.25° grid, so each window
+  covered three times AER's ground distance. Rescaled to 3, 3 and 5 cells, the
+  near-coast test added (§4.20), and the 3×3 mean dropped (one cell here).
+  Rescoring moved the LGA peak ratio 0.38 → 0.48 and little else.
+- **MDFF is not a two-year sampling artefact:** tables from 2023 alone or 2025
+  alone give the same Aug–Nov median (0.075–0.081) as both years together.
+- **The peak deficit is half timing, half height:** max(ours)/max(SFED) is 0.75
+  against 0.57 at FloodScan's peak day, with our peak a median 3 days late.
+  The shortfall is regional (Benue valley 0.5–0.6, Niger lowlands 0.97, Sahel
+  1.3–1.7), so it is a dry-reference and rain problem, not one gain factor.
+- **Q_pow:** ours 0.416 vs AER's 0.451 on the AMSR2 scale. The gap is in the
+  direction that makes our floods larger, so it does not explain low peaks;
+  it is the atmospheric correction AER applies and we do not.
+- **The NOAA CSU bucket** holds AMSR2 daily grids only for 2023–2026 and no GMI
+  at all; AMSR2 swath files exist from July 2012 (~74 MB per orbit). More
+  training years therefore mean the swath route, not more grid years.
+
+What was built (`rainflags.py`, `aer_chain.py`, `04`, `05`):
+- **Rain flags (§3.7):** Ferraro's land scattering index
+  SI = 451.9 − 0.44·T19V − 1.775·T22V + 0.00575·T22V² − T85V with AER's four
+  changes (local SI0 = 10 + 2·max(ΔSI61, 0) + max(SI61 − 7, −1); snow test with
+  "and" and 264 K; desert > 22 K; two-part arid test), dilation by 2 cells
+  (AER: 7 at 5′) and re-test at SI0 − 1. SI0 from the training years' 15th
+  percentile of the 61-day SI median. No frozen flags at 0–20°N. Channels:
+  AMSR2 18.7 V/H, 23.8 V, 89 V (A-scan), added to the CSU fetch (≈ 6 GB
+  streamed, < 0.1 GB kept).
+- **Spatial Q61Esp (§3.8.1):** median of (Q61Epw − Q61c) over the 5×5 window
+  minus its 3×3 centre, over cells where Q61Epw > Q61c; three initial FF
+  forms (point-wise, 61-day, spatial).
+- **f_hop (§4.19):** in-sample initial FF per pass, 15-day running mean
+  removed, negatives to 0, derivative between successive *valid* observations
+  (a pass revisits a cell every ~2 days here, so consecutive-day differences
+  discard most of the record), Pearson kurtosis per day-of-year over ±30 days
+  across years and passes; f_hop = clip((log10 k − 0.75)/0.75, 0, 1); near
+  coast 5·f_pow. Cells with < 8 samples get 0 and are counted in the log.
+- **Finishing (§3.8.3):** weights 0.67 − 0.33·f_hop / 0.33 / 0.33·f_hop;
+  outliers at half weight; the last earlier instantaneous value at half the
+  prior-day weight when the prior day is empty; the eq. 18 merge with the
+  15-day record (trigger ≥ 12 of 15 above MDFF, region where ff_sp and ff_61
+  exceed MDFF, w_sp = clip((N − 11)/3, 0, 1)); fill-in decay; clip; MDFF with
+  the coastal exception.
+- **Flash filter (§3.8.2):** now with the t_flash = 1.5 + 4.75·f_hop screen
+  and dilation across rain-flagged cells whose last test was flash or rain.
+
+Our readings where the ADD is silent or its text is garbled (marked in code):
+- Outlier test: more than 0.10 from the group median.
+- Fill-in: f0 = f−1 − a·max(T0 − T−1, 0)·(f−1 − f_floor). The extracted
+  formula divides by (f−1 − f_floor); the stated behaviour ("the larger the
+  difference … the faster f0 decreases") needs a product.
+- Coastal exception: min(FF, half the lowest neighbour above MDFF).
+- Running medians need ≥ 25% of the window valid (AER states no minimum;
+  AMSR2 sees ~55% of the box's cells per pass per day, and 50% left many
+  cells without a 61-day median).
+
+### Swath-route prototype (2026-10-22): one day, `08_swath_prototype.py`
+
+- CSU AMSR2 orbit files for 2024-09-01 (ICDR; 2023 and earlier are FCDR):
+  15 listed, 5 cross the box. Per-variable range reads: **46 MB streamed**
+  for 36 GHz V/H with geolocation and time. All channels for the chain would
+  be ~2.5× that, so ≈ 25 GB per June–December season.
+- Footprints split by spacecraft latitude trend, Gaussian footprint matching
+  (FWHM 22 km, 3σ radius) onto the 5′ grid, earliest swath wins.
+- Check: the 5′ Q aggregated 3×3 against the CSU 0.25° grid's Q, same day
+  and pass: r 0.991 (asc, n 3324) and 0.990 (dsc, n 4813), bias ≤ 0.0003,
+  median absolute difference 0.0008–0.0009. Coverage 0.55 / 0.94 of cells
+  (asc / dsc) against the grid's 0.52 / 0.75.
+- So the swath route reproduces the grid where both exist, at 9× finer
+  cells, with no account needed. What it costs is bandwidth (above) and the
+  chain's run time at 240×240 cells.
