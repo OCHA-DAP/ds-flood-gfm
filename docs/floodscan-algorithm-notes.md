@@ -459,3 +459,65 @@ Our readings where the ADD is silent or its text is garbled (marked in code):
 - Switch: `04 default <out> atmos` builds corrected tables;
   `05` with `{"atmos": true}` runs on them. The rain-flag channels stay
   top-of-atmosphere, as in AER.
+
+## Step 2 results (2026-10-23): rain flags, finishing step, atmospheric correction
+
+Setup: tables from 2023 + 2025 with rain-flagged passes removed; test Aug–Nov
+2024; 677,401 common cell-days; `results/floodscan_repro/nga2024_variant_summary*.csv`
+(baseline) and `results/floodscan_repro/atmos/` (earth-leaving Tb).
+Columns as before, plus peak_mm = max(ours)/max(SFED) per LGA regardless of
+day, and lag = our peak day minus FloodScan's (median over LGAs with
+SFED max ≥ 0.10).
+
+| variant | ratio | never | r_pool | r_cell | r_blk | LGA r 0.10–0.20 / > 0.20 | peak | peak_mm | lag |
+|---|---|---|---|---|---|---|---|---|---|
+| step 1 (rescaled windows, no flash) | 1.36 | 0.46 | 0.48 | 0.65 | 0.76 | 0.67 / 0.83 | 0.48 | – | – |
+| **step 2 full** (rain flags, f_hop, merge, fill-in, coastal rule, flash) | 1.41 | 0.41 | 0.50 | 0.70 | 0.82 | 0.73 / 0.85 | 0.51 | 0.68 | 2 |
+| step 2, no daily rain flags | 1.32 | 0.40 | 0.51 | 0.68 | 0.78 | 0.68 / 0.80 | 0.46 | 0.66 | 5 |
+| step 2, no flash filter | 1.45 | 0.41 | 0.51 | 0.72 | 0.82 | 0.73 / 0.84 | 0.51 | 0.68 | 2 |
+| step 2, no spatial merge | 1.41 | 0.41 | 0.50 | 0.70 | 0.82 | 0.73 / 0.85 | 0.51 | 0.68 | 2 |
+| step 2, f_hop = 0 | 1.42 | 0.41 | 0.50 | 0.69 | 0.82 | 0.75 / 0.85 | 0.49 | 0.72 | 3 |
+| step 2, no coastal exception | 1.35 | 0.39 | 0.51 | 0.70 | 0.82 | 0.73 / 0.85 | 0.51 | 0.67 | 2 |
+| step 2, MDFF × 0.5 | 1.84 | 0.43 | 0.51 | 0.74 | 0.85 | 0.80 / 0.85 | 0.53 | 0.72 | 3 |
+| step 2, no MDFF | 2.48 | 0.51 | 0.51 | 0.75 | 0.86 | 0.82 / 0.86 | 0.58 | 0.72 | 2 |
+| **step 2 + atmospheric correction**, full | 1.47 | 0.42 | 0.49 | 0.71 | 0.85 | 0.74 / 0.86 | 0.49 | 0.68 | 2 |
+| + atmos, no MDFF | 2.46 | 0.51 | 0.49 | 0.75 | 0.87 | 0.85 / 0.87 | 0.59 | 0.74 | 1 |
+
+Inland cells (86%): step 2 full ratio 0.92, never 0.12, r_pool 0.70,
+r_cell 0.70; with the atmospheric correction 0.95 / 0.13 / 0.70 / 0.71.
+
+**The four pre-registered checks**
+1. *Rain flags vs the noise floor.* Aug–Nov inland median MDFF (36 GHz asc)
+   0.078 → 0.064, p75 0.125 → 0.116, p90 0.174 → 0.169. Rain explains part
+   of the median and almost none of the upper tail. The high-MDFF cells are
+   where the thresholding loses floods, so the tail is what matters.
+2. *Spatial merge.* It fires (11,389 triggered cell-days, 9,703 raised) but
+   moves no score: ff_sp sits barely above ff_pw here.
+3. *Rain flags on their own population.* Same as on the common population
+   (the flags remove passes, and the 3-day averaging refills nearly every
+   cell-day). Daily rain flags are worth +0.05 in LGA r, +0.05 in peak and
+   3 days of lag.
+4. *Peak height and lag.* 0.51 at FloodScan's day, 0.68 regardless of day,
+   2 days late. Unchanged by the atmospheric correction.
+
+**Reading**
+- Steps 2–3 together: cell r 0.65 → 0.70, block r 0.76 → 0.82, LGA r
+  0.67/0.83 → 0.73/0.85, inland false mass 0.15 → 0.12, lag 3 → 2. Real,
+  modest. Rain flags are most of it; f_hop, the merge, the fill-in and the
+  coastal exception are each within ±0.02 of neutral. The flash filter now
+  costs 0.02 in cell r and nothing else.
+- **The atmospheric correction is neutral on scores** (±0.02 everywhere)
+  while moving Q_pow to 0.439 (AER 0.451). It scales Q_obs and Q_dry
+  together, so the flooded fraction barely changes. Kept for fidelity, not
+  for skill; it is not the cause of the low peaks.
+- **The peak deficit is regional and sits in narrow floodplains:** by state,
+  max/max is 1.0 in Anambra (wide Niger lowland) and 1.3–1.5 in the Sahel,
+  but 0.6 in Kogi, 0.5 in Taraba and 0.3–0.4 in Adamawa, where the Benue
+  valley is a few km wide; Adamawa's peak is a month late. A 28 km cell
+  dilutes such a floodplain below MDFF until the flood is broad. Removing
+  MDFF lifts peak_mm only to 0.72–0.74, so part of the deficit is in the
+  retrieval itself at this cell size.
+- **What is left on the 0.25° grid:** the coast (all-cells never 0.41 vs
+  inland 0.12) and the MDFF tail, both tied to the grid. The next structural
+  step is the swath route (5′ cells, fixed 22 km footprints), tested first on
+  two weeks for its effect on the 7-day Q noise (`10_swath_noise_test.py`).

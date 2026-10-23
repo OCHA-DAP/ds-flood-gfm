@@ -5,10 +5,11 @@ the scores. Knobs (05's P): w_exp (AER 1/0.0012), qpow_offset (added to the tabl
 outlier_dev. One-at-a-time sweeps around AER's values first; a joint refinement can follow once the
 sensitive knobs are known. Fit year: 2024 (the only year 05 runs so far); hold-out comes later.
 
-    uv run python experiments/floodscan_repro/07_fit_params.py [sweep.json]
+    uv run python experiments/floodscan_repro/07_fit_params.py [sweep.json|default] [atmos]
 
-sweep.json: {"name": [values, ...], ...}; default below. Output: results/floodscan_repro/fit_sweep.csv and
-the per-run scorer tables under data/floodscan_repro/fit/<run>/.
+sweep.json: {"name": [values, ...], ...}; 'default' uses the sweep below. 'atmos' runs on the corrected tables
+(static_tables_atmos.npz, P['atmos'] = true). Output: results/floodscan_repro/fit_sweep[_atmos].csv and the
+per-run scorer tables under data/floodscan_repro/fit[_atmos]/<run>/.
 """
 
 import json
@@ -19,16 +20,18 @@ from pathlib import Path
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[2]
-WORK = ROOT / "data/floodscan_repro/fit"
-OUT = ROOT / "results/floodscan_repro/fit_sweep.csv"
-TABLES = ROOT / "data/floodscan_repro/static_tables.npz"
+ATMOS = "atmos" in sys.argv[2:]
+SUFFIX = "_atmos" if ATMOS else ""
+WORK = ROOT / f"data/floodscan_repro/fit{SUFFIX}"
+OUT = ROOT / f"results/floodscan_repro/fit_sweep{SUFFIX}.csv"
+TABLES = ROOT / f"data/floodscan_repro/static_tables{SUFFIX}.npz"
 DEFAULT = {
     "w_exp": [1 / 0.0012 / 4, 1 / 0.0012 / 2, 1 / 0.0012, 2 / 0.0012, 4 / 0.0012],
     "qpow_offset": [-0.02, -0.01, 0.01, 0.02, 0.035],
     "mdff_scale": [0.25, 0.5, 0.75, 1.5],
     "outlier_dev": [0.05, 0.2, 1.0],
 }
-sweep = json.loads(Path(sys.argv[1]).read_text()) if len(sys.argv) > 1 else DEFAULT
+sweep = json.loads(Path(sys.argv[1]).read_text()) if len(sys.argv) > 1 and sys.argv[1] != "default" else DEFAULT
 UV = ["uv", "run", "--no-project", "--with", "numpy", "--with", "scipy", "python"]
 
 
@@ -36,7 +39,7 @@ def run(name, params):
     d = WORK / name
     d.mkdir(parents=True, exist_ok=True)
     pj = d / "params.json"
-    pj.write_text(json.dumps({**params, "variants": ["full"]}))
+    pj.write_text(json.dumps({**params, "variants": ["full"], "atmos": ATMOS}))
     ff = d / "ff.npz"
     if not ff.exists():
         subprocess.run(UV + [str(ROOT / "experiments/floodscan_repro/05_ff_chain.py"), str(TABLES), str(ff), str(pj)],
