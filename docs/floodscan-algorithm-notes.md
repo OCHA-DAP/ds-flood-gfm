@@ -521,3 +521,23 @@ r_cell 0.70; with the atmospheric correction 0.95 / 0.13 / 0.70 / 0.71.
   inland 0.12) and the MDFF tail, both tied to the grid. The next structural
   step is the swath route (5′ cells, fixed 22 km footprints), tested first on
   two weeks for its effect on the 7-day Q noise (`10_swath_noise_test.py`).
+
+### Parameter sweep (2026-10-23): `07_fit_params.py`, corrected tables, fit year 2024
+
+One knob at a time around AER's values (`results/floodscan_repro/fit_sweep_atmos.csv`):
+
+| knob | effect |
+|---|---|
+| weight on the expected median (W_Q61E, AER 1/0.0012), ×¼ … ×4 | nothing moves (all scores within 0.005) |
+| Q_pow offset −0.02 | peak 0.49 → 0.74, peak_mm 0.68 → 0.89, LGA r 0.74/0.86 → 0.78/0.86, but ratio 1.47 → 2.17, inland ratio 0.95 → 1.42 |
+| Q_pow offset +0.02 | ratio 1.03, inland 0.68, peak 0.35 |
+| MDFF × 0.25 | LGA r 0.84/0.87, peak_mm 0.74, but inland never 0.13 → 0.27 and ratio 1.5 |
+| MDFF × 1.5 | r_cell 0.60, peak 0.37 |
+| outlier test off (deviation 1.0) | r_cell 0.71 → 0.73, LGA r 0.75/0.87, peak 0.53; our 0.10 test costs ~0.02 |
+
+Reading: no knob raises the peaks without inflating the total, because the
+inland total is already right (0.95×) while the peaks are 0.68×. The error is
+in the *distribution* of flooded fraction, too much low-level mass and too
+little at the peaks, which is what cell dilution plus a per-cell threshold
+produces. Tuning on this grid cannot fix it. Our outlier test is slightly
+harmful and AER's is unspecified; left at 0.10 pending a hold-out year.
