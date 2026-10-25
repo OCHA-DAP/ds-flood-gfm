@@ -541,3 +541,44 @@ in the *distribution* of flooded fraction, too much low-level mass and too
 little at the peaks, which is what cell dilution plus a per-cell threshold
 produces. Tuning on this grid cannot fix it. Our outlier test is slightly
 harmful and AER's is unspecified; left at 0.10 pending a hold-out year.
+
+### Gridding-noise test (2026-10-25): `10_swath_noise_test.py`, 1–14 Sep 2024
+
+Does the 0.25° daily grid add day-to-day Q noise that fixed 22 km footprints
+on a 5′ grid do not? MDFF is 3σ of the 7-day Q variance (§4.20), so this
+decides whether the swath route lowers the threshold tail.
+
+Same inland land cells, same days, 36 GHz, two 7-day windows
+(239 MB streamed for 14 days; 8 days had been cached before a DNS outage):
+
+| | asc | dsc |
+|---|---|---|
+| cells × weeks compared | 10,686 | 10,745 |
+| σ7 at 0.25°, CSU daily grid | 0.0012 | 0.0011 |
+| σ7 at 0.25°, our 5′ grid aggregated 3×3 | 0.0008 | 0.0007 |
+| ratio of median 7-day variances, grid / ours | 2.09 | 2.33 |
+| ratio at the 75th percentile | 1.83 | 1.72 |
+| σ7 at 5′ itself | 0.0008 | 0.0008 |
+| same-day Q at 0.25°, r / bias | 0.974 / −0.0001 | 0.973 / +0.0002 |
+
+**Reading**
+- The daily grid carries about twice the 7-day Q variance of footprint
+  matching, for the same cells and days, with no level bias. The daily grid
+  averages a different mix of footprints into each cell every day; fixed
+  Gaussian footprints on a fixed grid do not. This is the noise MDFF is
+  built from.
+- MDFF scales with σ, so the swath route should cut it by ~30% (1/√2.1)
+  across the distribution, tail included, which the rain flags did not do.
+  Our Aug–Nov median 0.064 would land near 0.045; AER's worked example is
+  0.06 at 22 km.
+- Even at the native 5′ cells, σ7 (0.0008) is below the 0.25° grid's. So the
+  swath route gives 9× finer cells *and* a lower noise floor. It addresses
+  the three residuals at once: the MDFF tail, narrow-floodplain dilution,
+  and (with AER's geolocation correction later) the coast.
+- Cost: ~25 GB streamed per June–December season for 36/18/23/89 GHz, three
+  seasons for tables plus test, < 1 GB kept; chain runtime at 240×240 cells
+  about 9× the current few minutes.
+- To fix before the full run: day assignment. Descending passes over the
+  box come from orbits starting ~23:20 UTC the previous day, so grouping by
+  file date leaves some days with 2–20% descending coverage (seen on 7, 9,
+  12, 14 Sep). AER starts its day at 21:00 UTC the day before (§3.5).
