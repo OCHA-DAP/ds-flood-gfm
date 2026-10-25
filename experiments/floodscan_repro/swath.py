@@ -5,8 +5,8 @@ variable). Per day: list the orbits (FCDR, else ICDR), skip those whose track ne
 geolocation and the requested channels, split footprints by scan direction (ascending = spacecraft latitude
 increasing), footprint-match onto the 5' grid with a Gaussian (FWHM 22 km for 36 GHz, 27 km for the flag
 channels: AER's composite footprints; its Backus-Gilbert coefficients are unpublished), earliest swath
-winning where two overlap. Day grouping is by the file's date; AER starts the day at 21:00 UTC the day
-before so one night's descending pass is not split (s. 3.5). TODO for the full run.
+winning where two overlap. A day runs from 21:00 UTC the day before (DAY_START_UTC), as AER does (s. 3.5),
+so one night's descending pass over the box is not split between two days.
 """
 
 import datetime as dt
@@ -49,13 +49,29 @@ def get(url, headers=None):
             time.sleep(10 * (attempt + 1))
 
 
-def list_orbits(d):
+DAY_START_UTC = 21  # AER (s. 3.5): the day starts at 21:00 UTC the day before, so a night's descending pass is not split
+
+
+def _orbits_dated(d):
     for kind in ("FCDR", "ICDR"):
         xml = get(f"{BUCKET}/?list-type=2&prefix=data/{kind}/{d:%Y}/CSU_AMSR2_{kind}_V02R00_GCOMW1_D{d:%Y%m%d}&max-keys=100").decode()
         keys = re.findall(r"<Key>([^<]+)</Key>", xml)
         if keys:
             return kind, keys
     return None, []
+
+
+def _start_hour(key):
+    return int(re.search(r"_S(\d{2})\d{2}_E", key).group(1))
+
+
+def list_orbits(d):
+    """Orbit files of AER's day d: those dated d-1 starting at or after DAY_START_UTC plus those dated d
+    starting before it. The product kind (FCDR/ICDR) is whatever each date has."""
+    kind_prev, prev = _orbits_dated(d - dt.timedelta(1))
+    kind, cur = _orbits_dated(d)
+    keys = [k for k in prev if _start_hour(k) >= DAY_START_UTC] + [k for k in cur if _start_hour(k) < DAY_START_UTC]
+    return kind or kind_prev, keys
 
 
 def chunk_info(key, variables):

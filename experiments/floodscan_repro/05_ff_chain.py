@@ -46,28 +46,33 @@ from scipy.ndimage import convolve, label
 
 from aer_chain import PASSES, clim_doy, initial_ff, load_year, rain_flags
 
-SRC = Path("data/floodscan_repro/csu_amsr2_grid/2024")
 TAB = Path("data/floodscan_repro/static_tables.npz")
 OUT = Path("data/floodscan_repro/ff_2024.npz")
 if len(sys.argv) > 1:  # e.g. an in-sample code test: `... 05_ff_chain.py /tmp/tables_2024.npz /tmp/ff.npz`
     TAB, OUT = Path(sys.argv[1]), Path(sys.argv[2])
-D0, D1 = dt.date(2024, 6, 1), dt.date(2024, 12, 31)
-T0, T1 = dt.date(2024, 8, 1), dt.date(2024, 11, 30)
-# Fit knobs (07): a JSON file as argv[3] with any of w_exp, qpow_offset, mdff_scale, outlier_dev, variants.
+# Knobs: a JSON file as argv[3] with any of the keys below. year: the test year (its tables must come from
+# other years for a hold-out); atmos: earth-leaving correction (atmos.py, MERRA-2 from 09), use tables built
+# with it. The rest are the fit knobs of 07.
 P = {"w_exp": 1 / 0.0012, "qpow_offset": 0.0, "mdff_scale": 1.0, "outlier_dev": 0.10, "variants": None,
-     "atmos": False}  # atmos: earth-leaving correction (atmos.py, MERRA-2 from 09); use tables built with it
+     "atmos": False, "year": 2024}
 if len(sys.argv) > 3:
     overrides = json.loads(Path(sys.argv[3]).read_text())
     unknown = set(overrides) - set(P)
     if unknown:
-        raise KeyError(f"unknown fit parameters {sorted(unknown)}")
+        raise KeyError(f"unknown parameters {sorted(unknown)}")
     P.update(overrides)
 OUTLIER_DEV = P["outlier_dev"]
+YEAR = int(P["year"])
+SRC = Path(f"data/floodscan_repro/csu_amsr2_grid/{YEAR}")
+D0, D1 = dt.date(YEAR, 6, 1), dt.date(YEAR, 12, 31)
+T0, T1 = dt.date(YEAR, 8, 1), dt.date(YEAR, 11, 30)
 
 t = np.load(TAB)
 fpow, near_coast = t["fpow"], t["near_coast"]
 days, Q, TB = load_year(SRC, D0, D1, atmos_dir=Path("data/floodscan_repro/merra2") if P["atmos"] else None)
-print(f"tables {TAB}; atmospheric correction {'on' if P['atmos'] else 'off'}")
+in_sample = YEAR in set(int(y) for y in t["years"])
+print(f"test year {YEAR}; tables {TAB} from {tuple(int(y) for y in t['years'])}{' (IN-SAMPLE)' if in_sample else ''}; "
+      f"atmospheric correction {'on' if P['atmos'] else 'off'}")
 dcs = np.array([clim_doy(d) for d in days])
 NT = len(days)
 
@@ -75,7 +80,7 @@ NT = len(days)
 RAIN = rain_flags(TB, {p: t[f"SI0_{p}"] for p in PASSES}, dcs)
 for p in PASSES:
     valid = np.isfinite(TB[("18v", p)]) & (t["focean"] <= 0.001)[None]
-    print(f"2024 {p}: rain-flagged {RAIN[p][valid].mean():.3f} of valid inland cell-days")
+    print(f"{YEAR} {p}: rain-flagged {RAIN[p][valid].mean():.3f} of valid inland cell-days")
 Q_flagged = {k: np.where(RAIN[k[1]], np.nan, q) for k, q in Q.items()}
 
 FF = initial_ff(Q_flagged, t, dcs, fpow, w_exp=P["w_exp"], qpow_offset=P["qpow_offset"])  # {'pw' | '61' | 'sp': {(f, p): ...}}
