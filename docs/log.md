@@ -93,11 +93,16 @@ uv run --with h5py --with fsspec --with aiohttp python scripts/fusion/experiment
 ### 2026-10-26: dropping GFDS (Next steps 12)
 - `cv_ordinary_days.py --microwave floodscan` (flag committed before running, e94b6f0 results). Fusion's ordinary-day flood calls 1.06 → 0.34 per 100 cells; false block-events 2.7% → 0.03%; map-day F1 −0.011. Recommended; awaits the user's confirmation (fixed decision 2).
 
+### 2026-10-26: CYGNSS all events; far-from-flood; Sentinel-2 referee
+- `experiment_cygnss.py --all` → `results/experiment_cygnss_skill_all.csv`: F1 0.35 (0.27–0.40), recall 0.73, precision 0.23; 0.70 on normally-wet cells, 0.26 elsewhere. Not a flood input as is.
+- `cv_far_from_flood.py` (rules first) → `results/cv/far_from_flood.csv`: fusion 2.24 false calls per 100 dry open-land cells far from the flood (6.51 near); implied precision 0.04. Doc now states ordinary-day precision as a range 0.04–0.2, with GFM's 0.14 recall as the reason the 0.03 is only a floor.
+- `experiment_s2_referee.py` (rules first, 8d3b9af): Sentinel-2 SCL water on the 30 sample blocks as an input-independent referee; running (resumable, `data/fusion/metrics/s2_referee_rows.parquet`).
+
 ## Open decisions and next steps (as of 2026-10-21)
 1. Operating point: catch floods (low threshold / no memory ≈ cascade) or avoid false alarms (fusion as built or higher threshold). User's call.
 2. ~~Ordinary-day precision~~ done 26 Oct. Drop GFDS from the microwave vote: tested, recommended, awaiting the user's yes (`sources.gfds.enabled: false`).
 3. ~~Normally-wet stratum~~ done 26 Oct: scores worse; not adopted. The target definition (water vs flood) is the limit.
-4. CYGNSS on all 148 events in coverage (~4.3 GB of windowed reads), then as a background layer (base rate) rather than daily evidence.
+4. ~~CYGNSS on all 148 events~~ done 26 Oct: F1 0.35, a water mask; candidate water layer for water-first, not a flood input.
 5. MODIS for the VIIRS gap: Databricks job blocked on an Earthdata login the job can use (user's consent for a personal token as a secret, or the team account fixed).
 6. FloodScan licence outside Africa unconfirmed; GFDS feed ended 2026-09-14.
 7. Water-first redesign (fuse water, subtract one normal-water baseline): a target-clarity change, not a calibration fix.
