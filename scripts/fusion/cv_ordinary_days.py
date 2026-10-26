@@ -20,6 +20,10 @@ C. Implied ordinary-day precision, stated as a formula, not a measurement: map-d
    (map-day recall x base rate + false-alarm rate x (1 - base rate)), with A's false-alarm rate and the
    sample base rate (prior.csv), per land type.
 
+D. (added 2026-10-26 after A and B, before running it; Next steps 12) --microwave floodscan: the same A and B
+   with FloodScan alone in fusion's microwave slot (and in the cascade), rates fitted the same way, to test
+   whether GFDS is what makes fusion noisy on ordinary days. Outputs get the suffix _floodscan_only.
+
 Outputs, results/cv/: ordinary_days_dry_windows.csv, ordinary_days_sample.csv, ordinary_days_sample_blocks.csv,
 ordinary_days_implied_precision.csv.
 Run: nice -n 19 uv run python -u scripts/fusion/cv_ordinary_days.py
@@ -45,9 +49,12 @@ CASCADE = "cascade: VIIRS, else GFM, else microwave"
 PRODUCTS = ["fusion", CASCADE, *SINGLE]
 
 
+MW = "microwave"
+
+
 def cascade(v):
     out = np.full(v["viirs"].shape, NODATA, "uint8")
-    for s in ["microwave", "gfm", "viirs"]:
+    for s in [MW, "gfm", "viirs"]:
         out = np.where(v[s] != NODATA, v[s], out)
     return out
 
@@ -62,6 +69,16 @@ def calls_and_seen(name, v, p, thr):
 
 
 def main() -> None:
+    import argparse
+
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--microwave", default="microwave", choices=["microwave", "floodscan"], help="what fills fusion's (and the cascade's) microwave slot")
+    a = ap.parse_args()
+    mw = a.microwave
+    sfx = "" if mw == "microwave" else f"_{mw}_only"
+    srcs = ["gfm", mw, "viirs"]
+    global MW
+    MW = mw
     cfg = load_config()
     f, thr = cfg["fusion"], cfg["fusion"]["prob_threshold"]
     rule = cfg["gold"]["dry_window_rule"]
@@ -73,9 +90,12 @@ def main() -> None:
     counts = counts[counts.rule == rule]
     prior = pd.read_csv(res / "prior.csv")
     clip = tuple(f["sens_spec_clip"])
-    models = {k: engine.Model.from_tables(crossval.fit_table(counts, ev.code[ev.fold != k]), prior, MODEL_SOURCES, f["decay"], clip)
+    if mw != "microwave":
+        comp = pd.read_parquet(cfg.local("metrics", "cv_fit_counts_components.parquet"))
+        counts = pd.concat([counts.drop(columns="rule"), comp[comp.source == mw]], ignore_index=True)
+    models = {k: engine.Model.from_tables(crossval.fit_table(counts, ev.code[ev.fold != k], sources=srcs), prior, srcs, f["decay"], clip)
               for k in sorted(ev.fold.unique())}
-    model_all = engine.Model.from_tables(crossval.fit_table(counts, ev.code), prior, MODEL_SOURCES, f["decay"], clip)
+    model_all = engine.Model.from_tables(crossval.fit_table(counts, ev.code, sources=srcs), prior, srcs, f["decay"], clip)
     t0 = time.time()
 
     # A. dry windows
@@ -90,7 +110,7 @@ def main() -> None:
             dom = ds.domain.values.astype(bool)
             lt = crossval.landtype_codes(ds.stratum.values)
             v = {s: ds[s].values for s in SINGLE}
-            p = engine.run_sequence({s: v[s] for s in MODEL_SOURCES}, ds.stratum.values, dom, models[r.fold])["p_flood"]
+            p = engine.run_sequence({s: v[s] for s in srcs}, ds.stratum.values, dom, models[r.fold])["p_flood"]
             start, end = pd.Timestamp(ds.attrs["event_start"]), pd.Timestamp(ds.attrs["event_end"])
             nw_cache = {}
             for i in np.where(~gd)[0]:
@@ -114,7 +134,7 @@ def main() -> None:
                                          "calls": int((call & mm).sum()), "dry_observed": int((seen & mm).sum()), "dry_all": int(mm.sum())})
         print(f"A: {r.code} done, {time.time() - t0:.0f}s", flush=True)
     A = pd.DataFrame(rows)
-    A.to_parquet(cfg.local("metrics", "ordinary_days_dry_rows.parquet"))
+    A.to_parquet(cfg.local("metrics", f"ordinary_days_dry_rows{sfx}.parquet"))
 
     def summarise(df, by):
         g = df.groupby(["product", *by], as_index=False)[["calls", "dry_observed", "dry_all"]].sum()
@@ -125,7 +145,7 @@ def main() -> None:
 
     out = pd.concat([summarise(A, []), summarise(A, ["landtype"]), summarise(A, ["continent"]), summarise(A, ["wet"]), summarise(A, ["period"]),
                      summarise(A, ["landtype", "wet"])], ignore_index=True)
-    out.to_csv(res / "ordinary_days_dry_windows.csv", index=False)
+    out.to_csv(res / f"ordinary_days_dry_windows{sfx}.csv", index=False)
 
     # B. the global random sample
     blocks = pd.read_parquet(cfg.local("sample", "blocks.parquet"))
@@ -138,7 +158,7 @@ def main() -> None:
             continue
         lt = crossval.landtype_codes(ds.stratum.values)
         v = {s: ds[s].values for s in SINGLE}
-        p = engine.run_sequence({s: v[s] for s in MODEL_SOURCES}, ds.stratum.values, dom, model_all)["p_flood"]
+        p = engine.run_sequence({s: v[s] for s in srcs}, ds.stratum.values, dom, model_all)["p_flood"]
         gfm_call, gfm_seen = v["gfm"] == 1, v["gfm"] != NODATA
         nday = p.shape[0]
         for name in PRODUCTS:
@@ -160,7 +180,7 @@ def main() -> None:
                           "days": nday, "days_fired": int(fired) if n_dom >= 5 else np.nan})
         print(f"B: {b.block_id} done, {time.time() - t0:.0f}s", flush=True)
     S = pd.DataFrame(srows)
-    S.to_parquet(cfg.local("metrics", "ordinary_days_sample_rows.parquet"))
+    S.to_parquet(cfg.local("metrics", f"ordinary_days_sample_rows{sfx}.parquet"))
 
     def ssum(df, by):
         g = df.groupby(["product", *by], as_index=False)[["cell_days", "observed", "calls", "both_seen", "gfm_flood_both", "calls_both", "agree_flood"]].sum()
@@ -173,11 +193,11 @@ def main() -> None:
         return g
 
     sout = pd.concat([ssum(S, []), ssum(S, ["landtype"]), ssum(S, ["continent"])], ignore_index=True)
-    sout.to_csv(res / "ordinary_days_sample.csv", index=False)
+    sout.to_csv(res / f"ordinary_days_sample{sfx}.csv", index=False)
     B = pd.DataFrame(brows)
     bsum = B.groupby("product", as_index=False).agg(blocks=("block_id", "nunique"), block_days=("days", "sum"), days_fired=("days_fired", "sum"))
     bsum["share_of_block_days_fired"] = bsum.days_fired / bsum.block_days
-    pd.concat([B, bsum.assign(block_id="ALL")], ignore_index=True).to_csv(res / "ordinary_days_sample_blocks.csv", index=False)
+    pd.concat([B, bsum.assign(block_id="ALL")], ignore_index=True).to_csv(res / f"ordinary_days_sample_blocks{sfx}.csv", index=False)
 
     # C. implied precision
     sk = pd.read_csv(res / "skill_by_landtype.csv")
@@ -193,7 +213,7 @@ def main() -> None:
                      "dry_window_false_alarm_rate_all": far, "base_rate": base,
                      "implied_ordinary_day_precision": rec * base / (rec * base + far * (1 - base)) if far > 0 else np.nan})
     C = pd.DataFrame(crow)
-    C.to_csv(res / "ordinary_days_implied_precision.csv", index=False)
+    C.to_csv(res / f"ordinary_days_implied_precision{sfx}.csv", index=False)
 
     pd.set_option("display.width", 220)
     print(out[out.view == "overall"][["product", "calls", "dry_observed", "dry_all", "false_alarm_rate_observed", "false_alarm_rate_all"]].round(4).to_string(index=False), "\n")
