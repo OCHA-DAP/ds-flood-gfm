@@ -81,7 +81,13 @@ def read_window(fs, url: str, win: grid.Window) -> np.ndarray:
 
 
 def main() -> None:
+    import argparse
+
     import fsspec
+
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--all", action="store_true", help="every fold event inside CYGNSS's dates and latitudes (Next steps 11), with event-bootstrap intervals")
+    a = ap.parse_args()
 
     cfg = load_config()
     tok = os.environ.get(cfg["sources"]["modis"]["token_env"])
@@ -94,7 +100,8 @@ def main() -> None:
     ev = pd.read_parquet(cfg.local("gold", "event_table_all.parquet"))
     ev = ev[ev.code.isin(folds.code)].merge(folds[["code", "fold", "flood_cell_days"]], on="code")
     inside = ev[(ev.start >= START) & (ev.lat.abs() <= LAT_MAX)]
-    pick = inside.sort_values("flood_cell_days", ascending=False).groupby("continent").head(2).sort_values(["continent", "code"])
+    pick = inside.sort_values(["continent", "code"]) if a.all else inside.sort_values("flood_cell_days", ascending=False).groupby("continent").head(2).sort_values(["continent", "code"])
+    sfx = "_all" if a.all else ""
     print("events:", pick[["code", "continent", "flood_cell_days"]].to_string(index=False), flush=True)
     counts = pd.read_parquet(cfg.local("metrics", "cv_fit_counts.parquet"))
     counts = counts[counts.rule == cfg["gold"]["dry_window_rule"]]
@@ -102,6 +109,13 @@ def main() -> None:
     models = {k: engine.Model.from_tables(crossval.fit_table(counts, ev.code[ev.fold != k]), prior, MODEL_SOURCES, f["decay"],
                                           tuple(f["sens_spec_clip"])) for k in sorted(ev.fold.unique())}
     rows, t0 = [], time.time()
+    part = cfg.local("metrics", f"cygnss_rows{sfx}_partial.parquet")
+    done = set()
+    if part.exists():
+        prev = pd.read_parquet(part)
+        rows = prev.to_dict("records")
+        done = set(zip(prev.code, prev.day.astype(str)))
+        print(f"resuming: {len(done)} window-days already scored", flush=True)
     for _, r in pick.iterrows():
         for ew in gold.event_windows(r):
             ds = xr.load_dataset(cube.cube_path(cfg, ew.key), engine="netcdf4")
@@ -112,7 +126,7 @@ def main() -> None:
             t = ds.truth.values
             for i in np.where(crossval.gold_day_mask(ds))[0]:
                 lab = ((t[i] == gold.DRY) | (t[i] == gold.FLOOD)) & np.isfinite(p[i])
-                if not lab.any():
+                if not lab.any() or (r.code, str(days[i])) in done:
                     continue
                 cyg = read_window(fs, granule_url(days[i]), win)
                 nw = baseline.normally_wet(cfg, ew.window, days[i].month)
@@ -134,15 +148,26 @@ def main() -> None:
                                      "fn_obs": int((~fl & tf & m & seen).sum()), "cells": int(m.sum()), "seen": int((m & seen).sum()),
                                      "flood_seen": int((m & seen & tf).sum()), "flood": int((m & tf).sum())})
                 print(f"{r.code} {ew.key} {days[i]:%Y-%m-%d} done, {time.time() - t0:.0f}s", flush=True)
+                pd.DataFrame(rows).to_parquet(part)
     df = pd.DataFrame(rows)
-    df.to_csv(cfg.results_dir / "experiment_cygnss_rows.csv", index=False)
+    df.to_csv(cfg.results_dir / f"experiment_cygnss_rows{sfx}.csv", index=False)
     s = df.groupby(["group", "product"])[["tp", "fp", "fn", "tp_obs", "fp_obs", "fn_obs", "seen", "cells", "flood_seen", "flood"]].sum().reset_index()
     with np.errstate(invalid="ignore", divide="ignore"):
         s["recall"], s["precision"] = s.tp / (s.tp + s.fn), s.tp / (s.tp + s.fp)
         s["f1"] = 2 * s.tp / (2 * s.tp + s.fp + s.fn)
         s["f1_observed_cells"] = 2 * s.tp_obs / (2 * s.tp_obs + s.fp_obs + s.fn_obs)
         s["share_of_flood_seen"] = s.flood_seen / s.flood
-    s.to_csv(cfg.results_dir / "experiment_cygnss_skill.csv", index=False)
+    if a.all:  # 95% intervals on F1 (all cells), resampling whole events, per group
+        rng = np.random.default_rng(20261026)
+        ci = []
+        for (g, prod), gg in df.groupby(["group", "product"]):
+            e = gg.groupby("code")[["tp", "fp", "fn"]].sum().to_numpy(float)
+            idx = rng.integers(0, len(e), (500, len(e)))
+            m = e[idx].sum(1)
+            f1b = 2 * m[:, 0] / (2 * m[:, 0] + m[:, 1] + m[:, 2])
+            ci.append({"group": g, "product": prod, "n_events": len(e), "f1_lo": float(np.nanquantile(f1b, 0.025)), "f1_hi": float(np.nanquantile(f1b, 0.975))})
+        s = s.merge(pd.DataFrame(ci), on=["group", "product"])
+    s.to_csv(cfg.results_dir / f"experiment_cygnss_skill{sfx}.csv", index=False)
     pd.set_option("display.width", 220)
     print(s[["group", "product", "recall", "precision", "f1", "f1_observed_cells", "share_of_flood_seen", "flood"]].round(3).to_string(index=False))
     per = df[df.group == "all cells"].groupby(["code", "product"])[["tp", "fp", "fn"]].sum()
