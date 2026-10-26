@@ -421,3 +421,55 @@ All of these numbers come from `05_compare_jrc.py 2022-10-01 2022-10-31`.
 - NSIDC, SSMIS through September 2026:
   <https://nsidc.org/data/user-resources/data-announcements/user-notice-ssmis-processing-will-now-continue-through-september-2026>
 - DFO River and Reservoir Watch: <https://floodobservatory.colorado.edu/>
+
+## Exactness test (2026-10-26): can GFDS be replicated pixel for pixel?
+
+Scripts: `experiments/gfds_rebuild/07_signal_from_swath.py` (raw orbit
+footprints → JRC's 0.09° grid), `08_gridding_schemes.py` (which footprints
+go in a cell and a day), `09_window_convention.py` (is C taken on the grid).
+JRC's archive was fully served on 2026-10-26, including the per-sensor
+"answer key" files and the baseline rasters; the per-sensor calibration and
+position files are populated for 2013–2016 (`*_HD5_GZ.tif`) and empty in
+2018.
+
+**Magnitude: exact.** With JRC's own `AMSR2/AveragesAndSd/bt_signal_avg.tif`
+and `bt_signal_sd_sf_min_to_0.5.tif`, m = (avg − s)/sd (note the sign: a
+flood *lowers* the signal) reproduces JRC's MagTiff on 2018-08-20 for 99.9%
+of land cells to within the file's 0.001 rounding; the rest is the ±20 clip.
+So anyone holding their baseline rasters and a signal file can produce
+their magnitude product exactly. The rasters are ~24 MB each and should be
+backed up.
+
+**Signal: close, not exact, from NOAA's AMSR2 data.** One day each in 2016
+and 2018, West Africa box, land cells:
+
+| | 2016-08-20 | 2018-08-20 |
+|---|---|---|
+| our T_M vs JRC SourceTiff, UTC-day mean | r 0.77, bias −1.6 K, MAD 1.8 K | r 0.75, bias −1.0 K, MAD 1.5 K |
+| … daytime pass only, else night pass | r 0.84, bias −0.3 K, MAD 1.1 K | r 0.80, bias −0.4 K, MAD 1.2 K |
+| our C vs JRC CalibrationTiff | r 0.90, bias −1.6 K, MAD 0.65 K | (empty file) |
+| our s vs JRC SignalTiff | r 0.74, bias 0.0000, MAD 0.0033 | r 0.56, bias +0.001, MAD 0.0042 |
+| JRC's own SourceTiff / CalibrationTiff vs its SignalTiff | r 0.90 | – |
+
+What the answer keys settle:
+- C is **not** a 9×9 window of grid cells: recomputing it from JRC's own
+  source grid matches their calibration grid in only 19% of cells under any
+  percentile convention. It is taken among raw footprints, as the tech
+  note says and as our code does. The position file (values 1–81) is a
+  footprint-window offset, not decodable from the grid.
+- JRC's source grid follows the **daytime (ascending) pass** where it
+  exists (95% of cells with both passes in 2016, 87% in 2018) and is filled
+  from the night pass elsewhere; a per-cell maximum over the day's samples
+  fits about as well. A plain UTC-day mean of both passes is 1–2.5 K too
+  cold.
+- JRC's signal is not the ratio of its own source and calibration grids
+  (r 0.90), so the signal is a per-footprint ratio averaged separately.
+- The residual after the pass rule, ~1.1 K MAD at r 0.8–0.84, is the size
+  of the calibration difference between NOAA's CSU record (tied to GMI) and
+  JAXA's L1B, which JRC read. The test for that is one day from JAXA's L1B
+  via G-Portal (~300 MB for the orbits over the box).
+
+**Bottom line.** Exact magnitude, yes, from their baseline. Exact signal
+needs JAXA's calibration and the pass rule above; it is plausible but
+unproven until the L1B test runs. From NOAA data alone the signal is
+r 0.8 pixel-for-pixel, unbiased.
