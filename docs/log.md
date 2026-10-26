@@ -87,10 +87,13 @@ uv run --with h5py --with fsspec --with aiohttp python scripts/fusion/experiment
 - `cv_ordinary_days.py` (rules committed first, 23f69de) → `results/cv/ordinary_days_{dry_windows,sample,sample_blocks,implied_precision}.csv` (d14d285). Dry-window false-alarm rates: fusion 3.0%, cascade 2.65%, GFM 0.03%. Random sample (30 blocks, GFM referee): fusion flags 1.06% of floodable cell-days, 1.7% agreed by GFM; implied precision ~0.03 (GFM 0.46). GFDS is the noisy half of the microwave vote on ordinary days (2.4% vs FloodScan 0.1%). Needed the remaining 194 window-months of JRC masks (`data/fusion/resume/prefetch_baseline.py`, all months).
 - CYGNSS on all 148 events in coverage started (`experiment_cygnss.py --all`, resumable; 74c93ef + follow-up).
 
+### 2026-10-26: normally-wet strata (Next steps 8)
+- `cv_normally_wet_strata.py` (rules + expectation committed first) → `results/cv/normally_wet_strata_*.csv`. Worse: pooled F1 0.37 vs 0.44, normally-wet cells 0.40 vs 0.60, other cells +0.006; false events 27% vs 34%. Gold's inconsistency on normally-wet cells (52/48) means the better-specified rates lose recall where the gold flood sits. Not adopted.
+
 ## Open decisions and next steps (as of 2026-10-21)
 1. Operating point: catch floods (low threshold / no memory ≈ cascade) or avoid false alarms (fusion as built or higher threshold). User's call.
 2. ~~Ordinary-day precision~~ done 26 Oct. New: drop GFDS from the microwave vote? (doc Next steps 12).
-3. Normally-wet stratum (separate rates per land type × normally wet). Masks cached for map-day months; ~195 more window-months to fetch.
+3. ~~Normally-wet stratum~~ done 26 Oct: scores worse; not adopted. The target definition (water vs flood) is the limit.
 4. CYGNSS on all 148 events in coverage (~4.3 GB of windowed reads), then as a background layer (base rate) rather than daily evidence.
 5. MODIS for the VIIRS gap: Databricks job blocked on an Earthdata login the job can use (user's consent for a personal token as a secret, or the team account fixed).
 6. FloodScan licence outside Africa unconfirmed; GFDS feed ended 2026-09-14.
