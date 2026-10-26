@@ -52,20 +52,18 @@ GDAL_ENV = dict(GDAL_DISABLE_READDIR_ON_OPEN="EMPTY_DIR", CPL_VSIL_CURL_ALLOWED_
 
 
 def scenes(bbox, start, end) -> pd.DataFrame:
-    items, token = [], None
+    items = []
     body = {"collections": ["sentinel-2-l2a"], "bbox": bbox, "datetime": f"{start}T00:00:00Z/{end}T23:59:59Z", "limit": 200,
             "query": {"eo:cloud_cover": {"lt": 20}}, "fields": {"include": ["id", "properties.datetime", "assets.scl.href"]}}
-    while True:
-        r = requests.post(STAC, json=body | ({"token": token} if token else {}), timeout=120)
+    while body is not None:  # the "next" link carries the whole next request body (STAC API paging)
+        r = requests.post(STAC, json=body, timeout=120)
         r.raise_for_status()
         j = r.json()
         items += [{"day": i["properties"]["datetime"][:10], "scl": i["assets"]["scl"]["href"]} for i in j["features"]]
         nxt = [lk for lk in j.get("links", []) if lk.get("rel") == "next"]
-        if not nxt:
-            break
-        token = nxt[0]["body"]["token"] if "body" in nxt[0] else None
-        if token is None:
-            break
+        body = (nxt[0].get("body") or None) if nxt else None
+        if nxt and body is not None and nxt[0].get("merge"):
+            body = {**{k: v for k, v in body.items()}, **{}}
     return pd.DataFrame(items)
 
 
