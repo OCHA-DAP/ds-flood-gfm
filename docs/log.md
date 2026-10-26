@@ -90,9 +90,12 @@ uv run --with h5py --with fsspec --with aiohttp python scripts/fusion/experiment
 ### 2026-10-26: normally-wet strata (Next steps 8)
 - `cv_normally_wet_strata.py` (rules + expectation committed first) → `results/cv/normally_wet_strata_*.csv`. Worse: pooled F1 0.37 vs 0.44, normally-wet cells 0.40 vs 0.60, other cells +0.006; false events 27% vs 34%. Gold's inconsistency on normally-wet cells (52/48) means the better-specified rates lose recall where the gold flood sits. Not adopted.
 
+### 2026-10-26: dropping GFDS (Next steps 12)
+- `cv_ordinary_days.py --microwave floodscan` (flag committed before running, e94b6f0 results). Fusion's ordinary-day flood calls 1.06 → 0.34 per 100 cells; false block-events 2.7% → 0.03%; map-day F1 −0.011. Recommended; awaits the user's confirmation (fixed decision 2).
+
 ## Open decisions and next steps (as of 2026-10-21)
 1. Operating point: catch floods (low threshold / no memory ≈ cascade) or avoid false alarms (fusion as built or higher threshold). User's call.
-2. ~~Ordinary-day precision~~ done 26 Oct. New: drop GFDS from the microwave vote? (doc Next steps 12).
+2. ~~Ordinary-day precision~~ done 26 Oct. Drop GFDS from the microwave vote: tested, recommended, awaiting the user's yes (`sources.gfds.enabled: false`).
 3. ~~Normally-wet stratum~~ done 26 Oct: scores worse; not adopted. The target definition (water vs flood) is the limit.
 4. CYGNSS on all 148 events in coverage (~4.3 GB of windowed reads), then as a background layer (base rate) rather than daily evidence.
 5. MODIS for the VIIRS gap: Databricks job blocked on an Earthdata login the job can use (user's consent for a personal token as a secret, or the team account fixed).
