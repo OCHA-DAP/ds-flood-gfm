@@ -98,6 +98,10 @@ uv run --with h5py --with fsspec --with aiohttp python scripts/fusion/experiment
 - `cv_far_from_flood.py` (rules first) → `results/cv/far_from_flood.csv`: fusion 2.24 false calls per 100 dry open-land cells far from the flood (6.51 near); implied precision 0.04. Doc now states ordinary-day precision as a range 0.04–0.2, with GFM's 0.14 recall as the reason the 0.03 is only a floor.
 - `experiment_s2_referee.py` (rules first, 8d3b9af): Sentinel-2 SCL water on the 30 sample blocks as an input-independent referee; running (resumable, `data/fusion/metrics/s2_referee_rows.parquet`).
 
+### 2026-10-27: Sentinel-2 referee done
+- First run died 8 times on scenes whose SCL exists only as JPEG2000 on the requester-pays bucket `s3://sentinel-s2-l2a` (10 of 9,629 scenes). Fix (b9d1bcc): those scenes are left out and listed in `results/experiment_s2_referee_excluded.csv`; the day's other tiles are still read. Relaunched with `data/fusion/resume/s2_referee.sh` (8-attempt loop); finished in about 2 h.
+- `experiment_s2_referee.py` → `results/experiment_s2_referee.csv`: 3.04 M observed cell-days on 1,073 scene-days. Sentinel-2 water on 2.7% of cell-days, unusual water (not normally wet that month) 0.94%. Fusion calls 1.38 per 100: 69% no water visible, 22% normally-wet water, 9% unusual water (precision vs water 0.31, vs unusual 0.09; recall vs unusual 0.13). FloodScan-only fusion 0.53 per 100, precision 0.48 / 0.18, recall 0.10. Three blocks hold 90% of fusion's calls. Written to the doc (Ordinary days, Next steps) and final_report.
+
 ## Open decisions and next steps (as of 2026-10-21)
 1. Operating point: catch floods (low threshold / no memory ≈ cascade) or avoid false alarms (fusion as built or higher threshold). User's call.
 2. ~~Ordinary-day precision~~ done 26 Oct. Drop GFDS from the microwave vote: tested, recommended, awaiting the user's yes (`sources.gfds.enabled: false`).
