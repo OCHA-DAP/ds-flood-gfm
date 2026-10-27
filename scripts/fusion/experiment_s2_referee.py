@@ -19,7 +19,10 @@ Rules, fixed before running:
     water, and against unusual water, all cells (no data = not flagged), by land type;
   - caveats stated up front: cloud-free days are drier than average (floods come with cloud), so this
     measures ordinary-day behaviour, not flood-day skill; water under trees is invisible to SCL; a 5-day
-    revisit means most days are unlabelled.
+    revisit means most days are unlabelled;
+  - scenes whose SCL is only on the requester-pays bucket (s3://sentinel-s2-l2a, JPEG2000, no https COG;
+    10 of 9,629 scenes on 2026-10-26) are left out and every one is listed in
+    results/experiment_s2_referee_excluded.csv. The other tiles of that day are still read.
 
 Outputs: results/experiment_s2_referee.csv (+ per-block rows in data/fusion/metrics/). Resumable per block-day.
 Run: nice -n 19 uv run python -u scripts/fusion/experiment_s2_referee.py [--blocks N] [--max-days N]
@@ -59,12 +62,10 @@ def scenes(bbox, start, end) -> pd.DataFrame:
         r = requests.post(STAC, json=body, timeout=120)
         r.raise_for_status()
         j = r.json()
-        items += [{"day": i["properties"]["datetime"][:10], "scl": i["assets"]["scl"]["href"]} for i in j["features"]]
+        items += [{"id": i["id"], "day": i["properties"]["datetime"][:10], "scl": i["assets"]["scl"]["href"]} for i in j["features"]]
         nxt = [lk for lk in j.get("links", []) if lk.get("rel") == "next"]
         body = (nxt[0].get("body") or None) if nxt else None
-        if nxt and body is not None and nxt[0].get("merge"):
-            body = {**{k: v for k, v in body.items()}, **{}}
-    return pd.DataFrame(items)
+    return pd.DataFrame(items, columns=["id", "day", "scl"])
 
 
 def read_scl_on_grid(hrefs, win: grid.Window) -> tuple[np.ndarray, np.ndarray]:
@@ -117,6 +118,8 @@ def main() -> None:
     part = cfg.local("metrics", "s2_referee_rows.parquet")
     rows = pd.read_parquet(part).to_dict("records") if part.exists() else []
     done = {(r["block_id"], r["day"]) for r in rows}
+    excl_path = cfg.results_dir / "experiment_s2_referee_excluded.csv"
+    excluded = pd.read_csv(excl_path).to_dict("records") if excl_path.exists() else []  # kept across resumes
     t0 = time.time()
     for _, b in blocks.iterrows():
         ds = xr.load_dataset(cfg.local("cube", "sample", f"{b.block_id}.nc"), engine="netcdf4")
@@ -135,6 +138,12 @@ def main() -> None:
         calls = {"fusion": np.isfinite(p) & (p >= thr), FS_ONLY: np.isfinite(pf) & (pf >= thr), CASCADE: cas == 1} | {s: v[s] == 1 for s in SINGLE}
         minx, miny, maxx, maxy = win.bounds
         sc = scenes([minx, miny, maxx, maxy], days[0].strftime("%Y-%m-%d"), days[-1].strftime("%Y-%m-%d"))
+        jp2 = ~sc.scl.str.startswith("https://")  # requester-pays s3://sentinel-s2-l2a JPEG2000 only: no https copy
+        if jp2.any():
+            excluded = [e for e in excluded if e["block_id"] != b.block_id] + [{"block_id": b.block_id, **r} for r in sc[jp2].to_dict("records")]
+            pd.DataFrame(excluded).to_csv(excl_path, index=False)
+            print(f"{b.block_id}: {int(jp2.sum())} scene(s) without an https COG left out (listed in {excl_path.name})", flush=True)
+            sc = sc[~jp2]
         if a.max_days:
             sc = sc[sc.day.isin(sorted(sc.day.unique())[: a.max_days])]
         nw = {m: baseline.normally_wet(cfg, win, m) for m in range(1, 13)}
