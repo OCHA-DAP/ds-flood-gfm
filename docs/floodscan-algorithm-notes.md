@@ -582,3 +582,68 @@ Same inland land cells, same days, 36 GHz, two 7-day windows
   box come from orbits starting ~23:20 UTC the previous day, so grouping by
   file date leaves some days with 2–20% descending coverage (seen on 7, 9,
   12, 14 Sep). AER starts its day at 21:00 UTC the day before (§3.5).
+
+## Hold-out result (2026-10-27): test year 2023, tables from 2024+2025
+
+Every score above tested 2024 with tables from 2023 and 2025. Swapping roles
+(`04 2024,2025 …static_tables_2425.npz`, `05 … {"year": 2023}`, `06`)
+answers whether the method or the year was doing the work.
+
+| | 2024 test | 2023 hold-out |
+|---|---|---|
+| ratio (our total / FloodScan total, box) | 1.41 | 4.79 |
+| never (share of our flooded cell-days where FloodScan never floods) | 0.41 | 0.79 |
+| r_cell | 0.70 | 0.39 |
+| r_lga1 | 0.73 | 0.43 |
+| peak / peak_mm | 0.51 / 0.68 | 0.08 / 0.47 |
+| our mean ff, Aug–Nov land | 0.0066 | 0.0122 |
+| FloodScan: inland cells with SFED max > 0.2 | 100 | 41 |
+
+2023 was a low-flood year in FloodScan (half of 2024's LGA peaks) and our
+chain produced twice as much flooding as in 2024. Diagnostics
+(scratchpad `q_level_by_year.py`, `sahel_tables_diag.py`):
+
+- Not calibration: monthly land medians of Q and of the 18 GHz Tb agree
+  across 2023 (FCDR), 2024 (ICDR) and 2025 (FCDR) to 0.001 / 1 K.
+- Where: the Sahel band 12.5–17.5°N (rows 10–29; mean of cell max 0.12 in
+  2023 against 0.02–0.05 in 2024), in October–November (mean ff per 10-day
+  block rises to 0.022 from 0.007 in August). Mostly Niger and Chad, outside
+  the LGA scores. South of 12.5°N the two years behave alike.
+- Why: in that band Q has a soil/vegetation seasonal cycle (band median
+  0.362 in June, 0.348 in late August, 0.365 in November). The dry-down of
+  2023 reached 0.364–0.367 in Oct–Nov; 2024 and 2025 reached 0.356–0.362.
+  The 2024+2025 Qdc/Q61c at DOY 288–319 is 0.355–0.360, so 2023 sits
+  ~0.005 above it, which eq. 13 turns into ff ≈ 0.09 with Q_pow − Q_dry ≈
+  0.06. The band's MDFF is 0.10–0.11, so the excess straddles the
+  threshold. South of 12.5°N the year-to-year spread is < 0.001.
+- The 2024 result is partly luck: 2024's Sahel dry-down sat inside the
+  2023+2025 range, so no false floods there. The southern (Nigeria) scores
+  do not depend on this and stand.
+
+**Expectation weight test** (`wexp_test.sh`; `w_exp` is the eq. 17 weight
+of the in-season 61-day expectation; the table weight 1/var61 is ~1e6 with
+two training years, so at AER's 1/0.0012 the climatology has 99.9% of the
+weight):
+
+| w_exp | 2023 ratio / never / r_cell / r_lga1 | 2024 ratio / never / r_cell / r_lga1 / peak |
+|---|---|---|
+| 833 (AER) | 4.79 / 0.79 / 0.39 / 0.43 | 1.41 / 0.41 / 0.70 / 0.73 / 0.51 |
+| 1e5 | 3.34 / 0.72 / 0.38 / 0.44 | 1.34 / 0.42 / 0.68 / 0.75 / 0.46 |
+| 1e6 | 1.99 / 0.63 / 0.44 / 0.43 | 1.19 / 0.46 / 0.64 / 0.79 / 0.46 |
+| 1e7 | 1.74 / 0.61 / 0.41 / 0.46 | 1.11 / 0.50 / 0.59 / 0.76 / 0.42 |
+
+Giving the in-season expectation real weight halves the 2023 false total
+but does not restore skill (r_cell stays ~0.4, 61% of our flooding still
+where FloodScan has none) and it erodes 2024 (r_cell 0.70 → 0.59), because
+a 61-day median also absorbs real slow floods. It is a partial patch, not
+the fix.
+
+**Reading.** The dry reference built from two years cannot absorb normal
+inter-annual variation of the semi-arid surface, which is the size of the
+flood threshold there. AER's tables come from 10+ years. The CSU 0.25°
+daily grid exists only from 2023, so the grid route is capped at three
+or four training years; the CSU swath files run from 2012-07 and are the
+only public source of a 13-year AMSR2 climatology. The swath route is
+therefore needed for the climatology, not only for the noise floor
+(previous section). Until then, scores from a single test year should be
+quoted with this caveat.
