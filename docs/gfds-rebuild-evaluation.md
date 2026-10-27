@@ -106,8 +106,27 @@ From the [2015 Technical Note](https://www.gdacs.org/flooddetection/Download/Tec
 
 ### JAXA G-Portal
 
-These facts come from the listing probe of 2026-10-15. Access is SFTP to
-`ftp.gportal.jaxa.jp:2051` with the account's user ID and password.
+These facts come from the listing probe of 2026-10-15, made on the old
+system: SFTP to `ftp.gportal.jaxa.jp:2051` with user ID and password.
+
+**G-Portal system renewal (notice of 2026-10-01, read 2026-10-27).** JAXA
+replaced the platform on 2026-10-01; the old system is planned to shut down
+on 2026-11-04 after a month of parallel operation. In practice the old SFTP
+host reset every connection from 2026-10-26 (the website was down for a
+JAXA-wide maintenance from 2026-10-22 and returned on 2026-10-27). The new
+addresses are `https://www.gportal.jaxa.jp/`, SFTP `sftp.gportal.jaxa.jp`
+on **port 22** (an AWS Transfer Family endpoint in ap-northeast-1), and
+CSW `https://csw.gportal.jaxa.jp/csw`. SFTP is **public-key only**: the
+site generates the key pair and the private key (OpenSSH format) is
+downloaded under "User account services"; SFTP becomes available up to an
+hour after the account is set up. Users are asked to "reconfigure your
+user account on the new system" under new terms of use, so the account
+may need to be re-registered. The web bulk-download function is gone;
+JAXA supplies CSW + SFTP sample scripts instead. The GCOM-C request
+procedure for data older than 2.5 years does not apply to GCOM-W/AMSR2.
+`experiments/gfds_rebuild/10_signal_from_jaxa_l1b.py` reads
+`GPORTAL_HOST`/`GPORTAL_PORT`/`GPORTAL_KEY` from `.env` (defaults: the new
+host, 22, key auth).
 
 | product | path under `/standard` | dates | size | delay |
 |---|---|---|---|---|

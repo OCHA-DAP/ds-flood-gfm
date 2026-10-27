@@ -43,16 +43,30 @@ EPOCH = dt.datetime(1993, 1, 1)
 day = dt.date.fromisoformat(sys.argv[1])
 KEY = Path(f"data/gdacs_gfds/rebuild/answer_key_{day:%Y%m%d}")
 cfg = dotenv_values(ENV)
-if not cfg.get("GPORTAL_USER") or not cfg.get("GPORTAL_PASSWORD"):
-    sys.exit(f"GPORTAL_USER / GPORTAL_PASSWORD missing from {ENV}")
+# G-Portal moved to a new system on 2026-10-01 (old host ftp.gportal.jaxa.jp:2051 with password login shut down
+# 2026-11-04). The new SFTP host sftp.gportal.jaxa.jp:22 accepts public-key login only; the key is registered on
+# the website under "User account services". .env: GPORTAL_USER, GPORTAL_KEY (private key path); GPORTAL_HOST /
+# GPORTAL_PORT override the defaults; GPORTAL_PASSWORD is used only when no key is configured (old host).
+HOST, PORT = cfg.get("GPORTAL_HOST", "sftp.gportal.jaxa.jp"), int(cfg.get("GPORTAL_PORT", "22"))
+if not cfg.get("GPORTAL_USER"):
+    sys.exit(f"GPORTAL_USER missing from {ENV}")
+if cfg.get("GPORTAL_KEY"):
+    KEY_PATH = Path(cfg["GPORTAL_KEY"]).expanduser()
+    if not KEY_PATH.exists():
+        sys.exit(f"GPORTAL_KEY points to {KEY_PATH}, which does not exist")
+    AUTH = {"pkey": paramiko.PKey.from_path(str(KEY_PATH))}
+elif cfg.get("GPORTAL_PASSWORD"):
+    AUTH = {"password": cfg["GPORTAL_PASSWORD"]}
+else:
+    sys.exit(f"neither GPORTAL_KEY nor GPORTAL_PASSWORD set in {ENV}; the new host needs a registered SSH key")
 
 
 def connect():
     for attempt in range(6):
         try:
-            t = paramiko.Transport(("ftp.gportal.jaxa.jp", 2051))
+            t = paramiko.Transport((HOST, PORT))
             t.banner_timeout = 60
-            t.connect(username=cfg["GPORTAL_USER"], password=cfg["GPORTAL_PASSWORD"])
+            t.connect(username=cfg["GPORTAL_USER"], **AUTH)
             s = paramiko.SFTPClient.from_transport(t)
             s.get_channel().settimeout(120)
             return t, s
