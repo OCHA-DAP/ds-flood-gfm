@@ -640,10 +640,24 @@ the fix.
 
 **Reading.** The dry reference built from two years cannot absorb normal
 inter-annual variation of the semi-arid surface, which is the size of the
-flood threshold there. AER's tables come from 10+ years. The CSU 0.25°
-daily grid exists only from 2023, so the grid route is capped at three
-or four training years; the CSU swath files run from 2012-07 and are the
-only public source of a 13-year AMSR2 climatology. The swath route is
-therefore needed for the climatology, not only for the noise floor
-(previous section). Until then, scores from a single test year should be
-quoted with this caveat.
+flood threshold there. AER's tables come from 10+ years. Whether more
+years fix it is a hypothesis, not a result: a longer *mean* does not put
+2023 inside the envelope if 2023 is a genuinely high dry-down year (the
+2023+2025 tables, with 2023 in-sample, sit only 0.004 above the 2024+2025
+ones at DOY 288–319), and with a realistic 13-year var61 of order (0.005)²
+the climatology still holds ~98% of the eq. 17 blend. What more years
+enable is a realistic var61 and the §4.14 per-day a61 regression skipped
+in 04 for lack of years, which is the stage AER built to track the current
+season's level. The CSU 0.25° daily grid exists only from 2023; the CSU
+swath files run from 2012-07 and are the only public source of a long
+AMSR2 record, so they are what lets us *test* the fix. Cheapest
+discriminating test: stream 36 GHz swaths only (~46 MB/day, ~10 GB per
+Jun–Dec season) for several pre-2023 seasons, aggregate to 0.25° (the
+noise test showed r 0.97, no bias, against the CSU grid), rebuild the
+tables with 5–6 years including a61, and repeat this hold-out. That
+separates "more years" from "finer grid" before the full route
+(~25 GB per season for all channels, 10+ seasons for a climatology).
+Until then, scores from a single test year carry this caveat. The
+coastal states (Lagos, Rivers, Bayelsa, Akwa Ibom) are over-flooded
+10–50× in both years, a standing defect that the inland 2024 floods hid;
+only the inland southern scores stand.
