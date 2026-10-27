@@ -1,0 +1,20 @@
+# Next steps
+
+Steps 1–4 are done (15 October). Steps 5–7 extend the analysis, and each waits on something outside this work.
+
+- [x] **1. Settle the two proposals:** the rule for days before and after each event, and the event-level rules (the 10% share, the ±3-day window, the ordinary-day period). Decided for you on 14 October, before any result existed (ADRs 0006 and 0007).
+- [x] **2. Code changes**, each with its test and a short decision record (ADR), and `docs/methods.md` updated in the same commit:
+  - [x] scope and event selection in `configs/fusion.yaml` (continents listed, no quotas or size limits)
+  - [x] three land types instead of six strata
+  - [x] the days-before-and-after rule
+  - [x] five folds by basin, balanced on flood area
+- [x] **3. Build the 51 new events.** All built (15 October).
+- [x] **4. Re-run fitting and scoring** over the five folds on all 170 events: cell-level (all cells and observed cells, per continent and land type) and event-level. Done (15 October): results/cv/ in the repo, Results above, and `docs/final_report.md`.
+- [ ] **5. MODIS in the optical vote.** The stake: where VIIRS has files it adds 0.08 F1 to fusion, and the VIIRS gap holds 28% of the gold flood. Needs MODIS over every event window, a Databricks job. It is blocked on an Earthdata login the job can use: either your personal token stored as a Databricks secret, or the team account fixed.
+- [ ] **6. Precision on ordinary days** from the global random sample, with the deferred check for false events away from floods (ADR 0007).
+- [ ] **7. Gauge test:** choose a gauge source inside the four continents.
+- [ ] **8. Normally-wet stratum.** Fit each source's rates separately for cells normally wet in that calendar month (JRC monthly recurrence), within each land type. False-alarm rates differ 3 to 11 times between the two (Results, Water versus flood). Cheap: the masks are cached for every map-day month; the other months of the 51 new events need about 195 more window-month downloads (minutes). It is not expected to fix the flat probabilities, which persist within both kinds of cell.
+- [x] **9. Beat the cascade.** Fusion as built only matches "VIIRS, else GFM, else microwave" on the reference score and loses to it basin-weighted. The direct test is to learn the evidence for each combination of reports (each of the 27 patterns of flood, dry or couldn't see from the three sources, per land type) on the training folds, instead of multiplying each source's evidence as if they were independent. This changes fixed decision 7 of the original brief, so it needs your yes. Success: above the cascade on the pooled and the basin-weighted scores, while keeping fusion's lower false-event rate. Done 16 October: no version passes (Results, Can fusion beat the cascade?).
+- [ ] **10. Choose the operating point: catch floods or avoid false alarms.** Step 9 found (16 October) that no version beats the cascade on both F1 and false events. Fusion as built sits at one end (F1 0.44, false events on 34% of events); the cascade and the no-memory versions at the other (F1 0.46–0.49, false events 64%). Which end, or a point between, depends on how the product will be used: an alert that must not cry wolf, or a map that must not miss water. The points in between are now shown (Results, The trade-off, threshold by threshold); the choice is yours.
+- [ ] **11. CYGNSS on all events in its coverage.** On 8 events it has the best F1 of any single product (0.47) and the highest recall (0.67), but low precision on ordinary cells (Other approaches tried, CYGNSS). Score it on all 148 events inside its dates and latitudes, with intervals, as a slowly updating layer: about 590 map days, read by window with your Earthdata token, an hour or two of downloads.
+

@@ -1,0 +1,193 @@
+product,zone,calls,dry,false_alarm_rate,view,landtype,implied_ordinary_day_precision,wet
+"cascade: VIIRS, else GFM, else microwave",far (>5 cells from the flood),603184,40395570,0.014931934368050754,zone,,,
+"cascade: VIIRS, else GFM, else microwave",near (within 5 cells),943637,22625790,0.04170625644452636,zone,,,
+floodscan,far (>5 cells from the flood),407009,40395570,0.01007558502083273,zone,,,
+floodscan,near (within 5 cells),759916,22625790,0.033586274777587875,zone,,,
+fusion,far (>5 cells from the flood),675032,40395570,0.016710545240480577,zone,,,
+fusion,near (within 5 cells),1266751,22625790,0.05598703956856313,zone,,,
+"fusion, FloodScan alone",far (>5 cells from the flood),523995,40395570,0.01297159564774058,zone,,,
+"fusion, FloodScan alone",near (within 5 cells),1078859,22625790,0.04768271074733744,zone,,,
+gfds,far (>5 cells from the flood),456528,40395570,0.011301437261561107,zone,,,
+gfds,near (within 5 cells),607581,22625790,0.026853471193713015,zone,,,
+gfm,far (>5 cells from the flood),4106,40395570,0.00010164480907188585,zone,,,
+gfm,near (within 5 cells),12520,22625790,0.0005533508443241097,zone,,,
+microwave,far (>5 cells from the flood),780005,40395570,0.01930917177304343,zone,,,
+microwave,near (within 5 cells),1219175,22625790,0.053884306360131515,zone,,,
+viirs,far (>5 cells from the flood),122089,40395570,0.0030223363601503826,zone,,,
+viirs,near (within 5 cells),323825,22625790,0.01431220744115454,zone,,,
+"cascade: VIIRS, else GFM, else microwave",far (>5 cells from the flood),467346,25237350,0.018518029824842942,"zone,landtype",open,,
+"cascade: VIIRS, else GFM, else microwave",far (>5 cells from the flood),14391,546750,0.026320987654320987,"zone,landtype",urban,,
+"cascade: VIIRS, else GFM, else microwave",far (>5 cells from the flood),121447,14611470,0.008311757817659688,"zone,landtype",vegetated,,
+"cascade: VIIRS, else GFM, else microwave",near (within 5 cells),657007,14201250,0.04626402605404454,"zone,landtype",open,,
+"cascade: VIIRS, else GFM, else microwave",near (within 5 cells),27218,817590,0.03329052459056495,"zone,landtype",urban,,
+"cascade: VIIRS, else GFM, else microwave",near (within 5 cells),259412,7606950,0.03410197253827092,"zone,landtype",vegetated,,
+floodscan,far (>5 cells from the flood),325887,25237350,0.012912885069153456,"zone,landtype",open,0.056520350291193566,
+floodscan,far (>5 cells from the flood),7070,546750,0.01293095564700503,"zone,landtype",urban,0.0006576453579345427,
+floodscan,far (>5 cells from the flood),74052,14611470,0.005068073232878006,"zone,landtype",vegetated,0.007015186891579565,
+floodscan,near (within 5 cells),488576,14201250,0.03440373206583928,"zone,landtype",open,0.021990401245310234,
+floodscan,near (within 5 cells),21751,817590,0.02660379897014396,"zone,landtype",urban,0.000319761031794911,
+floodscan,near (within 5 cells),249589,7606950,0.0328106534156265,"zone,landtype",vegetated,0.0010900614365096683,
+fusion,far (>5 cells from the flood),564832,25237350,0.0223807967159785,"zone,landtype",open,0.04309394264081357,
+fusion,far (>5 cells from the flood),6025,546750,0.011019661636945588,"zone,landtype",urban,0.0006051000573116314,
+fusion,far (>5 cells from the flood),104175,14611470,0.007129672784463165,"zone,landtype",vegetated,0.005147725030435979,
+fusion,near (within 5 cells),924986,14201250,0.06513412551711997,"zone,landtype",open,0.015238594094350064,
+fusion,near (within 5 cells),17132,817590,0.020954268031654007,"zone,landtype",urban,0.000318308010788362,
+fusion,near (within 5 cells),324633,7606950,0.04267584248614754,"zone,landtype",vegetated,0.000863712034248167,
+"fusion, FloodScan alone",far (>5 cells from the flood),444858,25237350,0.017626969551082027,"zone,landtype",open,0.05054481996226842,
+"fusion, FloodScan alone",far (>5 cells from the flood),5181,546750,0.00947599451303155,"zone,landtype",urban,0.0007727566626045573,
+"fusion, FloodScan alone",far (>5 cells from the flood),73956,14611470,0.005061503052054311,"zone,landtype",vegetated,0.007228666771813452,
+"fusion, FloodScan alone",near (within 5 cells),753428,14201250,0.0530536396443975,"zone,landtype",open,0.01738001903597059,
+"fusion, FloodScan alone",near (within 5 cells),19364,817590,0.023684242713340426,"zone,landtype",urban,0.0003093210190107282,
+"fusion, FloodScan alone",near (within 5 cells),306067,7606950,0.04023517967122171,"zone,landtype",vegetated,0.0009151344721186877,
+gfds,far (>5 cells from the flood),316772,25237350,0.012551714027027401,"zone,landtype",open,0.030853298736341624,
+gfds,far (>5 cells from the flood),16858,546750,0.03083310470964792,"zone,landtype",urban,0.00016811890566001658,
+gfds,far (>5 cells from the flood),122898,14611470,0.0084110633632345,"zone,landtype",vegetated,0.0014014711324733707,
+gfds,near (within 5 cells),450712,14201250,0.03173748789719215,"zone,landtype",open,0.012433938830506537,
+gfds,near (within 5 cells),26016,817590,0.03182035005320515,"zone,landtype",urban,0.00016290376602104943,
+gfds,near (within 5 cells),130853,7606950,0.017201769434530265,"zone,landtype",vegetated,0.0006857614891946966,
+gfm,far (>5 cells from the flood),3728,25237350,0.00014771756939615293,"zone,landtype",open,0.6901884809303114,
+gfm,far (>5 cells from the flood),19,546750,3.475080018289895e-05,"zone,landtype",urban,0.16635443462478558,
+gfm,far (>5 cells from the flood),359,14611470,2.456973870527743e-05,"zone,landtype",vegetated,0.3746085713503002,
+gfm,near (within 5 cells),10402,14201250,0.0007324707332101048,"zone,landtype",open,0.30999971377845476,
+gfm,near (within 5 cells),120,817590,0.00014677283234873224,"zone,landtype",urban,0.045115216443893644,
+gfm,near (within 5 cells),1998,7606950,0.00026265454617159306,"zone,landtype",vegetated,0.05305960868143388,
+microwave,far (>5 cells from the flood),567575,25237350,0.022489484831014348,"zone,landtype",open,0.03943054336735188,
+microwave,far (>5 cells from the flood),23464,546750,0.04291540923639689,"zone,landtype",urban,0.00025582196354624414,
+microwave,far (>5 cells from the flood),188966,14611470,0.012932716557608508,"zone,landtype",vegetated,0.0030927251492711746,
+microwave,near (within 5 cells),809294,14201250,0.05698751870433941,"zone,landtype",open,0.015941336786557587,
+microwave,near (within 5 cells),44947,817590,0.0549749874631539,"zone,landtype",urban,0.00019971483223762813,
+microwave,near (within 5 cells),364934,7606950,0.047973760837129203,"zone,landtype",vegetated,0.0008356212909643227,
+viirs,far (>5 cells from the flood),105735,25237350,0.004189623712473774,"zone,landtype",open,0.07492680471637815,
+viirs,far (>5 cells from the flood),1410,546750,0.002578875171467764,"zone,landtype",urban,0.0013976701294496237,
+viirs,far (>5 cells from the flood),14944,14611470,0.0010227581482219106,"zone,landtype",vegetated,0.010311767885796208,
+viirs,near (within 5 cells),290893,14201250,0.02048361939970073,"zone,landtype",open,0.01629647460536421,
+viirs,near (within 5 cells),2943,817590,0.0035996037133526585,"zone,landtype",urban,0.0010017341345509925,
+viirs,near (within 5 cells),29989,7606950,0.0039423159084784306,"zone,landtype",vegetated,0.002695776643023295,
+"cascade: VIIRS, else GFM, else microwave",far (>5 cells from the flood),70653,528619,0.1336558088150445,"zone,wet",,,normally wet
+"cascade: VIIRS, else GFM, else microwave",far (>5 cells from the flood),532531,39866951,0.013357705734757594,"zone,wet",,,other
+"cascade: VIIRS, else GFM, else microwave",near (within 5 cells),136790,942307,0.1451650046110238,"zone,wet",,,normally wet
+"cascade: VIIRS, else GFM, else microwave",near (within 5 cells),806847,21683483,0.03721021203097307,"zone,wet",,,other
+floodscan,far (>5 cells from the flood),31693,528619,0.05995433383968416,"zone,wet",,,normally wet
+floodscan,far (>5 cells from the flood),375316,39866951,0.009414213793274534,"zone,wet",,,other
+floodscan,near (within 5 cells),94623,942307,0.10041631867321373,"zone,wet",,,normally wet
+floodscan,near (within 5 cells),665293,21683483,0.03068201727554563,"zone,wet",,,other
+fusion,far (>5 cells from the flood),81215,528619,0.153636172744453,"zone,wet",,,normally wet
+fusion,far (>5 cells from the flood),593817,39866951,0.01489496901832297,"zone,wet",,,other
+fusion,near (within 5 cells),184725,942307,0.19603483790314621,"zone,wet",,,normally wet
+fusion,near (within 5 cells),1082026,21683483,0.04990093150625294,"zone,wet",,,other
+"fusion, FloodScan alone",far (>5 cells from the flood),74779,528619,0.14146105228907777,"zone,wet",,,normally wet
+"fusion, FloodScan alone",far (>5 cells from the flood),449216,39866951,0.011267879502498197,"zone,wet",,,other
+"fusion, FloodScan alone",near (within 5 cells),168446,942307,0.1787591517414176,"zone,wet",,,normally wet
+"fusion, FloodScan alone",near (within 5 cells),910413,21683483,0.041986474220954265,"zone,wet",,,other
+gfds,far (>5 cells from the flood),30085,528619,0.0569124454474773,"zone,wet",,,normally wet
+gfds,far (>5 cells from the flood),426443,39866951,0.010696654479546229,"zone,wet",,,other
+gfds,near (within 5 cells),51808,942307,0.05497995876078603,"zone,wet",,,normally wet
+gfds,near (within 5 cells),555773,21683483,0.025631168203005025,"zone,wet",,,other
+gfm,far (>5 cells from the flood),786,528619,0.0014868932066384297,"zone,wet",,,normally wet
+gfm,far (>5 cells from the flood),3320,39866951,8.327699803278159e-05,"zone,wet",,,other
+gfm,near (within 5 cells),3190,942307,0.0033853086096144887,"zone,wet",,,normally wet
+gfm,near (within 5 cells),9330,21683483,0.00043028142665087524,"zone,wet",,,other
+microwave,far (>5 cells from the flood),57179,528619,0.10816675147885339,"zone,wet",,,normally wet
+microwave,far (>5 cells from the flood),722826,39866951,0.01813095764459138,"zone,wet",,,other
+microwave,near (within 5 cells),132442,942307,0.14055079713936117,"zone,wet",,,normally wet
+microwave,near (within 5 cells),1086733,21683483,0.05011800917776909,"zone,wet",,,other
+viirs,far (>5 cells from the flood),44568,528619,0.08431024991534546,"zone,wet",,,normally wet
+viirs,far (>5 cells from the flood),77521,39866951,0.0019444928206323077,"zone,wet",,,other
+viirs,near (within 5 cells),73951,942307,0.07847866990269625,"zone,wet",,,normally wet
+viirs,near (within 5 cells),249874,21683483,0.011523702165376291,"zone,wet",,,other
+"cascade: VIIRS, else GFM, else microwave",far (>5 cells from the flood),64071,428587,0.1494935684003481,"zone,landtype,wet",open,,normally wet
+"cascade: VIIRS, else GFM, else microwave",far (>5 cells from the flood),403275,24808763,0.016255344935980888,"zone,landtype,wet",open,,other
+"cascade: VIIRS, else GFM, else microwave",far (>5 cells from the flood),493,10556,0.046703296703296704,"zone,landtype,wet",urban,,normally wet
+"cascade: VIIRS, else GFM, else microwave",far (>5 cells from the flood),13898,536194,0.025919723085301216,"zone,landtype,wet",urban,,other
+"cascade: VIIRS, else GFM, else microwave",far (>5 cells from the flood),6089,89476,0.0680517680718852,"zone,landtype,wet",vegetated,,normally wet
+"cascade: VIIRS, else GFM, else microwave",far (>5 cells from the flood),115358,14521994,0.007943674952627029,"zone,landtype,wet",vegetated,,other
+"cascade: VIIRS, else GFM, else microwave",near (within 5 cells),119255,768544,0.15517003580796934,"zone,landtype,wet",open,,normally wet
+"cascade: VIIRS, else GFM, else microwave",near (within 5 cells),537752,13432706,0.04003303578593918,"zone,landtype,wet",open,,other
+"cascade: VIIRS, else GFM, else microwave",near (within 5 cells),1516,27637,0.05485400007236675,"zone,landtype,wet",urban,,normally wet
+"cascade: VIIRS, else GFM, else microwave",near (within 5 cells),25702,789953,0.03253611290798313,"zone,landtype,wet",urban,,other
+"cascade: VIIRS, else GFM, else microwave",near (within 5 cells),16019,146126,0.10962457057607818,"zone,landtype,wet",vegetated,,normally wet
+"cascade: VIIRS, else GFM, else microwave",near (within 5 cells),243393,7460824,0.03262280412994597,"zone,landtype,wet",vegetated,,other
+floodscan,far (>5 cells from the flood),29418,428587,0.06863950609794511,"zone,landtype,wet",open,0.011144339840115588,normally wet
+floodscan,far (>5 cells from the flood),296469,24808763,0.011950172606348813,"zone,landtype,wet",open,0.060796833868038996,other
+floodscan,far (>5 cells from the flood),51,10556,0.004831375521030693,"zone,landtype,wet",urban,0.0017582192684118321,normally wet
+floodscan,far (>5 cells from the flood),7019,536194,0.013090411306355536,"zone,landtype,wet",urban,0.0006496397157076651,other
+floodscan,far (>5 cells from the flood),2224,89476,0.02485582726094148,"zone,landtype,wet",vegetated,0.0014384214497804762,normally wet
+floodscan,far (>5 cells from the flood),71828,14521994,0.004946152711535344,"zone,landtype,wet",vegetated,0.007186865446778137,other
+floodscan,near (within 5 cells),79233,768544,0.10309494316525794,"zone,landtype,wet",open,0.007447520517063708,normally wet
+floodscan,near (within 5 cells),409343,13432706,0.03047360673270151,"zone,landtype,wet",open,0.02475625281622113,other
+floodscan,near (within 5 cells),705,27637,0.025509281036291926,"zone,landtype,wet",urban,0.0003334763329790791,normally wet
+floodscan,near (within 5 cells),21046,789953,0.026642091364929305,"zone,landtype,wet",urban,0.0003193015894096488,other
+floodscan,near (within 5 cells),14685,146126,0.1004954628197583,"zone,landtype,wet",vegetated,0.0003561544400042355,normally wet
+floodscan,near (within 5 cells),234904,7460824,0.03148499415078013,"zone,landtype,wet",vegetated,0.0011359057709556494,other
+fusion,far (>5 cells from the flood),75742,428587,0.1767249123281854,"zone,landtype,wet",open,0.005670937052992067,normally wet
+fusion,far (>5 cells from the flood),489090,24808763,0.019714404946348997,"zone,landtype,wet",open,0.048638946907343696,other
+fusion,far (>5 cells from the flood),175,10556,0.016578249336870028,"zone,landtype,wet",urban,0.00040229525285394286,normally wet
+fusion,far (>5 cells from the flood),5850,536194,0.010910230252483243,"zone,landtype,wet",urban,0.0006111656000146148,other
+fusion,far (>5 cells from the flood),5298,89476,0.05921140864589387,"zone,landtype,wet",vegetated,0.000622659253838564,normally wet
+fusion,far (>5 cells from the flood),98877,14521994,0.006808775709451471,"zone,landtype,wet",vegetated,0.005389029472226673,other
+fusion,near (within 5 cells),161006,768544,0.2094948369904651,"zone,landtype,wet",open,0.004788116371622995,normally wet
+fusion,near (within 5 cells),763980,13432706,0.05687461632823647,"zone,landtype,wet",open,0.017413055237095913,other
+fusion,near (within 5 cells),877,27637,0.03173282194160003,"zone,landtype,wet",urban,0.00021021239789785172,normally wet
+fusion,near (within 5 cells),16255,789953,0.020577173578681263,"zone,landtype,wet",urban,0.00032413938882417965,other
+fusion,near (within 5 cells),22842,146126,0.1563171509519182,"zone,landtype,wet",vegetated,0.00023594850368070024,normally wet
+fusion,near (within 5 cells),301791,7460824,0.040450089695186486,"zone,landtype,wet",vegetated,0.0009111941979944464,other
+"fusion, FloodScan alone",far (>5 cells from the flood),70563,428587,0.1646410180430111,"zone,landtype,wet",open,0.005667265179514515,normally wet
+"fusion, FloodScan alone",far (>5 cells from the flood),374295,24808763,0.015087209305840843,"zone,landtype,wet",open,0.058555240228579095,other
+"fusion, FloodScan alone",far (>5 cells from the flood),147,10556,0.013925729442970823,"zone,landtype,wet",urban,0.0005259650123330749,normally wet
+"fusion, FloodScan alone",far (>5 cells from the flood),5034,536194,0.009388393007008658,"zone,landtype,wet",urban,0.0007799615003402708,other
+"fusion, FloodScan alone",far (>5 cells from the flood),4069,89476,0.04547588180070634,"zone,landtype,wet",vegetated,0.0008097585359546888,normally wet
+"fusion, FloodScan alone",far (>5 cells from the flood),69887,14521994,0.004812493380729947,"zone,landtype,wet",vegetated,0.0075998523509072345,other
+"fusion, FloodScan alone",near (within 5 cells),145605,768544,0.18945564600074946,"zone,landtype,wet",open,0.004928633415847277,normally wet
+"fusion, FloodScan alone",near (within 5 cells),607823,13432706,0.04524948286666886,"zone,landtype,wet",open,0.02031664303148148,other
+"fusion, FloodScan alone",near (within 5 cells),1001,27637,0.036219560733798895,"zone,landtype,wet",urban,0.0002022889926062765,normally wet
+"fusion, FloodScan alone",near (within 5 cells),18363,789953,0.023245686768706492,"zone,landtype,wet",urban,0.00031515486770868745,other
+"fusion, FloodScan alone",near (within 5 cells),21840,146126,0.14946005502100926,"zone,landtype,wet",vegetated,0.00024652233102713446,normally wet
+"fusion, FloodScan alone",near (within 5 cells),284227,7460824,0.03809592613362814,"zone,landtype,wet",vegetated,0.0009664736252889353,other
+gfds,far (>5 cells from the flood),24648,428587,0.0575099104732528,"zone,landtype,wet",open,0.006900257472110331,normally wet
+gfds,far (>5 cells from the flood),292124,24808763,0.011775032878503455,"zone,landtype,wet",open,0.03282158759580754,other
+gfds,far (>5 cells from the flood),721,10556,0.06830238726790451,"zone,landtype,wet",urban,7.589933736653424e-05,normally wet
+gfds,far (>5 cells from the flood),16137,536194,0.030095450527234547,"zone,landtype,wet",urban,0.00017223887235816087,other
+gfds,far (>5 cells from the flood),4716,89476,0.05270687111627699,"zone,landtype,wet",vegetated,0.00022391317525174233,normally wet
+gfds,far (>5 cells from the flood),118182,14521994,0.008138138605483517,"zone,landtype,wet",vegetated,0.0014484035059617343,other
+gfds,near (within 5 cells),46126,768544,0.06001738352000666,"zone,landtype,wet",open,0.00661387752810943,normally wet
+gfds,near (within 5 cells),404586,13432706,0.030119471087955027,"zone,landtype,wet",open,0.01309314396356232,other
+gfds,near (within 5 cells),917,27637,0.03318015703585773,"zone,landtype,wet",urban,0.00015622859956840814,normally wet
+gfds,near (within 5 cells),25099,789953,0.03177277635504897,"zone,landtype,wet",urban,0.0001631476436766573,other
+gfds,near (within 5 cells),4765,146126,0.03260884442193723,"zone,landtype,wet",vegetated,0.00036186913673971467,normally wet
+gfds,near (within 5 cells),126088,7460824,0.016900009972088875,"zone,landtype,wet",vegetated,0.0006979976108618147,other
+gfm,far (>5 cells from the flood),773,428587,0.0018036011358253984,"zone,landtype,wet",open,0.15430366662875755,normally wet
+gfm,far (>5 cells from the flood),2955,24808763,0.0001191111382699734,"zone,landtype,wet",open,0.7342406732270801,other
+gfm,far (>5 cells from the flood),0,10556,0.0,"zone,landtype,wet",urban,,normally wet
+gfm,far (>5 cells from the flood),19,536194,3.543493586276609e-05,"zone,landtype,wet",urban,0.16366832633450132,other
+gfm,far (>5 cells from the flood),13,89476,0.00014529035719075507,"zone,landtype,wet",vegetated,0.09197837325418146,normally wet
+gfm,far (>5 cells from the flood),346,14521994,2.3825929138932297e-05,"zone,landtype,wet",vegetated,0.3818378017739773,other
+gfm,near (within 5 cells),3083,768544,0.004011481450639131,"zone,landtype,wet",open,0.07581520752992109,normally wet
+gfm,near (within 5 cells),7319,13432706,0.0005448641546982418,"zone,landtype,wet",open,0.3765462367903257,other
+gfm,near (within 5 cells),28,27637,0.0010131345659803886,"zone,landtype,wet",urban,0.006798109448620914,normally wet
+gfm,near (within 5 cells),92,789953,0.00011646262499161342,"zone,landtype,wet",urban,0.056196926056428016,other
+gfm,near (within 5 cells),79,146126,0.0005406293199020024,"zone,landtype,wet",vegetated,0.026500998569610027,normally wet
+gfm,near (within 5 cells),1919,7460824,0.000257210195549446,"zone,landtype,wet",vegetated,0.05412193295448596,other
+microwave,far (>5 cells from the flood),49535,428587,0.11557746735201954,"zone,landtype,wet",open,0.007924195472706536,normally wet
+microwave,far (>5 cells from the flood),518040,24808763,0.02088133132635432,"zone,landtype,wet",open,0.042338674782557074,other
+microwave,far (>5 cells from the flood),769,10556,0.07284956422887458,"zone,landtype,wet",urban,0.00015071961728681634,normally wet
+microwave,far (>5 cells from the flood),22695,536194,0.04232609838976192,"zone,landtype,wet",urban,0.000259382876539523,other
+microwave,far (>5 cells from the flood),6875,89476,0.0768362465912647,"zone,landtype,wet",vegetated,0.0005218953927525155,normally wet
+microwave,far (>5 cells from the flood),182091,14521994,0.012538980528431564,"zone,landtype,wet",vegetated,0.003189529939023358,other
+microwave,near (within 5 cells),112533,768544,0.14642362701419828,"zone,landtype,wet",open,0.0062653131806864205,normally wet
+microwave,near (within 5 cells),696761,13432706,0.05187048685499407,"zone,landtype,wet",open,0.017486452752434583,other
+microwave,near (within 5 cells),1564,27637,0.05659080218547599,"zone,landtype,wet",urban,0.00019401356020861454,normally wet
+microwave,near (within 5 cells),43383,789953,0.0549184571740344,"zone,landtype,wet",urban,0.00019992036751120072,other
+microwave,near (within 5 cells),18345,146126,0.12554234017218016,"zone,landtype,wet",vegetated,0.0003194826870600637,normally wet
+microwave,near (within 5 cells),346589,7460824,0.046454520304995806,"zone,landtype,wet",vegetated,0.000862925721917749,other
+viirs,far (>5 cells from the flood),40854,428587,0.095322536614503,"zone,landtype,wet",open,0.003547294406299792,normally wet
+viirs,far (>5 cells from the flood),64881,24808763,0.0026152452663601162,"zone,landtype,wet",open,0.11485224334749275,other
+viirs,far (>5 cells from the flood),216,10556,0.02046229632436529,"zone,landtype,wet",urban,0.00017636461680162313,normally wet
+viirs,far (>5 cells from the flood),1194,536194,0.002226805969481195,"zone,landtype,wet",urban,0.0016182911851739027,other
+viirs,far (>5 cells from the flood),3498,89476,0.03909428226563548,"zone,landtype,wet",vegetated,0.00027250599577109,normally wet
+viirs,far (>5 cells from the flood),11446,14521994,0.0007881837714572806,"zone,landtype,wet",vegetated,0.013339753736829678,other
+viirs,near (within 5 cells),67017,768544,0.08719995211725028,"zone,landtype,wet",open,0.0038764402969908578,normally wet
+viirs,near (within 5 cells),223876,13432706,0.016666485516767804,"zone,landtype,wet",open,0.019954387139176005,other
+viirs,near (within 5 cells),765,27637,0.027680283677678476,"zone,landtype,wet",urban,0.000130381287533586,normally wet
+viirs,near (within 5 cells),2178,789953,0.0027571260568666745,"zone,landtype,wet",urban,0.0013074275341699647,other
+viirs,near (within 5 cells),6169,146126,0.042216990816144974,"zone,landtype,wet",vegetated,0.00025235434488441485,normally wet
+viirs,near (within 5 cells),23820,7460824,0.0031926768410566984,"zone,landtype,wet",vegetated,0.003326638117804113,other

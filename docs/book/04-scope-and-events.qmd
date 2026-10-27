@@ -1,0 +1,24 @@
+# Scope and events
+
+170 flood events are in scope, in Africa, Asia, South America and Oceania. Europe and North America are set aside for now.
+
+An **event** is one activation code in a gold catalog. Each of its gold maps covers an area on one date. Areas within 0.05° of each other are merged into one **window**, and every window covers every day from 30 days before the event's first map to 60 days after its last.
+
+An event is **built** once its data is prepared. For each window and each of its 91 or more days, the gold labels and every source's flood, dry or "couldn't see" value are put on the 0.01° grid. The result is saved as one file per window (an *event cube*). Fitting and scoring read only these files, which is why re-running them is cheap and building new events is not.
+
+| step | events |
+|---|---|
+| In the gold catalogs: Copernicus EMS rapid mapping (283) and UNOSAT (180) | 463 |
+| Pass the gold rules: one acquisition day, 2015 or later (GFM starts in 2015), a map of the examined area, a flood layer, not drawn from coarse optical imagery | 353 |
+| In Africa, Asia, South America or Oceania | **170** |
+| with at least 5 floodable cells flooded on a map day (used for the event-level scores) | 148 |
+
+| continent | events | gold flooded cell-days |
+|---|---|---|
+| Asia | 61 | 270,263 (67%) |
+| Africa | 80 | 109,025 (27%) |
+| Oceania | 13 | 19,553 (5%) |
+| South America | 16 | 5,173 (1%) |
+| all | 170 | 404,014 |
+
+Gold flooded cell-days count floodable cells flooded on a map day, summed over map days; they are the cells scored for recall. Asia holds two thirds of them, and one river basin in Bangladesh 40% (four UNOSAT floods, 2017–2022), so every result is also shown per continent and with that basin left out. The five largest events hold 47%: Bangladesh 2020, 2017 and 2022, Thailand 2021 and Myanmar (EMSR130). 13 events have no gold flood on a floodable cell, because their maps' flood areas never cover 30% of one; they are scored, but add only dry cells. Five very large UNOSAT events were never built in the gold catalog and are not available.

@@ -1,0 +1,13 @@
+# Not yet validated
+
+| gap | why it matters | what would close it |
+|---|---|---|
+| precision on ordinary days | all precision above is measured inside mapped floods, where about a tenth of labelled cells on map days are flooded (12% in open land); elsewhere it will be far lower | score the global random sample (53 blocks, 2023–2025) with GFM as stand-in truth, and the false-event check |
+| one dominant basin | four Bangladesh floods in one basin hold 40% of the gold flood, so pooled scores follow them | Results shows every score with and without that basin; mapped events from other large floodplains would reduce the weight |
+| independence from GFM | many Copernicus maps are drawn from Sentinel-1, GFM's own satellite | partly done: Results scores every product on map days without Sentinel-1 maps (GFM falls to F1 0.12, fusion keeps 0.46); a gold source fully independent of Sentinel-1 is still missing |
+| river gauges | an independent check on timing and on floods the analysts never mapped | not started; the best-documented gauge network with flood thresholds (USGS/NWS) is in North America, now out of scope. Candidates are in `docs/gauge_sources.md` |
+| small floods | a flood covering under 30% of a 1 km cell is dry for gold and products alike | a finer grid, at much higher cost |
+| GFM on seasonal floodplains | GFM's stricter water definition probably costs recall there | score GFM on normally-wet versus other cells |
+| uncertainty | per-continent counts are small | intervals by resampling whole events are beside every score; Oceania (13 events) and South America (16) stay thin, and more mapped events would help |
+| FloodScan outside Africa | the licence for the Asia-Australia and South America files is unconfirmed | check with whoever holds the AER agreement |
+| seasonal water in VIIRS and FloodScan | whether they count it as flood decides how they compare with GFM on floodplains | compare each source's flood-call rate on normally-wet and other cells on ordinary days, month by month, using the built events and the global sample |

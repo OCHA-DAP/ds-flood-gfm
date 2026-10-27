@@ -1,0 +1,22 @@
+# Inputs
+
+Fusion uses three daily satellite sources plus the gold maps to test against. Every source is turned into one value per 0.01° cell per day: flood, dry or "couldn't see". "Couldn't see" is never counted as dry.
+
+| input | what it is | pixel | years | read from | cell is flood when | cell is "couldn't see" when |
+|---|---|---|---|---|---|---|
+| **GFM** | Copernicus Global Flood Monitoring, Sentinel-1 radar | 20 m, read at 80 m | 2015 on | EODC STAC (`stac.eodc.eu`), collection GFM: layers `ensemble_flood_extent`, `exclusion_mask`, `advisory_flags` | at least 30% of its observed pixels are flood | under half its pixels observed: no Sentinel-1 pass that day, excluded pixels, or GFM's own snow/frozen-ground flag |
+| **FloodScan** | AER flooded fraction (SFED) from passive microwave | about 9 km | 1998 on; outside Africa to 2026-03-31 | Africa: prod blob `raster/floodscan/daily/v5/processed/` (daily COGs). Asia-Australia and South America: dev blob `raster/floodscan/daily/v5/raw/` (one NetCDF per region) | the 9 km cell it sits in is at least 30% flooded | outside FloodScan's regions, or after its archive ends (2026-03-31 outside Africa). Inside, it has no cloud mask and always answers |
+| **GFDS** | JRC/GDACS Global Flood Detection System, passive microwave | about 9 km (0.09°) | 1997 to 2026-09-14 (feed ended); used from 2015 | `gdacs.org/flooddetection/DATA`: daily signal GeoTIFF plus GFDS's long-term mean | the signal's drop below its long-term mean implies at least 30% water | days GDACS has no file for, and pixels GFDS masks itself |
+| **microwave vote** | FloodScan and GFDS combined into one vote, since they measure the same thing |  |  |  | either says flood | both couldn't see (possible only outside FloodScan's regions) |
+| **VIIRS** | NOAA VIIRS flood map, optical | 375 m | 2012–2020 and 2023-08 on (no files 2021-01 to 2023-07) | AWS `s3://noaa-jpss/`, `VFM_1day_GLB` | at least 30% of its observed pixels are flood | under half its pixels observed: cloud, shadow, snow or ice, no data |
+| **gold maps** | analyst flood maps: Copernicus EMS rapid mapping and UNOSAT | vector, burned at 0.001° | 2015 on | dev blob `global/copernicus_ems/flood/gold/` and `global/unosat/gold/` | see Gold labels | not examined by the analyst |
+
+**From pixels to cells.** Each product pixel goes to the cell that holds its centre. A cell is "couldn't see" if fewer than half its pixels were observed that day. Otherwise it is flood if at least 30% of the observed pixels are flood, and dry if not. FloodScan and GFDS pixels are larger than a cell (about 9 km), so every cell copies the value of the 9 km pixel it sits in.
+
+**Why the sources have gaps.**
+
+- **GFM:** Sentinel-1 passes over a given place only every 6 to 12 days, so GFM has no image on most days.
+- **VIIRS:** it sees reflected sunlight like a camera, so cloud blocks it, and floods come with cloud.
+- **Passive microwave** (FloodScan, GFDS): it measures the energy the ground itself gives off. It sees through cloud every day, but only at about 9 km.
+
+The in-cell rules (at least half observed, at least 30% flood) are the same for every source and for gold. A river that floods 10% of a cell is therefore dry everywhere. MODIS was tested only as an experiment; see Other approaches tried. FloodScan is used under AER's commercial licence, and whether it covers the non-Africa regions is still to be confirmed.

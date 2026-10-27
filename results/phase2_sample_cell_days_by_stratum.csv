@@ -1,0 +1,7 @@
+stratum,cell_days,target,meets_target
+open_nosnow,12825182,2000000,True
+open_snow,3359450,2000000,True
+vegetated_nosnow,10702756,2000000,True
+vegetated_snow,2783524,2000000,True
+urban_nosnow,24145175,2000000,True
+urban_snow,2122657,2000000,True

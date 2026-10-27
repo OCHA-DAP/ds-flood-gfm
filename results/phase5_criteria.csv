@@ -1,0 +1,7 @@
+stratum,fusion_csi_all,best_single,best_single_csi_all,b_csi_ge_best_single,n_gold_flood,reliability_slope_wls,c_slope_in_range
+open_nosnow,0.30035652360264176,viirs,0.33290503676761285,False,40256,0.01027060246377255,False
+open_snow,0.125,gfm,0.3333333333333333,False,24,0.030103584865100196,False
+urban_nosnow,0.09883720930232558,gfm,0.16353887399463807,False,353,0.004129615129333207,False
+urban_snow,,,,,0,,
+vegetated_nosnow,0.18333623238824143,viirs,0.23246492985971945,False,3644,0.008823382118409231,False
+vegetated_snow,0.03273809523809524,gfm,0.052941176470588235,False,332,0.0495922982821728,False

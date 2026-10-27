@@ -1,0 +1,53 @@
+# Other approaches tried
+
+Four alternatives were tested on the first run's events. One, MODIS, is still worth adding to the optical vote, though its first-run numbers do not carry over (see its row); the other three are not used.
+
+| approach | idea | result | verdict |
+|---|---|---|---|
+| **MODIS flood product** (NASA MCDWD) | fill the 2021-01 to 2023-07 period, when the NOAA VIIRS archive has no files | first run (52 events on all continents, the old dry-day rule): MODIS alone reaches recall 0.19 · precision 0.73 (F1 0.30), and MODIS-or-GFM 0.27 · 0.76 (F1 0.40); fusion without optical input reached 0.13 · 0.45 (F1 0.20). These do not carry over: in this analysis, fusion without optical input scores 0.40 · 0.52 (F1 0.45) on the 55 gap events, above MODIS-or-GFM's first-run score | **add** as part of the optical vote (VIIRS or MODIS), to give fusion an optical input in the gap, where VIIRS adds 0.08 F1 elsewhere; MODIS's value inside fusion is unmeasured. Needs MODIS over whole event windows, a Databricks job |
+| **Agreement between sources** (no gold) | estimate each source's accuracy from how often the sources agree, without gold maps | the method assumes the sources err independently, but on gold-dry cells their false alarms coincide 4–18 times more often than that allows. Its "flood" class looks like seasonal water (2.4% of cell-days, 15 times the base flood rate) | not used; accuracy comes from gold |
+| **Seasonal mask** | ignore flood calls on normally-wet cells | every source got worse, because gold counts seasonal water as flood (see Water versus flood) | not used |
+| **Learning GFM from daily inputs** ("super-GFM") | train a model on GFM's own calls to estimate a GFM-like map on days without a Sentinel-1 pass | 0.25 · 0.77 (F1 0.38), no better than simply carrying GFM's last value forward (0.25 · 0.81, F1 0.38) | not used |
+
+### CYGNSS: a first look at a fourth source
+
+CYGNSS is a NASA constellation that measures GPS signals reflected off the ground; calm water reflects strongly. The UC Berkeley daily watermask built from it gives water, land or no data on a 0.01° grid, from August 2018, between latitudes 37.4° S and 37.4° N, a few days behind real time. Like the microwave products it sees through cloud, but at 1 km instead of 9 km. 148 of the 170 events, holding 82% of the gold flood, fall inside its dates and latitudes. It is read with your Earthdata token, fetching only the rows each window needs: about 11 MB a day for the largest window, instead of a 257 MB file.
+
+**Checked before scoring:**
+
+- **It is not a daily snapshot.** Over a Bangladesh window in July–August 2020, 6% of cells change from one day to the next, 13% over 8 days and 24% over 30 days, and the files' own metadata gives a 31-day coverage. It behaves like a rolling composite of several weeks. So it cannot enter fusion as fresh daily evidence: fusion's memory would count the same water many times.
+- **Its cells are offset by half a cell from ours,** so each of our cells takes a quarter of four CYGNSS cells. A cell is observed if at least half of it has data, and water if at least 30% of the observed part is water, the rules every source uses.
+
+**Scored on a few events.** The events were fixed by rule before running: the two with the most gold flood in each continent inside its coverage. That gives 8 events, 51 window map days and 161,934 gold flooded cell-days, 70% of them in Bangladesh (`scripts/fusion/experiment_cygnss.py`). Recall · precision (F1), gold-map days:
+
+| product | all cells | normally-wet cells | other cells | share of gold flood seen |
+|---|---|---|---|---|
+| CYGNSS | 0.67 · 0.37 (0.47) | 0.81 · 0.74 (0.77) | 0.58 · 0.24 (0.34) | 100% |
+| fusion (as built) | 0.47 · 0.53 (0.50) | 0.59 · 0.83 (0.69) | 0.39 · 0.38 (0.38) | 100% |
+| cascade | 0.35 · 0.65 (0.46) | 0.29 · 0.89 (0.44) | 0.39 · 0.56 (0.46) | 100% |
+| microwave vote | 0.40 · 0.45 (0.42) | 0.39 · 0.82 (0.53) | 0.40 · 0.34 (0.37) | 100% |
+| FloodScan | 0.36 · 0.45 (0.40) | 0.36 · 0.81 (0.49) | 0.36 · 0.34 (0.35) | 100% |
+| GFM | 0.11 · 0.88 (0.19) | 0.07 · 0.93 (0.12) | 0.14 · 0.87 (0.23) | 54% |
+| VIIRS | 0.11 · 0.61 (0.18) | 0.10 · 0.86 (0.17) | 0.12 · 0.52 (0.19) | 28% |
+
+F1 by event:
+
+| event | gold flooded cell-days | CYGNSS | fusion (as built) | cascade | microwave vote | FloodScan | GFM | VIIRS |
+|---|---|---|---|---|---|---|---|---|
+| EMSR342 (Australia 2019) | 9,503 | 0.57 | 0.57 | 0.73 | 0.52 | 0.54 | 0.00 | 0.74 |
+| EMSR637 (Australia 2022) | 2,236 | 0.40 | 0.16 | 0.40 | 0.41 | 0.33 | 0.22 | 0.00 |
+| EMSR865 (Colombia 2026) | 791 | 0.22 | 0.32 | 0.44 | 0.28 | 0.28 | 0.29 | 0.25 |
+| FL20200713BGD (Bangladesh 2020) | 80,274 | 0.48 | 0.56 | 0.42 | 0.41 | 0.39 | 0.25 | 0.17 |
+| FL20220525BGD (Bangladesh 2022) | 33,435 | 0.66 | 0.63 | 0.62 | 0.59 | 0.54 | 0.19 | 0.00 |
+| FL20230321PER (Peru 2023) | 1,060 | 0.37 | 0.35 | 0.27 | 0.27 | 0.13 | 0.00 | 0.00 |
+| TC20190312MOZ (Idai, Mozambique) | 16,581 | 0.34 | 0.13 | 0.39 | 0.37 | 0.35 | 0.19 | 0.11 |
+| TC20190324ZWE (Idai, Zimbabwe) | 18,054 | 0.09 | 0.00 | 0.01 | 0.00 | 0.00 | 0.00 | 0.01 |
+
+**Reading.**
+
+- **CYGNSS has the highest F1 of any single product on these events** (0.47; next is the microwave vote at 0.42) and the highest recall of anything (0.67), and it sees almost all of the gold flood.
+- **Its precision on ordinary cells is low (0.24).** It maps water broadly, and a composite of several weeks keeps water that has already drained. Its strength is on normally-wet cells (F1 0.77), where gold counts water as flood about half the time (Water versus flood).
+- **Event by event** it is the best on three events and level with the best on one, and weaker where VIIRS saw clearly (Australia 2019) and on Colombia 2026.
+- **A first look only:** eight events, 70% of the flood in Bangladesh, no intervals.
+
+**What it would take.** Score it on all 148 events in its coverage, about 590 map days to read (Next steps, 11). Then it could enter as a fourth input treated as a slowly updating layer, not as daily evidence. Or it could be the water source in a water-first design (Water versus flood), where a water mask is exactly what is wanted.

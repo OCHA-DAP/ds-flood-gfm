@@ -1,0 +1,190 @@
+# Databricks Asset Bundle — ds-flood-gfm flood fusion v1
+#
+# Three jobs, all through databricks/run_task.py (team wrapper; KB infrastructure/databricks.md):
+#   flood_fusion_daily   scheduled daily: scripts/fusion/daily_job.py for the configured AOIs
+#   flood_fusion_static  on demand: scripts/fusion/static_build.py --bbox ... (extends coverage)
+#   flood_fusion_modis   on demand: scripts/fusion/modis_windows.py (MODIS counts for every event window)
+# Credentials come from the Job Compute policy (DSCI_AZ_BLOB_* from the dsci scope).
+# Data plane is dev on both targets (an experimental product; KB: dev/prod axes are independent).
+#
+# dev target  : runs the files synced from your checkout (no git push needed); the schedule is
+#               PAUSED (set explicitly: development mode does not override an explicit status).
+#               Use it to test a run:
+#   databricks bundle validate -t dev
+#   databricks bundle deploy   -t dev
+#   databricks bundle run flood_fusion_daily -t dev --params date=2026-09-10,extra=--cold-start
+# prod target : pulls the code from GitHub main (git_source), so it only ever runs reviewed,
+#               merged code; deploy only after the fusion PR is merged (docs/decisions.md D-27).
+
+bundle:
+  name: ds-flood-gfm-fusion
+
+variables:
+  git_branch:
+    description: Repo branch the prod job pulls the code from
+    default: main
+  stage:
+    description: ocha-stratus data plane
+    default: dev
+
+.cluster_spec: &cluster_spec
+  policy_id: "000C79D951EAF0D6"
+  apply_policy_default_values: true
+  num_workers: 1
+
+.libs: &libs
+  - pypi: { package: "ocha-stratus>=0.1.6" }
+  - pypi: { package: "pystac-client" }
+  - pypi: { package: "rasterio>=1.4" }
+  - pypi: { package: "xarray" }
+  - pypi: { package: "netcdf4" }
+  - pypi: { package: "pyproj" }
+  - pypi: { package: "shapely>=2" }
+  - pypi: { package: "geopandas" }
+  - pypi: { package: "pyyaml" }
+
+resources:
+  jobs:
+    flood_fusion_daily:
+      name: Flood Fusion Daily
+      description: >
+        Daily P(flooded), uncertainty and observation-age rasters on the 0.01-degree grid for the
+        AOIs in configs/fusion.yaml (operational.aois), fusing GFM, FloodScan|GFDS and VIIRS.
+        Writes dev blob projects/ds-flood-gfm/processed/flood_fusion_v1/.
+      tags:
+        databricks: job
+        blob_container: projects
+      permissions:
+        - group_name: dsci
+          level: CAN_MANAGE
+      max_concurrent_runs: 1
+      timeout_seconds: 10800
+      schedule:
+        quartz_cron_expression: "0 0 7 * * ?"   # 07:00 UTC daily, for UTC yesterday
+        timezone_id: UTC
+        pause_status: PAUSED                     # unpaused only in the prod target (below)
+      parameters:
+        - name: stage
+          default: ${var.stage}
+        - name: date            # empty = UTC today - lag_days
+          default: ""
+        - name: extra           # e.g. --cold-start on the first run
+          default: ""
+      job_clusters:
+        - job_cluster_key: main
+          new_cluster: *cluster_spec
+      tasks:
+        - task_key: daily
+          job_cluster_key: main
+          libraries: *libs
+          spark_python_task:
+            python_file: databricks/run_task.py
+            parameters: ["scripts/fusion/daily_job.py", "--stage", "{{job.parameters.stage}}", "--",
+                         "--date={{job.parameters.date}}", "{{job.parameters.extra}}"]
+
+    flood_fusion_static:
+      name: Flood Fusion Static Build
+      description: Build and cache static layers for 1-degree land tiles in a bbox (extends daily coverage).
+      tags:
+        databricks: job
+        blob_container: projects
+      permissions:
+        - group_name: dsci
+          level: CAN_MANAGE
+      max_concurrent_runs: 1
+      timeout_seconds: 43200
+      parameters:
+        - name: stage
+          default: ${var.stage}
+        - name: bbox
+          default: "5.5,6.5,9.0,9.5"
+      job_clusters:
+        - job_cluster_key: main
+          new_cluster: *cluster_spec
+      tasks:
+        - task_key: static
+          job_cluster_key: main
+          libraries: *libs
+          spark_python_task:
+            python_file: databricks/run_task.py
+            parameters: ["scripts/fusion/static_build.py", "--stage", "{{job.parameters.stage}}", "--", "--bbox", "{{job.parameters.bbox}}"]
+
+    flood_fusion_modis:
+      name: Flood Fusion MODIS Windows
+      description: >
+        NASA MCDWD flood product for every event window and day: per-cell pixel counts of the 1-day
+        layers, one NetCDF per window to dev blob processed/flood_fusion_v1/modis/ (D-37, D-41).
+        Resumable. Earthdata token from the team login (dsci IMERG_USERNAME / IMERG_PASSWORD).
+      tags:
+        databricks: job
+        blob_container: projects
+      permissions:
+        - group_name: dsci
+          level: CAN_MANAGE
+      max_concurrent_runs: 1
+      timeout_seconds: 43200
+      parameters:
+        - name: stage
+          default: ${var.stage}
+        - name: events          # comma-separated event codes; empty = all events
+          default: ""
+      job_clusters:
+        - job_cluster_key: main
+          new_cluster: *cluster_spec
+      tasks:
+        - task_key: modis
+          job_cluster_key: main
+          libraries:
+            - pypi: { package: "ocha-stratus>=0.1.6" }
+            - pypi: { package: "rasterio>=1.4" }
+            - pypi: { package: "xarray" }
+            - pypi: { package: "netcdf4" }
+            - pypi: { package: "pyproj" }
+            - pypi: { package: "pyyaml" }
+            - pypi: { package: "pyhdf" }
+          spark_python_task:
+            python_file: databricks/run_task.py
+            parameters: ["scripts/fusion/modis_windows.py", "--stage", "{{job.parameters.stage}}",
+                         "--secret", "IMERG_USERNAME", "--secret", "IMERG_PASSWORD", "--",
+                         "--events={{job.parameters.events}}"]
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://adb-6009046713167663.3.azuredatabricks.net
+
+  prod:
+    mode: production
+    workspace:
+      host: https://adb-6009046713167663.3.azuredatabricks.net
+      root_path: /Workspace/Users/adm.zarno1@global.un.org/.bundle/${bundle.name}/${bundle.target}
+    run_as:
+      user_name: adm.zarno1@global.un.org
+    resources:
+      jobs:
+        flood_fusion_daily:
+          schedule:
+            quartz_cron_expression: "0 0 7 * * ?"
+            timezone_id: UTC
+            pause_status: UNPAUSED
+          git_source:
+            git_url: https://github.com/OCHA-DAP/ds-flood-gfm.git
+            git_provider: gitHub
+            git_branch: ${var.git_branch}
+          tasks:
+            - task_key: daily
+              spark_python_task:
+                python_file: databricks/run_task.py
+                source: GIT
+        flood_fusion_static:
+          git_source:
+            git_url: https://github.com/OCHA-DAP/ds-flood-gfm.git
+            git_provider: gitHub
+            git_branch: ${var.git_branch}
+          tasks:
+            - task_key: static
+              spark_python_task:
+                python_file: databricks/run_task.py
+                source: GIT

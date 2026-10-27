@@ -1,0 +1,26 @@
+# Gold labels
+
+A gold map gives each cell it examined one label for its map date: flooded, dry or none. Cells it did not examine are never scored.
+
+Each map has two parts: the **flood polygons** and the **area the analyst examined**. Both are drawn onto a 0.001° grid, so each 0.01° cell holds 10 × 10 = 100 sub-pixels.
+
+| label | rule |
+|---|---|
+| **flooded** | at least half the cell was examined, and at least 30% of the examined part is flood |
+| **dry** | at least half examined, under 30% flood, and under 30% "flood possible" |
+| **none** | under half examined; or examined, under 30% flood and at least 30% "flood possible" |
+
+Maps of the same event on the same day are merged, and flood wins over dry.
+
+**Where the thresholds come from.** The 30% flood share and the at-least-half rule are the same for gold and for every product, so a cell is "flooded" by one definition on both sides. As a result, a flood covering under 30% of a cell is invisible to scoring (see Not yet validated). These thresholds, the 30-day and 60-day periods, the 10% daily fading and the P ≥ 0.5 cut-off were all set in the project plan before any result was seen. None is tuned to the results.
+
+### The days before and after each event
+
+Gold maps exist only on flood days. To learn how often each source raises a **false alarm on ordinary days**, the model also needs dry labels away from the flood. These come from the 30 days before an event's first map and the 60 days after its last.
+
+- In those days, every cell the maps examined is labelled **dry**,
+- *except* cells that were flooded on any map day in their window. Those get **no label**, because floodwater takes weeks to drain. In open land in the first run (D-39), fusion still called flood on 48% of days 1–30 after the event in those cells, against 5% in cells that never flooded. This rule was decided on 14 October (ADR 0006); the old rule's scores are shown alongside.
+
+These days are used to fit the false-alarm rates and to check reliability. Recall, precision and F1 are scored on gold-map days only.
+
+**What the labels cannot tell us.** Analysts map what they saw; unmapped water inside the examined area counts as dry. Many Copernicus maps are drawn from Sentinel-1, the same satellite as GFM, which favours GFM. Results are therefore also reported for the events whose maps are not from Sentinel-1.

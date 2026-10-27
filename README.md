@@ -2,6 +2,8 @@
 
 Global Flood Monitoring (GFM) analysis pipeline for generating flood extent maps and affected population estimates.
 
+**Site:** <https://ocha-dap.github.io/ds-flood-gfm/> — landing page with the flood fusion book (`/fusion/`) and the 2024 GFM exploration book (`/gfm-exploration/`).
+
 ## Quick Start
 
 ### Prerequisites
@@ -116,6 +118,78 @@ All maps use **data provenance colors** showing which satellite observation each
 
 This helps identify data currency - green areas have the freshest information.
 
+## Flood fusion v1 (daily P(flooded), 0.01°)
+
+A daily global-capable raster product on a **0.01° (~1 km) WGS84 grid**, restricted to the floodable domain (HAND < 15 m, permanent water removed). Three layers per day:
+
+1. **P(flooded)**, from 0 to 1.
+2. **Uncertainty**: the absolute log-odds, plus the count of sources that observed the cell that day.
+3. **Days since the last direct observation.**
+
+It fuses three independent sensor families:
+- **Copernicus GFM** (Sentinel-1 SAR).
+- **FloodScan OR GFDS**, merged into one passive-microwave vote.
+- **NOAA VIIRS flood maps** (optical). These stand in for MODIS, which needs an Earthdata login.
+
+The fusion is per-stratum naive Bayes in log-odds, with sensitivity and specificity learned from Copernicus EMS and UNOSAT flood maps. Yesterday's log-odds carry over to today with a 0.9 decay toward the prior.
+
+> **Resolution.** v1 is deliberately coarser than GFM's 20 m. A cell counts as "flooded" only when at least 30% of its area is flooded, so small or narrow floods are not represented. Use GFM directly when you need detail; use this product when you need a daily, gap-filled estimate. v1's probabilities are not calibrated: read them as a ranking score.
+>
+> **Licence.** FloodScan is a commercial input, and outputs derived from it may not be shared outside OCHA without AER approval.
+
+**Cross-validated result (2026-10-15; `docs/final_report.md`, top section):** on the 170 gold events in Africa, Asia, South America and Oceania, scored in five folds by river basin, fusion has the highest F1 (0.44; microwave vote 0.38, FloodScan 0.37, GFM 0.24, VIIRS 0.22). The lead is within the uncertainty and leans on one Bangladesh basin holding 40% of the gold flood (without it: fusion 0.35, microwave vote 0.34). Probabilities are still not calibrated (criterion c fails). A no-fitting cascade (VIIRS where it sees, else GFM, else microwave) matches fusion pooled (0.46) and beats it with each basin weighted equally (0.40 vs 0.31); fusion's advantage is fewer false events.
+
+**First run (2026-10-12) status:**
+- **Validation (49 held-out gold events):** the product is built and tested end to end, but as specified it does **not** beat the best single source in any stratum. Measured as specified, its reliability slope is about 0.01 (target 0.8–1.2). Most of that comes from the dry-window labels (D-39); on gold days alone the slope is 0.27–0.47, still too extreme.
+- **Where a single product observed, it beats fusion.** Recall · precision on GFM-observed cells: GFM 0.45 · 0.94 vs fusion 0.34 · 0.63. On VIIRS-observed cells: VIIRS 0.75 · 0.60 vs fusion 0.46 · 0.57.
+- **One lead, not yet established.** In open, snow-free land, a decision threshold learned on training events (P ≥ 0.02) raised held-out recall from 0.38 to 0.53 at precision 0.56 (VIIRS: 0.42 and 0.62). That rests on one run, with no confidence interval. A per-stratum recalibration improved calibration there but did not reach the 0.8–1.2 target.
+- **What drives the over-confidence (measured 2026-10-13).**
+  - Mostly labels. The dry windows label still-flooded cells dry; a corrected variant raises held-out recall 0.37 → 0.44 at unchanged precision (D-39, proposed).
+  - What remains is the sources' false alarms coinciding about 4 times more often than the independence assumption allows. An agreement-based accuracy table (plan v2, ADR 0002) fails for the same reason, so the model keeps the gold table.
+- **Inputs are ending.** GFDS stopped on 2026-09-14, and FloodScan outside Africa ends on 2026-03-31 on our blob.
+
+Where fusion is better than single products, and where it is not, is written up in **[docs/final_report.md](docs/final_report.md)**. How every score is computed (grid, gold labels, product values, hits, misses and false alarms) is in **[docs/methods.md](docs/methods.md)**.
+
+### Running it (a junior's walk-through)
+
+```bash
+uv sync --extra dev            # environment
+make test                      # 45 synthetic tests: must pass before anything touches real data
+make phase0                    # snow climatology (CDS key in ~/.cdsapirc) + static tile indexes
+make phase1                    # gold events -> event cubes -> per-source skill, oracle + coverage gate
+make phase2                    # stratified random sample cube + static rasters
+make phase3                    # accuracy table (results/accuracy_table.csv) + prior (results/prior_v1.csv); agreement table + comparison
+make phase4                    # engine tests (gate)
+make phase5                    # held-out validation, daily COGs for every held-out event window
+make phase6                    # mirror to dev blob + MANIFEST.json
+make daily DATE=2026-09-10     # one operational day for the AOIs in configs/fusion.yaml
+```
+
+- **Timing.** Every step is resumable. The network-bound steps take hours on a laptop:
+  - the GFDS prefetch respects a limit of 1 request per second;
+  - GFM, VIIRS and FloodScan reads are windowed.
+- **Logs** go to `data/fusion/logs/`.
+- **Credentials:** `DSCI_AZ_BLOB_*` environment variables (ocha-stratus) and `~/.cdsapirc`. Nothing is in code.
+
+| what | file |
+|---|---|
+| every threshold and path | `configs/fusion.yaml` |
+| why each choice was made | `docs/decisions.md`, `docs/assumptions.md`, `docs/decisions/0001-*.md` |
+| what data exists and its limits | `docs/inventory.md` |
+| what was in the repo before | `docs/repo_audit.md` |
+| gate result | `docs/feasibility.md` |
+| the trained model | `results/accuracy_table.csv`, `results/prior_v1.csv` |
+| validation | `results/phase5_*.csv`, `results/reliability_*.png`, `docs/final_report.md` |
+| scheduled job | `databricks.yml` (job "Flood Fusion Daily"), `scripts/fusion/daily_job.py` |
+
+### Reading an output
+
+```python
+import rioxarray
+da = rioxarray.open_rasterio("data/fusion/out/daily/<window>/<window>_2024-09-15.tif")
+p_flood, abs_logodds, n_sources, days_since_obs = da  # NaN outside the floodable domain
+```
+
 ## Country Configuration
 
 Supported countries in [src/ds_flood_gfm/country_config.py](src/ds_flood_gfm/country_config.py):
@@ -178,3 +252,8 @@ Detailed documentation available in:
 - **Flood data:** GFM STAC API (https://services.eodc.eu/browser/#/v1/collections/GFM)
 - **Population:** GHSL 2025 (100m resolution, stored in Azure blob)
 - **Admin boundaries:** COD-AB via HDX (stored in Azure blob)
+
+## Pages site
+
+Served from the `gh-pages` branch (legacy branch mode) under the team's one-site-per-repo convention: a landing page at `/` (`pages/`), the flood fusion book at `/fusion/` (rendered from `docs/book/`), and the 2024 exploration book at `/gfm-exploration/` (rendered html kept on the branch; source `book_gfm/` on the `arbitrary-admin` branch). Publish with `scripts/publish_pages.sh` (`--dry-run` to preview); it touches only those paths and refuses to push if anything else on the branch changed. Never run `quarto publish gh-pages`: it wipes the branch.
+

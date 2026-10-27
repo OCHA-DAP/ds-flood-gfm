@@ -1,0 +1,51 @@
+{
+  "oracle_conditional": {
+    "score": "csi",
+    "best_overall_source": "viirs",
+    "best_overall": 0.3671620559278254,
+    "oracle": 0.3835961632254918,
+    "gain_points": 1.6434107297666367,
+    "chosen_by_stratum": {
+      "open_nosnow": "viirs",
+      "open_snow": "viirs",
+      "urban_nosnow": "viirs",
+      "urban_snow": "viirs",
+      "vegetated_nosnow": "gfm",
+      "vegetated_snow": "viirs"
+    },
+    "per_stratum_gain_points": 0.597300316974333
+  },
+  "oracle_all_cells": {
+    "score": "csi_all",
+    "best_overall_source": "microwave",
+    "best_overall": 0.15117347876708132,
+    "oracle": 0.16286944763246708,
+    "gain_points": 1.1695968865385764,
+    "chosen_by_stratum": {
+      "open_nosnow": "microwave",
+      "open_snow": "microwave",
+      "urban_nosnow": "viirs",
+      "urban_snow": "microwave",
+      "vegetated_nosnow": "viirs",
+      "vegetated_snow": "microwave"
+    },
+    "per_stratum_gain_points": 0.4019362792302952
+  },
+  "coverage": {
+    "gfm": 0.0641602617061228,
+    "microwave": 0.9908848773021678,
+    "viirs": 0.3628667498856883,
+    "floodscan": 0.947346658543233,
+    "gfds": 0.7918158420081245,
+    "any": 0.9944256702774552,
+    "any_3d": 0.9971772930909054,
+    "gfm_3d": 0.17085998024955742
+  },
+  "coverage_gain_any3d_minus_gfm_pp": 93.30170313847826,
+  "coverage_gain_any3d_minus_gfm3d_pp": 82.6317312841348,
+  "rule": "shrink iff oracle gain < 3 CSI points AND 3-day coverage gain < 15 pp",
+  "decision": "continue in full",
+  "n_train_events": 148,
+  "n_gold_flood_cells_train": 57699,
+  "n_gold_dry_cells_train_gold_days": 917681
+}
