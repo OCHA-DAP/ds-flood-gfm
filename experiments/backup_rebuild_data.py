@@ -12,11 +12,14 @@ every file in the docs can be traced to its blob copy and its source.
 
 import csv
 import hashlib
+import os
 import sys
 import time
 from pathlib import Path
 
 import ocha_stratus as stratus
+from azure.core.exceptions import ServiceRequestError, ServiceResponseError
+from azure.storage.blob import BlobClient
 
 PREFIX = "ds-flood-gfm"
 # (local directory or file, blob prefix, origin). Order = irreplaceability: JRC's archive first.
@@ -51,6 +54,31 @@ def sha256(path, bufsize=1 << 20):
     return h.hexdigest()
 
 
+def blob_client(name):
+    """A BlobClient with small blocks and a long socket timeout: the first run died with 'The write operation
+    timed out' on a 23 MB single PUT over a ~1 MB/s uplink (azure default: 64 MB single put, 20 s timeout)."""
+    sas = os.environ.get("DSCI_AZ_BLOB_DEV_SAS_WRITE")
+    if not sas:
+        raise EnvironmentError("DSCI_AZ_BLOB_DEV_SAS_WRITE is not set; the write SAS for imb0chd0dev is needed")
+    return BlobClient(account_url="https://imb0chd0dev.blob.core.windows.net", container_name="projects", blob_name=name,
+                      credential=sas, max_single_put_size=4 * 1024 * 1024, max_block_size=4 * 1024 * 1024,
+                      connection_timeout=300)
+
+
+def upload_with_retry(bc, path, attempts=6):
+    for attempt in range(attempts):
+        try:
+            with open(path, "rb") as f:
+                bc.upload_blob(f, overwrite=True, max_concurrency=2)
+            return
+        except (ServiceResponseError, ServiceRequestError, OSError) as e:
+            if attempt == attempts - 1:
+                raise
+            wait = 30 * (attempt + 1)
+            print(f"  {path.name}: {type(e).__name__}, retry {attempt + 1}/{attempts - 1} in {wait} s", flush=True)
+            time.sleep(wait)
+
+
 def main(dry_run):
     client = None if dry_run else stratus.get_container_client(stage="dev", container_name="projects", write=True)
     rows, total, uploaded = [], 0, 0
@@ -71,8 +99,7 @@ def main(dry_run):
                     status = "exists"
                 else:
                     t0 = time.time()
-                    with open(p, "rb") as f:
-                        bc.upload_blob(f, overwrite=True, max_concurrency=4)
+                    upload_with_retry(blob_client(name), p)
                     status = f"uploaded {size / 1e6:.0f} MB in {time.time() - t0:.0f} s"
                     uploaded += size
             rows.append({"local": str(p), "bytes": size, "sha256": sha256(p), "blob": f"projects/{name}", "origin": origin, "status": status})
