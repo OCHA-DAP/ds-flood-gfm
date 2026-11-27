@@ -25,6 +25,10 @@ book:
       chapters:
         - 05_alternative_flood_sources.qmd
         - 06_downscaling_poc.qmd
+    - part: "Rebuilding the Sources"
+      chapters:
+        - 07_gfds_rebuild.qmd
+        - 08_floodscan_reproduction.qmd
 
   appendices:
     - part: "GFM Methodology"

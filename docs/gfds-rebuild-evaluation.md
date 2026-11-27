@@ -86,8 +86,10 @@ From the [2015 Technical Note](https://www.gdacs.org/flooddetection/Download/Tec
      sample.
 5. **Merge (`ALL`).** Per-sensor daily s values are averaged.
 6. **Magnitude.**
-   - m = (s − avg)/sd, against a per-pixel 2002–2008 baseline. The files are
-     dated 2009.
+   - m = (avg − s)/sd, against a per-pixel 2002–2008 baseline. The files are
+     dated 2009. (The tech note writes the difference the other way round; the
+     exactness test below shows JRC's files use avg − s, so a flood, which
+     lowers s, gives a positive magnitude.)
    - The sd is floored at 0.005.
 7. **4-day product.** A trailing mean (`Avg*` folders).
 

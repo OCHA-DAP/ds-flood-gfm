@@ -23,6 +23,8 @@ The production pipeline is driven by four CLI scripts that can be run for any co
 
 - @sec-production-pipeline showcases the complete CLI pipeline with real command examples and the maps they produce --- this is the core of the book
 - @sec-alternative-sources evaluates the GDACS Global Flood Detection System (GFDS) as a complementary flood source, validated against FloodScan over the Nigeria 2022 floods
+- @sec-gfds-rebuild records what happened when the GFDS feed stopped in September 2026, how much of the product we can reproduce from public data (the magnitude exactly, the signal closely), and what running our own would cost
+- @sec-floodscan-repro rebuilds AER's FloodScan algorithm stage by stage from public AMSR2 data, scores it against FloodScan, and documents the hold-out failure that sets the next step
 
 The appendices hold the supporting material:
 

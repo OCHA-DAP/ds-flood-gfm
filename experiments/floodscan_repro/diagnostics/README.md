@@ -24,7 +24,7 @@ backed up by us).
 | Parameter sweep | knob table | `07_fit_params.py` | as Step 2 | `results/floodscan_repro/fit_sweep_atmos.csv` (the non-atmos sweep table is in the notes only) | not rerun |
 | Gridding-noise test | σ7 grid vs footprints | `10_swath_noise_test.py`, `swath.py` | CSU orbit files (streamed), cache `data/floodscan_repro/swath_proto/` | printed; cache on blob | not rerun |
 | Hold-out (2023, tables 2024+2025) | variant table | `holdout_2023.sh` (04 → 05 → 06) | `csu_amsr2_grid/{2024,2025}`, `static_tables_2425.npz`, `ff_2023.npz` | `results/floodscan_repro/holdout_2023/` | `regen_results.sh`: identical |
-| Hold-out diagnosis | yearly Q levels; Sahel-band references | `q_level_by_year.py`, `sahel_tables_diag.py` | the three `csu_amsr2_grid` years, both table sets | printed (numbers in the notes) | rerun: identical to the notes |
+| Hold-out diagnosis | yearly Q levels; Sahel-band references and Q cycle | `q_level_by_year.py`, `sahel_tables_diag.py` | the three `csu_amsr2_grid` years, both table sets | `results/floodscan_repro/holdout_2023/{q_level_by_year,sahel_band_references,sahel_band_q_cycle}.csv` (loaded by the book, `book_gfm/08_floodscan_reproduction.qmd`) | rerun: identical to the notes |
 | Expectation-weight test | w_exp table | `wexp_test.sh` | both table sets, `ff_{2023,2024}_wexp*.npz` | `results/floodscan_repro/wexp/` | `regen_results.sh`: identical |
 | CSU bucket facts | files per sensor/year, variable layout, swath chunking | `bucket_census.py`, `csu_vars.py`, `csu_swath_inspect.py` | the NOAA CDR bucket (live) | memory/notes text | not rerun |
 

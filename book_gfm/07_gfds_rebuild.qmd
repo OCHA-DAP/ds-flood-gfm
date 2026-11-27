@@ -1,0 +1,168 @@
+# Rebuilding GFDS from scratch {#sec-gfds-rebuild}
+
+---
+jupyter: ds-flood-gfm
+---
+
+@sec-alternative-sources showed that JRC's Global Flood Detection System
+(GFDS) tracks riverine floods at admin level about as well as FloodScan, for
+free. Then the feed stopped. This chapter records what happened, what the
+product actually computes, how much of it we have reproduced from public
+data, what it would cost to run our own, and where the work stands. The
+long-form record is `docs/gfds-rebuild-evaluation.md`; every number here is
+taken from it or from a committed result file, and the scripts are listed in
+`experiments/gfds_rebuild/diagnostics/README.md`.
+
+## What happened
+
+| date | event | evidence |
+|---|---|---|
+| ~2015 | JRC development ended; the pipeline ran unmaintained | JRC, 2026-09-04 |
+| 2025-08-11 | AMSR3 (GOSAT-GW) data record starts at JAXA | JAXA TB catalogue |
+| 2026-02-28 | last GFDS GPM file | GDACS listing |
+| 2026-03-04 | NASA moves GMI L1B to V08 and from HDF5 to NetCDF4 | NOAA OSPO notice |
+| Mar–Sep 2026 | GFDS `ALL` product = AMSR2 only | GDACS listing (byte-identical file sizes) |
+| 2026-09-02 | NOAA ends its own AMSR2 processing (AMSR3 transition) | NOAA OSPO |
+| 2026-09-14 | **last GFDS file**, a partial day | GDACS listing |
+| 2026-10-01 | JAXA G-Portal replaced by a new system (new SFTP host, key-only login) | G-Portal notice |
+| 2026-10-22 → 27 | JAXA-wide maintenance; G-Portal unreachable | JAXA notice, our probes |
+| 2026-10-26 | JRC's web listings return nothing; the files we had already fetched are our copies | `gdacs_check.py` |
+| 2026-11-04 | old G-Portal host shut down (planned); confirmed dead from 2026-10-26 | G-Portal notice |
+
+The GPM stop matches NASA's format change; the AMSR2 stop has no cause in the
+data, since JAXA still publishes AMSR2 daily. GFDS died of the thing the
+evaluation names as the deciding risk for any replacement: nobody was on call
+to absorb upstream changes.
+
+## What GFDS computes
+
+From the 2015 JRC technical note, the whole method fits in one figure. The
+input is the 36.5 GHz horizontally polarised brightness temperature, which
+water lowers. Each footprint is compared with the warmest dry land around it,
+in the swath's own geometry, so physical temperature and atmosphere cancel to
+first order.
+
+```{mermaid}
+%%| fig-cap: "The GFDS method, from swath to magnitude. Colours: green = we reproduce JRC's files exactly; amber = close (r 0.8, no bias) from NOAA's data, exact only with JAXA's own calibration; grey = JRC's convention, settled by the answer-key files."
+flowchart LR
+  A["AMSR2 swath<br/>36.5 GHz H-pol Tb<br/>per footprint M"] --> B["C = 95th percentile<br/>of the 9×9 footprint window<br/>(swath geometry)"]
+  A --> C["s = M / C"]
+  B --> C
+  C --> D["grid 0.09° (4000×2000):<br/>daytime pass first,<br/>night pass fills gaps"]
+  D --> E["merge sensors<br/>(ALL = mean of s)"]
+  E --> F["magnitude<br/>m = (avg − s) / sd<br/>per-pixel 2002–2008 baseline"]
+  F --> G["4-day trailing mean"]
+  classDef done fill:#cfe8cf,stroke:#2e7d32;
+  classDef close fill:#ffe9b3,stroke:#b26a00;
+  classDef conv fill:#e0e0e0,stroke:#616161;
+  class F,G done;
+  class A,B,C close;
+  class D,E conv;
+```
+
+Two details are not in the note and had to be found from JRC's own files:
+the calibration value is taken among raw footprints, not grid cells, and the
+day's grid follows the daytime (ascending) pass where it exists. The note also
+writes the magnitude difference the other way round; JRC's files use
+avg − s, so a flood gives a positive magnitude.
+
+## How exactly can we reproduce it?
+
+JRC's archive was fully served on 2026-10-26, including per-sensor
+"answer-key" files for 2013–2016 (the source Tb, the calibration Tb, the
+window position, the signal and the magnitude, each as a daily raster) and
+the baseline rasters behind the magnitude. We fetched them
+(`gdacs_key_2016.py`); they now live in `data/gdacs_gfds/rebuild/` and on
+the team's dev blob under `projects/ds-flood-gfm/raw/gfds/rebuild/`.
+
+**Magnitude: exact.** With JRC's own baseline rasters, our
+m = (avg − s)/sd reproduces JRC's magnitude file for 2018-08-20 on 99.9% of
+land cells to within the file's 0.001 rounding; the rest is the ±20 clip.
+Anyone holding those two rasters and a signal file can produce JRC's
+magnitude product exactly.
+
+**Signal: close, not yet exact.** Rebuilding s from NOAA's AMSR2 swath
+record (the only AMSR2 archive we could read at the time) and comparing with
+JRC's files, West Africa box, land cells (`07_signal_from_swath.py`,
+`08_gridding_schemes.py`, `09_window_convention.py`; printed by the scripts,
+not loaded here):
+
+| | 2016-08-20 | 2018-08-20 |
+|---|---|---|
+| our source Tb vs JRC's, UTC-day mean | r 0.77, bias −1.6 K | r 0.75, bias −1.0 K |
+| … daytime pass first, night pass fills | r 0.84, bias −0.3 K, MAD 1.1 K | r 0.80, bias −0.4 K, MAD 1.2 K |
+| our calibration Tb vs JRC's | r 0.90, MAD 0.65 K | (file empty) |
+| our signal s vs JRC's | r 0.74, bias 0.0000, MAD 0.0033 | r 0.56, bias +0.001, MAD 0.0042 |
+
+The residual after the pass rule, about 1.1 K at r 0.8, is the size of the
+calibration difference between NOAA's record (tied to GMI) and JAXA's own
+L1B, which JRC read. The decisive test is one day of JAXA L1B through
+G-Portal (`10_signal_from_jaxa_l1b.py`, written and self-checking). It is
+blocked on the G-Portal migration: the new host accepts SSH keys only, and
+the key is issued on the website per account.
+
+**Does the inexact signal matter?** For flood tracking, no. At admin level
+the rebuilt signal from JAXA's 0.1° grids tracks FloodScan as well as JRC's
+combined product did and better than JRC's own AMSR2-only product
+(`results/gfds_rebuild/nga2022_lga_r_by_source.csv`, @sec-alternative-sources
+for the method). Exactness is a proof point, not a dependency.
+
+## What it would cost to run our own
+
+- **A usable replacement is feasible.** The method is small and fully
+  specified, the raw data are public at JAXA, and the rebuilt signal is as
+  good as JRC's for flood tracking. What we lose is multi-sensor coverage:
+  single-sensor days have swath gaps, so daily land coverage drops from about
+  98% to 92% and some cells need the 4-day mean. GFDS is also not FloodScan:
+  it gives a flood signal and an anomaly, not a flooded fraction
+  (@sec-downscaling-poc and @sec-floodscan-repro are about that gap).
+- **Archive, 2012 to now.** About 165 GB of JAXA's daily 0.1° grids, a week
+  of downloading at the rates we have seen, compute that runs on a laptop.
+  The exact-replica route from raw swaths is about 7 TB, streamed day by day
+  rather than kept. Person-time on the order of two to three weeks to build,
+  validate against JRC's files and add the flooded-fraction step; the signal
+  step is already prototyped.
+- **Keeping it current.** AMSR2 still flows from JAXA; its successor AMSR3
+  publishes swaths about two hours after acquisition. A daily job is about
+  1 GB of input and minutes of compute. The real cost is the dependency:
+  one JAXA server, one account, one key, as the October outage showed. That
+  single point of failure killed GFDS at JRC, so the budget line that matters
+  is someone on call (roughly 0.1–0.2 FTE), not storage or compute.
+
+## Where we are
+
+```{mermaid}
+%%| fig-cap: "Status of the GFDS rebuild, November 2026. Green = done and verified; amber = done but with a known gap; red = blocked on something outside the code."
+flowchart TD
+  A["JRC archive copied<br/>answer keys, baselines, 2022 signals<br/>backed up to dev blob with sha256 manifest"]:::done
+  B["Signal from JAXA L3 grids<br/>gate 1a: flood tracking on par with JRC"]:::done
+  C["Signal from NOAA swaths<br/>r 0.8 vs JRC, no bias"]:::amber
+  D["Signal from JAXA L1B<br/>script ready; G-Portal key not registered"]:::blocked
+  E["Magnitude from JRC baseline<br/>exact"]:::done
+  F["Our own baseline (2012–)<br/>needs the L3 archive, ~165 GB"]:::todo
+  G["Flooded fraction<br/>crude physics rule only (R1)"]:::amber
+  H["Daily job on AMSR3<br/>not started"]:::todo
+  B --> C --> D
+  B --> E
+  B --> F --> H
+  G --> H
+  classDef done fill:#cfe8cf,stroke:#2e7d32;
+  classDef amber fill:#ffe9b3,stroke:#b26a00;
+  classDef blocked fill:#f8c9c9,stroke:#c62828;
+  classDef todo fill:#ffffff,stroke:#9e9e9e,stroke-dasharray: 4 3;
+```
+
+| component | status |
+|---|---|
+| JRC reference files and baselines | copied before the listings went dark; on blob; may be the only copies |
+| daily signal, grid route (JAXA L3) | built and scored (@sec-alternative-sources); the archive fetch needs the new G-Portal key |
+| daily signal, swath route | prototype on NOAA data; exact replication pending JAXA L1B |
+| magnitude | exact from JRC's baseline |
+| flooded fraction | crude rule only; the real work is the FloodScan chain in @sec-floodscan-repro |
+| operations | not started; the dependency risk is documented |
+
+**Next steps, in order.** Register the SSH key on the new G-Portal and run
+the one-day L1B test (ten minutes each side). Decide whether an exact
+replica matters or whether "as good as JRC for flood tracking" is the bar.
+Then either fetch the L3 archive for our own baseline, or fold the signal
+into the FloodScan-style chain and stop treating GFDS as a separate product.

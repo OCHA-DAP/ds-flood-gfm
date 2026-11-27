@@ -1,0 +1,223 @@
+# Reproducing FloodScan {#sec-floodscan-repro}
+
+---
+jupyter: ds-flood-gfm
+---
+
+The goal is an open flooded-fraction product. FloodScan (AER's AFED) is the
+benchmark the team already licenses, and its algorithm is published in AER's
+Algorithm Description Document, so the sanity check is to rebuild it from
+public data and see how close we get. The reproduction itself is not for
+publication; a product derived from FloodScan would need AER's approval. What
+we learn from it is which stages carry the skill, and that transfers to a
+product calibrated on the team's own validation maps.
+
+The long-form record is `docs/floodscan-algorithm-notes.md`. Every table in
+this chapter is loaded from a committed result file under
+`results/floodscan_repro/`, regenerated and diffed against the code on
+2026-11-27 (`experiments/floodscan_repro/diagnostics/regen_results.sh`). The
+scripts behind each section are listed in
+`experiments/floodscan_repro/diagnostics/README.md`.
+
+```{python}
+#| code-summary: "load the committed result tables (fails loudly if they are missing)"
+from pathlib import Path
+import pandas as pd
+
+RES = next((p for p in (Path("results/floodscan_repro"), Path("../results/floodscan_repro")) if p.exists()), None)
+if RES is None:
+    raise FileNotFoundError("results/floodscan_repro not found; run from the repo or book_gfm directory")
+
+
+def table(rel, cols=None, index="variant"):
+    df = pd.read_csv(RES / rel)
+    if cols:
+        df = df[[index] + cols]
+    return df.set_index(index)
+
+
+pd.options.display.float_format = "{:.2f}".format
+```
+
+## AER's chain, and how much of it we built
+
+AER's retrieval works on 37 GHz passive-microwave brightness temperatures.
+The polarisation ratio PRI = (V − H)/(V + H) rises with open water; a
+transform Q of it is linear in the flooded fraction. The rest of the chain is
+about deciding what "dry" looks like at each pixel and day, rejecting rain,
+and filtering noise. Our implementation runs on NOAA's 0.25° daily AMSR2
+grids over a West Africa box (0–20°E, 0–20°N) and uses two training years to
+build the reference tables that AER builds from more than ten.
+
+```{mermaid}
+%%| fig-cap: "The FloodScan (AFED) chain as described by AER, and our status per stage. Green = built and scored; amber = built on the coarse grid, with a known limitation; red = not possible on our data yet."
+flowchart TD
+  A["AMSR2 Tb 36/18/23/89 GHz<br/>NOAA CSU 0.25° daily grid<br/>(AER: 5′ footprint matching)"]:::amber
+  B["PRI → Q<br/>atmospheric correction (MERRA-2)"]:::done
+  C["rain flags<br/>scattering index, snow, desert tests<br/>+ 2-cell dilation"]:::done
+  D["dry reference Q_dry<br/>climatology Qdc blended with<br/>61-day in-season expectation"]:::amber
+  E["flooded fraction<br/>eq. 13 mixing with open-water Q_pow"]:::done
+  F["noise floor MDFF<br/>3σ of 7-day variance<br/>+ coastal rule"]:::amber
+  G["f_hop: kurtosis of day-to-day change<br/>3-day weights, outlier half-weight"]:::done
+  H["spatial merge (eq. 18)<br/>fill-in decay, flash filter"]:::done
+  I["output: SFED daily<br/>1/12° (AER's 90 m step not attempted)"]:::amber
+  A --> B --> C --> D --> E --> F --> G --> H --> I
+  classDef done fill:#cfe8cf,stroke:#2e7d32;
+  classDef amber fill:#ffe9b3,stroke:#b26a00;
+  classDef blocked fill:#f8c9c9,stroke:#c62828;
+```
+
+| stage (AER ADD section) | ours | limitation |
+|---|---|---|
+| input grid | NOAA CSU 0.25° daily, 2023–2025 (only years the grid product covers) | AER matches 22 km footprints onto a 5′ grid; our grid carries about twice the day-to-day noise |
+| PRI, Q, atmospheric correction | built; correction is neutral at these latitudes | |
+| rain flags | built (Ferraro 1996 with AER's changes); the single largest gain | |
+| dry reference | climatology from two years, blended with the in-season expectation | two years cannot absorb inter-annual surface variation (see the hold-out) |
+| flooded fraction, MDFF, f_hop, 3-day weights | built, filter windows rescaled from 5′ to 0.25° | |
+| spatial merge, fill-in, flash filter | built; the merge fires but does not change scores at 0.25° | |
+| 90 m downscaling | not attempted; @sec-downscaling-poc covers the prior-based route | |
+
+## Scores against FloodScan, West Africa, August–November 2024
+
+Reference tables from 2023 and 2025, test year 2024, scored cell by cell
+against FloodScan SFED resampled to the same grid. The metrics: `ratio` is
+our total flooding divided by FloodScan's; `never` is the share of our
+flooded cell-days in cells FloodScan never floods that season; `r_cell`,
+`r_blk` are per-cell and 0.5° block correlations of the daily series;
+`r_lga1` is the median per-LGA correlation; `peak` is our seasonal peak
+divided by FloodScan's at the LGA level; `lag` is the median timing offset
+in days. Each variant switches one stage off.
+
+```{python}
+#| code-summary: "2024 variant table, whole box"
+table("nga2024_variant_summary.csv", ["ratio", "never", "r_cell", "r_blk", "r_lga1", "r_lga2", "peak", "peak_mm", "lag"])
+```
+
+```{python}
+#| code-summary: "2024, inland cells only"
+table("nga2024_variant_summary_inland.csv")
+```
+
+Reading the 2024 run: inland, we produce the right amount of flooding
+(ratio 0.92) with little in the wrong place (12% never-flooded), and the
+daily series correlate at 0.70 per cell and 0.82 per block. The rain flags
+carry most of the gain (`norain`). The coast is over-flooded in every variant
+(whole-box `never` 0.41 against inland 0.12). Peaks come in low (about half
+of FloodScan's at LGA level) and a parameter sweep found no knob that fixes
+them without inflating the total; a two-week test showed the 0.25° grid has
+about twice the 7-day noise of footprint matching, which is where the
+noise floor comes from.
+
+## The hold-out: swapping the years
+
+Every score above tested 2024 with tables from 2023 and 2025. Swapping roles
+(tables from 2024 and 2025, test year 2023) asks whether the method or the
+year was doing the work.
+
+```{python}
+#| code-summary: "2023 hold-out variant table"
+table("holdout_2023/nga2023_variant_summary.csv", ["ratio", "never", "r_cell", "r_blk", "r_lga1", "peak", "peak_mm", "lag"])
+```
+
+It failed: nearly five times FloodScan's total, four fifths of it where
+FloodScan never floods, per-cell correlation 0.39. The diagnosis
+(`q_level_by_year.py`, `sahel_tables_diag.py`):
+
+```{python}
+#| code-summary: "yearly land medians of Q and 18 GHz Tb: no calibration step between years"
+q = pd.read_csv(RES / "holdout_2023/q_level_by_year.csv")
+q[q.variable.isin(["Q_36_asc", "Tb_18v_asc"])].pivot(index=["variable", "month"], columns="year", values="median")
+```
+
+The satellite data agree across years to the third decimal, so it is not
+calibration. The excess sits in the Sahel band (12.5–17.5°N) in
+October–November:
+
+```{python}
+#| code-summary: "Sahel-band Q cycle by year, 36 GHz ascending, 10-day blocks"
+#| fig-cap: "Median Q over land in the Sahel band (12.5–17.5°N, solid) and south of it (dashed), by 10-day block from 1 June. The band's dry-down in late 2023 reaches 0.365–0.367; 2024 and 2025 stop at 0.356–0.362. South of 12.5°N the three years are indistinguishable."
+import matplotlib.pyplot as plt
+
+c = pd.read_csv(RES / "holdout_2023/sahel_band_q_cycle.csv")
+c["doy"] = pd.to_datetime(c.block_start).dt.dayofyear
+fig, ax = plt.subplots(figsize=(8, 4))
+for (year, region), g in c.groupby(["year", "region"]):
+    ax.plot(g.doy, g.median_Q_36_asc, ls="-" if region.startswith("band") else "--",
+            color={2023: "tab:red", 2024: "tab:blue", 2025: "tab:green"}[year],
+            label=f"{year} {'Sahel band' if region.startswith('band') else 'south'}")
+ax.set_xlabel("day of year (10-day blocks from 1 June)"); ax.set_ylabel("median Q (36 GHz, asc)")
+ax.legend(ncol=3, fontsize=8); ax.grid(alpha=0.3)
+plt.show()
+```
+
+```{python}
+#| code-summary: "the dry references the two table sets give the band, mid-season dates"
+r = pd.read_csv(RES / "holdout_2023/sahel_band_references.csv")
+pd.options.display.float_format = "{:.4f}".format
+r[r.table.isin(["Qdc_36_asc", "MDFF_36_asc"])].pivot(index=["table", "date"], columns="training_years", values=["band_12.5_17.5N", "south_of_12.5N"])
+```
+
+In the Sahel the 36 GHz signal has a soil and vegetation cycle that is not
+water: it dips in the rains and climbs through the dry-down. Late 2023 climbed
+about 0.005 higher than 2024 and 2025. The two-year climatology built from
+those years sits below it by that amount, which the mixing equation turns into
+a flooded fraction of about 0.09, right where the band's noise floor
+(0.10–0.11) sits. South of 12.5°N the year-to-year spread is below 0.001,
+so the Nigeria scores stand; the 2024 result looked clean partly because
+2024's dry-down happened to fall inside the 2023 and 2025 range. The coastal
+states (Lagos, Rivers, Bayelsa, Akwa Ibom) are over-flooded ten to fifty
+times in both years, a standing defect the inland 2024 floods hid.
+
+Giving the in-season expectation real weight (AER's blend gives the
+climatology 99.9% of the weight when it comes from two years) halves the
+false total but does not restore skill, and erodes 2024, because a 61-day
+median absorbs real slow floods too:
+
+```{python}
+#| code-summary: "expectation-weight test, both years"
+pd.options.display.float_format = "{:.2f}".format
+rows = []
+for year in (2023, 2024):
+    for w in ("1e5", "1e6", "1e7"):
+        s = pd.read_csv(RES / f"wexp/{year}_{w}/nga{year}_variant_summary.csv").iloc[0]
+        rows.append({"test year": year, "w_exp": w, "ratio": s.ratio, "never": s.never, "r_cell": s.r_cell, "r_lga1": s.r_lga1, "peak": s.peak})
+pd.DataFrame(rows).set_index(["test year", "w_exp"])
+```
+
+## Where we are, and the open decision
+
+```{mermaid}
+%%| fig-cap: "Status of the FloodScan reproduction, November 2026, and the decision tree in front of us."
+flowchart TD
+  A["chain built end to end<br/>on the 0.25° grid"]:::done
+  B["2024 test: inland on target,<br/>peaks half, coast over-flooded"]:::amber
+  C["2023 hold-out failed:<br/>two-year dry reference<br/>cannot absorb Sahel variation"]:::blocked
+  D["36 GHz swaths 2019–2022,<br/>aggregated to 0.25°<br/>~10 GB per season, ~40 GB"]:::todo
+  E["rebuild tables from 5–6 years<br/>with AER's per-day level regression;<br/>repeat the hold-out"]:::todo
+  F{"Sahel false alarms gone?"}
+  G["full swath route:<br/>5′ grid, all channels,<br/>10+ seasons ≈ 250–325 GB streamed"]:::todo
+  H["the problem is elsewhere;<br/>250 GB saved"]:::todo
+  A --> B --> C --> D --> E --> F
+  F -- yes --> G
+  F -- no --> H
+  classDef done fill:#cfe8cf,stroke:#2e7d32;
+  classDef amber fill:#ffe9b3,stroke:#b26a00;
+  classDef blocked fill:#f8c9c9,stroke:#c62828;
+  classDef todo fill:#ffffff,stroke:#9e9e9e,stroke-dasharray: 4 3;
+```
+
+What is settled: the chain is implemented stage by stage as AER describes
+it, the rain flags are the stage that matters most, inland Nigeria is
+reproduced to within 10% in amount and 0.7 in daily correlation for one
+year, and the coarse grid and the two-year reference are the two things
+standing between that and "close to perfect". What is not settled is whether
+a long record fixes the reference: a longer mean may not cover a genuinely
+high dry-down year, and what more years really enable is a realistic spread
+estimate and AER's per-day level regression, which two years cannot support.
+The cheapest discriminating step is the 40 GB test in the figure; it needs a
+go-ahead because of the transfer volume.
+
+Everything the chapter rests on is preserved: the branch is on GitHub, the
+input grids, reference tables and flooded-fraction files are on the team's
+dev blob with a sha256 manifest (`experiments/backup_rebuild_data.py`), and
+the result tables are committed and regenerate byte for byte.
