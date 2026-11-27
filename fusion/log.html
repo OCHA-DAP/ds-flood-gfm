@@ -84,7 +84,7 @@ ul.task-list li input[type="checkbox"] {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./glossary.html">Appendices</a></li><li class="breadcrumb-item"><a href="./log.html"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Flood fusion: work log and reproduction ledger</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./glossary.html">Appendices</a></li><li class="breadcrumb-item"><a href="./log.html"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">log.html</span></a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -247,7 +247,7 @@ ul.task-list li input[type="checkbox"] {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./log.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Flood fusion: work log and reproduction ledger</span></span></a>
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">log.html</span></span></a>
   </div>
 </li>
       </ul>
@@ -278,6 +278,7 @@ ul.task-list li input[type="checkbox"] {
   <li><a href="#dropping-gfds-next-steps-12" id="toc-dropping-gfds-next-steps-12" class="nav-link" data-scroll-target="#dropping-gfds-next-steps-12"><span class="header-section-number">C.3.10</span> 2026-10-26: dropping GFDS (Next steps 12)</a></li>
   <li><a href="#cygnss-all-events-far-from-flood-sentinel-2-referee" id="toc-cygnss-all-events-far-from-flood-sentinel-2-referee" class="nav-link" data-scroll-target="#cygnss-all-events-far-from-flood-sentinel-2-referee"><span class="header-section-number">C.3.11</span> 2026-10-26: CYGNSS all events; far-from-flood; Sentinel-2 referee</a></li>
   <li><a href="#sentinel-2-referee-done" id="toc-sentinel-2-referee-done" class="nav-link" data-scroll-target="#sentinel-2-referee-done"><span class="header-section-number">C.3.12</span> 2026-10-27: Sentinel-2 referee done</a></li>
+  <li><a href="#preservation-checkpoint-the-book-starts-reading-results-directly" id="toc-preservation-checkpoint-the-book-starts-reading-results-directly" class="nav-link" data-scroll-target="#preservation-checkpoint-the-book-starts-reading-results-directly"><span class="header-section-number">C.3.13</span> 2026-11-27: preservation checkpoint; the book starts reading results/ directly</a></li>
   </ul></li>
   <li><a href="#open-decisions-and-next-steps-as-of-2026-10-21" id="toc-open-decisions-and-next-steps-as-of-2026-10-21" class="nav-link" data-scroll-target="#open-decisions-and-next-steps-as-of-2026-10-21"><span class="header-section-number">C.4</span> Open decisions and next steps (as of 2026-10-21)</a></li>
   </ul>
@@ -289,7 +290,7 @@ ul.task-list li input[type="checkbox"] {
 <style>.home-link{display:inline-block;margin:10px 12px;padding:6px 12px;font:500 13px/1 'Roboto',system-ui,sans-serif;color:#1e795f;background:#e9f5f1;border:1px solid #d4eae4;border-radius:4px;text-decoration:none}.home-link:hover{background:#d4eae4}</style>
 <a class="home-link" href="../">← Flood monitoring</a>
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./glossary.html">Appendices</a></li><li class="breadcrumb-item"><a href="./log.html"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Flood fusion: work log and reproduction ledger</span></a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./glossary.html">Appendices</a></li><li class="breadcrumb-item"><a href="./log.html"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">log.html</span></a></li></ol></nav>
 <div class="quarto-title">
 <h1 class="title">Appendix C — Flood fusion: work log and reproduction ledger</h1>
 </div>
@@ -368,7 +369,7 @@ uv run --with h5py --with fsspec --with aiohttp python scripts/fusion/experiment
 <li>Five folds by HydroBASINS level-4 basin, big-flood basins placed first: <code>events.assign_folds</code>, <code>make_folds.py</code>, <code>tests/test_folds.py</code>. 4042ef2.</li>
 <li>Rules fixed before any score (<code>docs/decisions/0003–0007</code>): three land types (snow split dropped); corrected dry-window rule adopted (<code>gold.dry_window_rule</code>); event-level rules (<code>event_level</code> in config: 10% + 5 cells, ±3 days, false-event days −30..−10). a0461a8. The unused <code>gold.dry_day_step</code> key removed (docs had said “every 3rd day”; code always used every day).</li>
 <li>Cross-validation code: <code>fusion/crossval.py</code>, <code>scripts/fusion/phase5_crossval.py</code> (<code>make crossval</code>), <code>tests/test_crossval.py</code>. c97b019, 802bd33. <code>docs/methods.md</code> §10. 66ae80b.</li>
-<li>Build of the 51 added events: 30 smaller ones 14 Oct; 21 large ones 14–15 Oct (laptop, restart loops; <code>data/fusion/resume/finish_build.sh</code>). No stage-C failures.</li>
+<li>Build of the 51 added events: 30 smaller ones 14 Oct; 21 large ones 14–15 Oct (laptop, restart loops; <code>scripts/fusion/ops/finish_build.sh</code>). No stage-C failures.</li>
 </ul>
 </section>
 <section id="the-cross-validated-result" class="level3" data-number="C.3.4">
@@ -406,7 +407,7 @@ uv run --with h5py --with fsspec --with aiohttp python scripts/fusion/experiment
 <section id="ordinary-days-next-steps-6" class="level3" data-number="C.3.8">
 <h3 data-number="C.3.8" class="anchored" data-anchor-id="ordinary-days-next-steps-6"><span class="header-section-number">C.3.8</span> 2026-10-26: ordinary days (Next steps 6)</h3>
 <ul>
-<li><code>cv_ordinary_days.py</code> (rules committed first, 23f69de) → <code>results/cv/ordinary_days_{dry_windows,sample,sample_blocks,implied_precision}.csv</code> (d14d285). Dry-window false-alarm rates: fusion 3.0%, cascade 2.65%, GFM 0.03%. Random sample (30 blocks, GFM referee): fusion flags 1.06% of floodable cell-days, 1.7% agreed by GFM; implied precision ~0.03 (GFM 0.46). GFDS is the noisy half of the microwave vote on ordinary days (2.4% vs FloodScan 0.1%). Needed the remaining 194 window-months of JRC masks (<code>data/fusion/resume/prefetch_baseline.py</code>, all months).</li>
+<li><code>cv_ordinary_days.py</code> (rules committed first, 23f69de) → <code>results/cv/ordinary_days_{dry_windows,sample,sample_blocks,implied_precision}.csv</code> (d14d285). Dry-window false-alarm rates: fusion 3.0%, cascade 2.65%, GFM 0.03%. Random sample (30 blocks, GFM referee): fusion flags 1.06% of floodable cell-days, 1.7% agreed by GFM; implied precision ~0.03 (GFM 0.46). GFDS is the noisy half of the microwave vote on ordinary days (2.4% vs FloodScan 0.1%). Needed the remaining 194 window-months of JRC masks (<code>scripts/fusion/ops/prefetch_baseline.py</code>, all months).</li>
 <li>CYGNSS on all 148 events in coverage started (<code>experiment_cygnss.py --all</code>, resumable; 74c93ef + follow-up).</li>
 </ul>
 </section>
@@ -433,8 +434,19 @@ uv run --with h5py --with fsspec --with aiohttp python scripts/fusion/experiment
 <section id="sentinel-2-referee-done" class="level3" data-number="C.3.12">
 <h3 data-number="C.3.12" class="anchored" data-anchor-id="sentinel-2-referee-done"><span class="header-section-number">C.3.12</span> 2026-10-27: Sentinel-2 referee done</h3>
 <ul>
-<li>First run died 8 times on scenes whose SCL exists only as JPEG2000 on the requester-pays bucket <code>s3://sentinel-s2-l2a</code> (10 of 9,629 scenes). Fix (b9d1bcc): those scenes are left out and listed in <code>results/experiment_s2_referee_excluded.csv</code>; the day’s other tiles are still read. Relaunched with <code>data/fusion/resume/s2_referee.sh</code> (8-attempt loop); finished in about 2 h.</li>
+<li>First run died 8 times on scenes whose SCL exists only as JPEG2000 on the requester-pays bucket <code>s3://sentinel-s2-l2a</code> (10 of 9,629 scenes). Fix (b9d1bcc): those scenes are left out and listed in <code>results/experiment_s2_referee_excluded.csv</code>; the day’s other tiles are still read. Relaunched with <code>scripts/fusion/ops/s2_referee.sh</code> (8-attempt loop); finished in about 2 h.</li>
 <li><code>experiment_s2_referee.py</code> → <code>results/experiment_s2_referee.csv</code>: 3.04 M observed cell-days on 1,073 scene-days. Sentinel-2 water on 2.7% of cell-days, unusual water (not normally wet that month) 0.94%. Fusion calls 1.38 per 100: 69% no water visible, 22% normally-wet water, 9% unusual water (precision vs water 0.31, vs unusual 0.09; recall vs unusual 0.13). FloodScan-only fusion 0.53 per 100, precision 0.48 / 0.18, recall 0.10. Three blocks hold 90% of fusion’s calls. Written to the doc (Ordinary days, Next steps) and final_report.</li>
+</ul>
+</section>
+<section id="preservation-checkpoint-the-book-starts-reading-results-directly" class="level3" data-number="C.3.13">
+<h3 data-number="C.3.13" class="anchored" data-anchor-id="preservation-checkpoint-the-book-starts-reading-results-directly"><span class="header-section-number">C.3.13</span> 2026-11-27: preservation checkpoint; the book starts reading results/ directly</h3>
+<ul>
+<li>Checkpoint <code>checkpoint-2026-11-27</code> (ac2c70f): book re-exported from the doc through its markdown export (<code>doc_to_book.py --analysis-md</code>, figures re-inserted after the paragraph that preceded them; raw export in <code>docs/book/_source/2026-11-27/</code>); one new chapter (From pixels to cells). Pages republished.</li>
+<li>Rescued from the gitignored working directory into <code>scripts/fusion/ops/</code> (README there): the build restart loop, the JRC prefetch, the referee loop, the doc-table and events-table generators.</li>
+<li><code>data/fusion/metrics/*.parquet</code> (18 files, 4.6 MB: the row-level counts behind every <code>results/</code> table) are now tracked (<code>.gitignore</code>: <code>data/*</code> so a sub-directory can be re-included). <code>results/events_in_scope.csv</code>: the 170 events with basin, fold and gold counts.</li>
+<li><code>phase6_package.py --only-results</code> mirrored <code>results/</code> (128 files) and <code>metrics/</code> (18) to blob dev and refreshed <code>MANIFEST.json</code>.</li>
+<li>Data-driven book, first slice (49cf70d): <code>docs/book/_numbers.py</code> reads <code>results/</code> at render time; in <code>15-results.qmd</code> the headline numbers, the all-cells table and the without-basin table are <code>{python}</code> cells (rendered output identical to the hand-typed version). <code>make book</code> renders with the project venv. <code>doc_to_book.py</code> keeps converted chapters instead of overwriting them.</li>
+<li>Found by the conversion: the doc’s “In short” bullet still gave ordinary-day precision as 0.03–0.2 while its Ordinary-days section said 0.04–0.09 outside normally-wet land. Fixed in the doc and the chapter.</li>
 </ul>
 </section>
 </section>
