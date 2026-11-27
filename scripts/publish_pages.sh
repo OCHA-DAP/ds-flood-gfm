@@ -15,7 +15,7 @@ render=1; dry_run=0
 for arg in "$@"; do case "$arg" in --no-render) render=0;; --dry-run) dry_run=1;; *) echo "usage: $0 [--no-render] [--dry-run]" >&2; exit 2;; esac; done
 root="$(git rev-parse --show-toplevel)"; cd "$root"
 rev="$(git describe --always --dirty --tags)"
-[ "$render" = 1 ] && quarto render docs/book
+[ "$render" = 1 ] && QUARTO_PYTHON="$PWD/.venv/bin/python" quarto render docs/book  # the book reads results/ at render time
 test -f docs/book/_book/index.html || { echo "error: docs/book/_book/index.html missing" >&2; exit 1; }
 
 git fetch origin gh-pages

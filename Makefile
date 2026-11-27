@@ -54,5 +54,8 @@ crossval: ## cross-validated re-run: fit on four folds, score the fifth (ADRs 00
 phase6: ## mirror outputs to blob (dev), write the dataset manifest
 	$(PY) scripts/fusion/phase6_package.py
 
+book: ## render docs/book (numbers are read from results/ at render time; fails if a file or column is missing)
+	cd docs/book && QUARTO_PYTHON=$(CURDIR)/.venv/bin/python quarto render
+
 daily: ## operational daily run for the configured AOIs (DATE=YYYY-MM-DD, default yesterday UTC)
 	$(PY) scripts/fusion/daily_job.py $(if $(DATE),--date $(DATE),)

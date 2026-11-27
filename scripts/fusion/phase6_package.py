@@ -90,7 +90,9 @@ def manifest(cfg) -> dict:
             "GDACS/GFDS publishes no reuse licence (disclaimer only).",
         ],
         "model": {"accuracy_table": "results/accuracy_table.csv", "prior": "results/prior_v1.csv"},
-        "validation": "results/phase5_*.csv and docs/final_report.md",
+        "validation": "results/cv/*.csv (cross-validated run, ADRs 0003-0007), results/phase5_*.csv (first run), "
+                      "results/experiment_*.csv; metrics/*.parquet hold the row-level counts behind every table; "
+                      "docs/final_report.md and docs/log.md (the command behind each number)",
     }
 
 
@@ -101,6 +103,7 @@ def main() -> None:
     ap.add_argument("--skip-cubes", action="store_true")
     ap.add_argument("--only-gfds-bands", action="store_true", help="upload only the GFDS row-band archive (5.5 GB)")
     ap.add_argument("--skip-gfds-bands", action="store_true", help="everything except the GFDS row-band archive")
+    ap.add_argument("--only-results", action="store_true", help="only results/ tables and figures, the row-level metrics parquet and the manifest")
     a = ap.parse_args()
     cfg = load_config(a.config)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", handlers=[logging.StreamHandler(sys.stdout)])
@@ -111,6 +114,15 @@ def main() -> None:
         mirror(cfg, cc, loc / "gfds" / "days", cfg.blob_path("raw", "gfds", "signal_row_bands"), (".npz",))
         return
     proc = cfg.blob_path("processed")
+    if a.only_results:
+        mirror(cfg, cc, cfg.results_dir, f"{proc}/results", (".csv", ".json", ".png", ".md"))
+        mirror(cfg, cc, cfg.local("metrics"), f"{proc}/metrics", (".parquet",))
+        m = cfg.local("out", "MANIFEST.json")
+        m.write_text(json.dumps(manifest(cfg), indent=2))
+        with open(m, "rb") as f:
+            cc.upload_blob(f"{proc}/MANIFEST.json", f, overwrite=True)
+        log.info("results, metrics and MANIFEST.json mirrored")
+        return
     # priority order (slow uplinks): what the scheduled job needs, then the deliverables, then archives
     if not a.skip_raw:
         mirror(cfg, cc, loc / "raw" / "era5_land", cfg.blob_path("raw", "era5_land"), (".nc",))

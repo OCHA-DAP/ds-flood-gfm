@@ -1,10 +1,18 @@
 # Results
 
-Every event is scored once, by rates fitted on the other four folds. All scores are on gold-map days in the 170 events: 404,014 gold flooded cell-days. Each score is pooled over cells, so large floods weigh more; brackets give the 95% interval from resampling events.
+```{python}
+#| echo: false
+# Every number below is read from results/ when the book renders (docs/book/_numbers.py); none is typed in.
+from _numbers import *  # noqa: F401,F403
+ov = skill("skill_overall.csv").set_index("product")
+wb = skill("skill_without_largest_basin.csv").set_index("product")
+```
+
+Every event is scored once, by rates fitted on the other four folds. All scores are on gold-map days in the `{python} int(ov.loc['fusion', 'n_events'])` events: `{python} f"{int(ov.loc['fusion', 'truth_flood']):,}"` gold flooded cell-days. Each score is pooled over cells, so large floods weigh more; brackets give the 95% interval from resampling events.
 
 **In short.**
 
-- Against the single products it combines, fusion has the highest F1 overall (0.44), in Asia (0.49), in open land (0.47) and in vegetated land (0.30). Its lead over the best single product, the microwave vote (0.38 overall), is within the uncertainty, and sits mostly on cells that are normally wet in that month (Water versus flood: where the problems sit).
+- Against the single products it combines, fusion has the highest F1 overall (`{python} f(ov.loc['fusion', 'f1'])`), in Asia (`{python} f(by('continent', 'Asia', 'fusion', 'f1'))`), in open land (`{python} f(by('landtype', 'open', 'fusion', 'f1'))`) and in vegetated land (`{python} f(by('landtype', 'vegetated', 'fusion', 'f1'))`). Its lead over the best single product, the microwave vote (`{python} f(ov.loc['microwave', 'f1'])` overall), is within the uncertainty, and sits mostly on cells that are normally wet in that month (Water versus flood: where the problems sit).
 - **A simple rule that needs no fitting matches fusion.** Take VIIRS where VIIRS saw the cell, else GFM, else the microwave vote: F1 0.46 against fusion's 0.44, a difference within the uncertainty. Weighting each river basin equally, the simple rule is clearly ahead (0.40 against 0.31). Fusion's one clear advantage is at event level: far fewer false events (34% of events against 64%). See A simpler bar: the best-available cascade.
 - **Learning how the products' reports combine does not beat the cascade either.** The best version (no memory, threshold chosen in each fold) scores 0.49 pooled against the cascade's 0.46, but is level basin-weighted and on false events. Fusion's memory is what gives it few false events, and it costs F1: with these products, fusion can catch about as many floods as the cascade or raise far fewer false events, not both (Can fusion beat the cascade?).
 - **On ordinary days, precision collapses for every product except GFM.** Fusion calls flood on about 1 in 100 floodable cells on days with no mapped flood, and only 1.7% of those calls agree with GFM where it looked; its ordinary-day precision is somewhere between 0.03 (judged by GFM, which misses most flood) and about 0.2 (the ceiling set by how often it calls flood), against 0.46 on map days. The noise in the microwave vote comes from GFDS (2.4% of cell-days flagged against FloodScan's 0.1%) (Ordinary days).
@@ -19,27 +27,21 @@ Every event is scored once, by rates fitted on the other four folds. All scores 
 
 A product's gaps count as misses.
 
-| product | recall | precision | F1 |
-| --- | --- | --- | --- |
-| fusion | 0.43 (0.30–0.51) | 0.46 (0.37–0.53) | 0.44 (0.34–0.50) |
-| microwave vote | 0.40 (0.32–0.45) | 0.37 (0.31–0.43) | 0.38 (0.32–0.43) |
-| FloodScan | 0.34 (0.25–0.39) | 0.42 (0.36–0.48) | 0.37 (0.31–0.42) |
-| GFM | 0.14 (0.11–0.19) | 0.86 (0.78–0.91) | 0.24 (0.19–0.31) |
-| GFDS | 0.17 (0.12–0.24) | 0.36 (0.29–0.44) | 0.23 (0.18–0.29) |
-| VIIRS | 0.14 (0.10–0.22) | 0.52 (0.42–0.62) | 0.22 (0.16–0.31) |
+```{python}
+#| echo: false
+#| output: asis
+print(table_skill("skill_overall.csv"))
+```
 
 VIIRS ranks last here mostly because its archive has no files for 2021-01 to 2023-07, which holds 28% of the gold flood; there every flooded cell counts as a VIIRS miss. Where it has files, VIIRS is what puts fusion ahead (VIIRS: what it adds, below).
 
-**Without the Bangladesh basin** (166 events, 244,189 gold flooded cell-days):
+**Without the Bangladesh basin** (`{python} int(wb.loc['fusion', 'n_events'])` events, `{python} f"{int(wb.loc['fusion', 'truth_flood']):,}"` gold flooded cell-days):
 
-| product | recall | precision | F1 |
-| --- | --- | --- | --- |
-| fusion | 0.34 | 0.38 | 0.35 (0.29–0.42) |
-| microwave vote | 0.37 | 0.31 | 0.34 (0.28–0.39) |
-| FloodScan | 0.29 | 0.38 | 0.33 (0.26–0.39) |
-| VIIRS | 0.18 | 0.47 | 0.26 (0.17–0.37) |
-| GFDS | 0.20 | 0.31 | 0.25 (0.19–0.29) |
-| GFM | 0.14 | 0.82 | 0.24 (0.16–0.34) |
+```{python}
+#| echo: false
+#| output: asis
+print(table_skill("skill_without_largest_basin.csv", intervals=False))
+```
 
 **With the old rule for the days before and after** (every examined cell dry): fusion 0.38 · 0.46 (F1 0.41), against 0.43 · 0.46 (F1 0.44) with the adopted rule. Precision is the same; recall is lower, because false-alarm rates fitted on draining floodwater give flood reports too little weight.
 
