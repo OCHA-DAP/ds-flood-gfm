@@ -102,6 +102,14 @@ uv run --with h5py --with fsspec --with aiohttp python scripts/fusion/experiment
 - First run died 8 times on scenes whose SCL exists only as JPEG2000 on the requester-pays bucket `s3://sentinel-s2-l2a` (10 of 9,629 scenes). Fix (b9d1bcc): those scenes are left out and listed in `results/experiment_s2_referee_excluded.csv`; the day's other tiles are still read. Relaunched with `scripts/fusion/ops/s2_referee.sh` (8-attempt loop); finished in about 2 h.
 - `experiment_s2_referee.py` → `results/experiment_s2_referee.csv`: 3.04 M observed cell-days on 1,073 scene-days. Sentinel-2 water on 2.7% of cell-days, unusual water (not normally wet that month) 0.94%. Fusion calls 1.38 per 100: 69% no water visible, 22% normally-wet water, 9% unusual water (precision vs water 0.31, vs unusual 0.09; recall vs unusual 0.13). FloodScan-only fusion 0.53 per 100, precision 0.48 / 0.18, recall 0.10. Three blocks hold 90% of fusion's calls. Written to the doc (Ordinary days, Next steps) and final_report.
 
+### 2026-11-27: preservation checkpoint; the book starts reading results/ directly
+- Checkpoint `checkpoint-2026-11-27` (ac2c70f): book re-exported from the doc through its markdown export (`doc_to_book.py --analysis-md`, figures re-inserted after the paragraph that preceded them; raw export in `docs/book/_source/2026-11-27/`); one new chapter (From pixels to cells). Pages republished.
+- Rescued from the gitignored working directory into `scripts/fusion/ops/` (README there): the build restart loop, the JRC prefetch, the referee loop, the doc-table and events-table generators.
+- `data/fusion/metrics/*.parquet` (18 files, 4.6 MB: the row-level counts behind every `results/` table) are now tracked (`.gitignore`: `data/*` so a sub-directory can be re-included). `results/events_in_scope.csv`: the 170 events with basin, fold and gold counts.
+- `phase6_package.py --only-results` mirrored `results/` (128 files) and `metrics/` (18) to blob dev and refreshed `MANIFEST.json`.
+- Data-driven book, first slice (49cf70d): `docs/book/_numbers.py` reads `results/` at render time; in `15-results.qmd` the headline numbers, the all-cells table and the without-basin table are `{python}` cells (rendered output identical to the hand-typed version). `make book` renders with the project venv. `doc_to_book.py` keeps converted chapters instead of overwriting them.
+- Found by the conversion: the doc's "In short" bullet still gave ordinary-day precision as 0.03–0.2 while its Ordinary-days section said 0.04–0.09 outside normally-wet land. Fixed in the doc and the chapter.
+
 ## Open decisions and next steps (as of 2026-10-21)
 1. Operating point: catch floods (low threshold / no memory ≈ cascade) or avoid false alarms (fusion as built or higher threshold). User's call.
 2. ~~Ordinary-day precision~~ done 26 Oct. Drop GFDS from the microwave vote: tested, recommended, awaiting the user's yes (`sources.gfds.enabled: false`).

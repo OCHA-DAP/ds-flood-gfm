@@ -165,3 +165,4 @@ outputs/
 data/fusion/*
 !data/fusion/metrics/
 !data/fusion/metrics/*.parquet
+docs/book/_book/

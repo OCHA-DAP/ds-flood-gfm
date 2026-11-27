@@ -8,14 +8,18 @@ The durable record of the analysis: rendered to https://ocha-dap.github.io/ds-fl
 - **Exported prose.** Most chapters are the Analysis tab of the review doc
   (https://claude.ai/artifact/EzpeTJ8mnRVPaw6rAE7Xop) as `scripts/fusion/doc_to_book.py` exported it at the
   last checkpoint; the raw export is kept under `_source/<date>/`. The doc is where the analysis is developed.
-- **Data-driven chapters.** A chapter that holds a `{python}` cell reads its numbers and tables from
-  `results/` at render time through `_numbers.py` (`make book`). Nothing in such a chapter is typed in: a
-  missing file, column or row fails the render. `doc_to_book.py` refuses to overwrite these chapters, so
-  once a chapter is converted the book, not the doc, is the source of its numbers, and prose changes made in
-  the doc have to be carried over by hand.
+- **Converted chapters.** A chapter that holds a `{python}` cell reads the converted passages from
+  `results/` at render time through `_numbers.py` (`make book`): a missing file, column or row fails the
+  render. The rest of such a chapter is still exported prose until it is converted too. `doc_to_book.py`
+  keeps a converted chapter as it is (matched by title; renumbered if a section was inserted before it) and
+  re-exports the others, so prose changes made in the doc to a converted chapter have to be carried over by
+  hand, and the book, not the doc, is the source of its numbers.
 
-Converted so far: `15-results.qmd` (the "In short" headline numbers, the all-cells table and the
-without-the-largest-basin table).
+Converted so far (keep this list current):
+
+| chapter | converted passages | still hand-typed |
+|---|---|---|
+| `15-results.qmd` | "In short" headline numbers (overall, Asia, open, vegetated, microwave vote), event and cell-day counts, the all-cells table, the without-the-largest-basin table | every other table and number in the chapter |
 
 ## Rendering
 

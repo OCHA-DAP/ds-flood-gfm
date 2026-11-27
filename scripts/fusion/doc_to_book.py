@@ -196,8 +196,15 @@ def reinsert_figures(blocks: list[str], anchors: list[tuple[str, str]]) -> list[
     return blocks
 
 
-def executable_chapters() -> list[str]:
-    return [q.name for q in sorted(BOOK.glob("*.qmd")) if "```{python}" in q.read_text() or "{python}" in q.read_text()]
+def converted_chapters() -> dict[str, str]:
+    """title -> text of every chapter that holds a {python} cell (numbers read from results/ at render time).
+    These are kept as they are and only renumbered; the doc no longer owns their numbers (docs/book/README.md)."""
+    out = {}
+    for q in sorted(BOOK.glob("[0-9][0-9]-*.qmd")):
+        text = q.read_text()
+        if "{python}" in text:
+            out[text.splitlines()[0].removeprefix("# ").strip()] = text
+    return out
 
 
 def main() -> None:
@@ -211,8 +218,7 @@ def main() -> None:
     a = ap.parse_args()
     if (a.analysis is None) == (a.analysis_md is None):
         raise SystemExit("give exactly one of --analysis (XML) or --analysis-md (markdown export)")
-    if ex := executable_chapters():
-        raise SystemExit(f"refusing: these chapters hold executable cells and would be overwritten: {ex}. Edit them by hand.")
+    converted = converted_chapters()
     (BOOK / "figures").mkdir(parents=True, exist_ok=True)
     if a.analysis_md:
         anchors = figure_anchors()
@@ -231,16 +237,26 @@ def main() -> None:
     h1 = next((b[2:] for b in front if b.startswith("# ")), "Flood fusion")
     intro = [b for b in front if not b.startswith("# ")]
     files = []
+    kept = []
     for i, (title, body) in enumerate(chapters[1:], 1):
         name = f"{i:02d}-{slug(title)}.qmd"
-        (BOOK / name).write_text(f"# {title}\n\n" + "\n\n".join(body) + "\n")
+        if title in converted:
+            (BOOK / name).write_text(converted.pop(title))
+            kept.append(name)
+        else:
+            (BOOK / name).write_text(f"# {title}\n\n" + "\n\n".join(body) + "\n")
         files.append(name)
+    if converted:
+        raise SystemExit(f"converted chapters whose title no longer exists in the doc (renamed or removed?): {list(converted)}. "
+                         "Rename the chapter's first line to the doc's new title, or delete it, then run again.")
+    if kept:
+        print("kept as converted (numbers from results/):", *kept, sep="\n  ")
     for src, name in ((a.glossary, "glossary.qmd"), (a.events, "events.qmd")):
         if src is None:
             continue
         bl = doc_to_blocks(Path(src).read_text())
         (BOOK / name).write_text("\n\n".join(b for b in bl) + "\n")
-    shutil.copy(ROOT / "docs" / "log.md", BOOK / "log.qmd")
+    (BOOK / "log.qmd").write_text("{{< include ../log.md >}}\n")  # the live ledger, never a copy
     (BOOK / "index.qmd").write_text(
         f"# {h1} {{.unnumbered}}\n\n*Checkpoint {a.date}, exported from the review doc "
         "(https://claude.ai/artifact/EzpeTJ8mnRVPaw6rAE7Xop) by `scripts/fusion/doc_to_book.py`. The doc is where the analysis "
