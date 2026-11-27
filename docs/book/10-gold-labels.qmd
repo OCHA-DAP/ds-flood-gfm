@@ -5,7 +5,7 @@ A gold map gives each cell it examined one label for its map date: flooded, dry 
 Each map has two parts: the **flood polygons** and the **area the analyst examined**. Both are drawn onto a 0.001° grid, so each 0.01° cell holds 10 × 10 = 100 sub-pixels.
 
 | label | rule |
-|---|---|
+| --- | --- |
 | **flooded** | at least half the cell was examined, and at least 30% of the examined part is flood |
 | **dry** | at least half examined, under 30% flood, and under 30% "flood possible" |
 | **none** | under half examined; or examined, under 30% flood and at least 30% "flood possible" |

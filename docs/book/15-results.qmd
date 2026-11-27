@@ -7,6 +7,8 @@ Every event is scored once, by rates fitted on the other four folds. All scores 
 - Against the single products it combines, fusion has the highest F1 overall (0.44), in Asia (0.49), in open land (0.47) and in vegetated land (0.30). Its lead over the best single product, the microwave vote (0.38 overall), is within the uncertainty, and sits mostly on cells that are normally wet in that month (Water versus flood: where the problems sit).
 - **A simple rule that needs no fitting matches fusion.** Take VIIRS where VIIRS saw the cell, else GFM, else the microwave vote: F1 0.46 against fusion's 0.44, a difference within the uncertainty. Weighting each river basin equally, the simple rule is clearly ahead (0.40 against 0.31). Fusion's one clear advantage is at event level: far fewer false events (34% of events against 64%). See A simpler bar: the best-available cascade.
 - **Learning how the products' reports combine does not beat the cascade either.** The best version (no memory, threshold chosen in each fold) scores 0.49 pooled against the cascade's 0.46, but is level basin-weighted and on false events. Fusion's memory is what gives it few false events, and it costs F1: with these products, fusion can catch about as many floods as the cascade or raise far fewer false events, not both (Can fusion beat the cascade?).
+- **On ordinary days, precision collapses for every product except GFM.** Fusion calls flood on about 1 in 100 floodable cells on days with no mapped flood, and only 1.7% of those calls agree with GFM where it looked; its ordinary-day precision is somewhere between 0.03 (judged by GFM, which misses most flood) and about 0.2 (the ceiling set by how often it calls flood), against 0.46 on map days. The noise in the microwave vote comes from GFDS (2.4% of cell-days flagged against FloodScan's 0.1%) (Ordinary days).
+- **Dropping GFDS cuts fusion's ordinary-day false alarms by two thirds for 0.01 F1** (1.06 to 0.34 flood calls per 100 cells; false block-level events from 2.7% to 0.03% of days). Recommended (Dropping GFDS).
 - **VIIRS is what puts fusion ahead.** Run without VIIRS, fusion scores 0.39, level with the microwave vote. Where VIIRS has files, it adds 0.08 F1 to fusion (0.06–0.10). VIIRS's own low score (0.22) is mostly missing files: its archive has none for 2021-01 to 2023-07, which holds 28% of the gold flood.
 - **FloodScan does almost all of the microwave work.** With FloodScan alone in the microwave slot, fusion loses 0.01 F1; with GFDS alone, 0.06; with no microwave, 0.11.
 - One river basin weighs heavily. Four UNOSAT floods in Bangladesh (2017, 2018, 2020 and 2022) share one HydroBASINS level-4 basin and hold 40% of all gold flooded cell-days. Without them, fusion scores F1 0.35, the microwave vote 0.34 and FloodScan 0.33, with overlapping intervals.
@@ -18,7 +20,7 @@ Every event is scored once, by rates fitted on the other four folds. All scores 
 A product's gaps count as misses.
 
 | product | recall | precision | F1 |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | fusion | 0.43 (0.30–0.51) | 0.46 (0.37–0.53) | 0.44 (0.34–0.50) |
 | microwave vote | 0.40 (0.32–0.45) | 0.37 (0.31–0.43) | 0.38 (0.32–0.43) |
 | FloodScan | 0.34 (0.25–0.39) | 0.42 (0.36–0.48) | 0.37 (0.31–0.42) |
@@ -31,7 +33,7 @@ VIIRS ranks last here mostly because its archive has no files for 2021-01 to 202
 **Without the Bangladesh basin** (166 events, 244,189 gold flooded cell-days):
 
 | product | recall | precision | F1 |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | fusion | 0.34 | 0.38 | 0.35 (0.29–0.42) |
 | microwave vote | 0.37 | 0.31 | 0.34 (0.28–0.39) |
 | FloodScan | 0.29 | 0.38 | 0.33 (0.26–0.39) |
@@ -55,7 +57,7 @@ The same comparison is also shown under views that stop one basin or the label p
 F1, gold-map days, all cells:
 
 | view | fusion | cascade | fusion minus cascade (95% interval) | GFM-first cascade | best single product |
-|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- |
 | pooled (the reference) | 0.44 | 0.46 | −0.015 (−0.092 to +0.045) | 0.44 | microwave vote 0.38 |
 | basin-weighted (72 basins) | 0.31 | 0.40 | −0.083 (−0.124 to −0.041) | 0.39 | FloodScan 0.28 |
 | gold map from Sentinel-1 | 0.43 | 0.42 | +0.008 (−0.140 to +0.087) | 0.40 | microwave vote 0.36 |
@@ -76,7 +78,7 @@ The interval compares the same resampled events (basins, for the basin-weighted 
 Was the event caught (same rules as everywhere on this page):
 
 | product | events | caught | false event | caught, no false event | median days to detection |
-|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- |
 | fusion | 148 | 68% | 34% | 36% | −2 |
 | cascade: VIIRS, else GFM, else microwave | 148 | 86% | 64% | 24% | −2 |
 | cascade: GFM first (check) | 148 | 86% | 64% | 25% | −2 |
@@ -103,7 +105,7 @@ The test for success was fixed beforehand: above the cascade on both pooled and 
 In the first run the threshold could go down to 0.02. Every fold chose 0.02, and a built-in check failed: the learned version without memory should at least match the cascade on its own training folds, and it did not. As planned for that case, the threshold was allowed down to 0.001; the check then passed. The table shows that follow-up. Rows at threshold 0.5 are the same in both runs.
 
 | version | threshold | pooled F1 | vs cascade | basin-weighted F1 | vs cascade | false events | caught, no false event | reliability slope |
-|---|---|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | fusion as built: each product separately, memory, 0.5 | 0.5 | 0.44 | −0.015 (−0.092 to +0.045) | 0.31 | −0.083 (−0.124 to −0.043) | 34% | 36% | 0.43 |
 | combinations learned, memory, 0.5 | 0.5 | 0.43 | −0.029 (−0.108 to +0.030) | 0.30 | −0.095 (−0.140 to −0.054) | 31% | 36% | 0.43 |
 | each product separately, memory, threshold in fold | 0.001 | 0.49 | +0.036 (−0.033 to +0.085) | 0.37 | −0.027 (−0.063 to +0.012) | 90% | 3% | 0.43 |
@@ -129,7 +131,7 @@ The two versions with no memory and threshold 0.5 are left out of the table: the
 *How to read it.* Each point is one version at one threshold, the P at or above which a cell is called flooded. Left: pooled F1; right: basin-weighted F1. Up is better; left is better (fewer false events). The ringed point is fusion as built; the black diamond is the cascade.
 
 | version | threshold | recall | precision | pooled F1 | basin-weighted F1 | events caught | false events | caught, no false event |
-|---|---|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | with memory, each product separately | 0.9 | 0.37 | 0.47 | 0.41 | 0.29 | 59% | 25% | 36% |
 | with memory, each product separately (as built) | 0.5 | 0.43 | 0.46 | 0.44 | 0.31 | 68% | 34% | 36% |
 | with memory, each product separately | 0.2 | 0.46 | 0.45 | 0.46 | 0.33 | 71% | 43% | 30% |
@@ -153,7 +155,7 @@ The two versions with no memory and threshold 0.5 are left out of the table: the
 *How to read it.* Each dot is one product's F1 on the gold-map days of that continent's events; the bar is its 95% interval from resampling events. FloodScan and GFDS, the two halves of the microwave vote, are in the tables.
 
 | continent (events; gold flooded cell-days) | fusion | VIIRS | microwave vote | FloodScan | GFDS | GFM | best single |
-|---|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- | --- |
 | Africa (80 events; 109,025 flooded cell-days) | 0.31 (0.21–0.41) | 0.26 (0.15–0.37) | 0.34 (0.23–0.42) | 0.34 (0.24–0.44) | 0.25 (0.16–0.33) | 0.11 (0.05–0.17) | FloodScan |
 | Asia (61 events; 270,263 flooded cell-days) | 0.49 (0.36–0.54) | 0.17 (0.08–0.26) | 0.40 (0.33–0.46) | 0.39 (0.29–0.44) | 0.21 (0.14–0.29) | 0.30 (0.23–0.42) | microwave vote |
 | Oceania (13 events; 19,553 flooded cell-days) | 0.45 (0.12–0.54) | 0.53 (0.00–0.68) | 0.43 (0.30–0.50) | 0.43 (0.23–0.51) | 0.31 (0.19–0.36) | 0.17 (0.06–0.38) | VIIRS |
@@ -162,7 +164,7 @@ The two versions with no memory and threshold 0.5 are left out of the table: the
 Recall · precision:
 
 | continent | fusion | VIIRS | microwave vote | FloodScan | GFDS | GFM |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | Africa | 0.28 · 0.37 | 0.18 · 0.48 | 0.36 · 0.31 | 0.31 · 0.39 | 0.20 · 0.32 | 0.06 · 0.80 |
 | Asia | 0.49 · 0.49 | 0.10 · 0.56 | 0.41 · 0.40 | 0.34 · 0.44 | 0.14 · 0.39 | 0.18 · 0.87 |
 | Oceania | 0.41 · 0.50 | 0.51 · 0.54 | 0.47 · 0.40 | 0.39 · 0.48 | 0.27 · 0.37 | 0.09 · 0.81 |
@@ -178,7 +180,7 @@ Recall · precision:
 ![F1 per land type, five-fold cross-validation: fusion, VIIRS, microwave vote and GFM, with 95% intervals](figures/f1_by_landtype.png)
 
 | land type (events; gold flooded cell-days) | fusion | VIIRS | microwave vote | FloodScan | GFDS | GFM | best single |
-|---|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- | --- |
 | open (167 events; 355,927 flooded cell-days) | 0.47 (0.36–0.54) | 0.23 (0.16–0.32) | 0.41 (0.34–0.47) | 0.40 (0.32–0.45) | 0.24 (0.18–0.31) | 0.24 (0.18–0.33) | microwave vote |
 | urban (161 events; 2,209 flooded cell-days) | 0.16 (0.10–0.23) | 0.12 (0.08–0.17) | 0.11 (0.08–0.14) | 0.12 (0.09–0.15) | 0.08 (0.04–0.11) | 0.24 (0.15–0.33) | GFM |
 | vegetated (159 events; 45,878 flooded cell-days) | 0.30 (0.23–0.34) | 0.17 (0.10–0.24) | 0.26 (0.20–0.30) | 0.27 (0.22–0.33) | 0.14 (0.10–0.19) | 0.25 (0.17–0.30) | FloodScan |
@@ -186,7 +188,7 @@ Recall · precision:
 Recall · precision:
 
 | land type | fusion | VIIRS | microwave vote | FloodScan | GFDS | GFM |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | open | 0.44 · 0.51 | 0.15 · 0.54 | 0.40 · 0.43 | 0.33 · 0.49 | 0.17 · 0.41 | 0.14 · 0.87 |
 | urban | 0.14 · 0.20 | 0.07 · 0.32 | 0.23 · 0.07 | 0.18 · 0.09 | 0.11 · 0.06 | 0.14 · 0.68 |
 | vegetated | 0.37 · 0.25 | 0.11 · 0.41 | 0.40 · 0.19 | 0.36 · 0.22 | 0.12 · 0.17 | 0.15 · 0.77 |
@@ -198,7 +200,7 @@ Urban land is small (2,209 flooded cell-days) and hard for every product; GFM is
 Each product only where it saw; fusion on the same cells. The last column is the share of all gold flooded cell-days the product saw.
 
 | cells | product: recall · precision (F1) | fusion: recall · precision (F1) | share of gold flood seen |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | where VIIRS observed | 0.51 · 0.52 (0.52) | 0.44 · 0.45 (0.44) | 28% |
 | where microwave vote observed | 0.40 · 0.37 (0.38) | 0.43 · 0.46 (0.44) | 100% |
 | where FloodScan observed | 0.34 · 0.42 (0.37) | 0.43 · 0.46 (0.44) | 100% |
@@ -213,7 +215,7 @@ Each product only where it saw; fusion on the same cells. The last column is the
 Map days whose gold maps all came from other satellites (132 events, 158,796 gold flooded cell-days):
 
 | product | recall · precision (F1) | F1 interval |
-|---|---|---|
+| --- | --- | --- |
 | fusion | 0.49 · 0.43 (0.46) | 0.38–0.53 |
 | fusion, old dry-day rule | 0.43 · 0.44 (0.43) | 0.36–0.51 |
 | microwave vote | 0.47 · 0.37 (0.42) | 0.35–0.47 |
@@ -231,7 +233,7 @@ VIIRS saw 28% of the gold flooded cell-days. 55 events (114,306 flooded cell-day
 **What VIIRS adds to fusion.** Fusion run again without VIIRS, with the same folds, fitted rates and base rate (F1, all cells). The interval compares the same resampled events with and without VIIRS:
 
 | events | fusion | fusion without VIIRS | added by VIIRS (95% interval) |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | 115 with VIIRS files | 0.44 | 0.36 | 0.08 (0.06–0.10) |
 | 55 in the gap | 0.45 | 0.45 | none: no VIIRS files |
 | all 170 | 0.44 | 0.39 | 0.06 (0.04–0.08) |
@@ -242,7 +244,7 @@ VIIRS saw 28% of the gold flooded cell-days. 55 events (114,306 flooded cell-day
 **By period**, every product (F1, all cells, 95% interval):
 
 | product | VIIRS archive available (115 events) | VIIRS gap, 2021-01 to 2023-07 (55 events) |
-|---|---|---|
+| --- | --- | --- |
 | fusion | 0.44 (0.32–0.51) | 0.45 (0.22–0.54) |
 | VIIRS | 0.29 (0.21–0.38) | 0.00 (0.00–0.00) |
 | microwave vote | 0.37 (0.29–0.41) | 0.42 (0.28–0.50) |
@@ -261,7 +263,7 @@ Outside the gap VIIRS scores F1 0.29, against 0.49 on the first run's 29 test ev
 The microwave vote says flood if FloodScan or GFDS says flood (Inputs). To see which of the two does the work, fusion was run again with the microwave slot filled by FloodScan alone, then GFDS alone, then nothing. Everything else is unchanged: the same folds, the same GFM and VIIRS rates, and the same base rate. Each microwave choice gets its own hit and false-alarm rates, fitted on the other four folds (`scripts/fusion/cv_microwave_components.py`; the rules were fixed before it ran).
 
 | microwave slot | recall | precision | F1 | F1 change from as built | events caught / false / caught, no false | reliability slope |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | microwave vote (as built) | 0.43 | 0.46 | 0.44 (0.35–0.50) | – | 68% / 34% / 36% | 0.43 |
 | FloodScan only | 0.40 | 0.47 | 0.43 (0.33–0.48) | −0.011 (−0.019 to −0.002) | 61% / 32% / 32% | 0.43 |
 | GFDS only | 0.30 | 0.54 | 0.39 (0.31–0.45) | −0.056 (−0.097 to −0.012) | 61% / 28% / 35% | 0.52 |
@@ -272,7 +274,7 @@ The change column compares the same resampled events with and without the swap. 
 F1 by continent and VIIRS period (events in brackets):
 
 | events | microwave vote (as built) | FloodScan only | GFDS only | no microwave | FloodScan only, change | GFDS only, change |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | Africa (80) | 0.31 | 0.31 | 0.29 | 0.25 | 0.000 (−0.008 to +0.010) | −0.021 (−0.069 to +0.024) |
 | Asia (61) | 0.49 | 0.47 | 0.42 | 0.36 | −0.016 (−0.025 to −0.003) | −0.069 (−0.132 to −0.014) |
 | Oceania (13) | 0.45 | 0.46 | 0.45 | 0.44 | +0.005 (−0.015 to +0.024) | −0.008 (−0.079 to 0.000) |
@@ -290,7 +292,7 @@ F1 by continent and VIIRS period (events in brackets):
 ### Criteria
 
 | land type | fusion CSI | best single (CSI) | (b) passes | slope, map days | slope, map and dry days | (c) passes |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | open | 0.31 | microwave vote (0.26) | yes | 0.46 | 0.03 | no |
 | vegetated | 0.18 | FloodScan (0.16) | yes | 0.24 | 0.01 | no |
 | urban | 0.09 | GFM (0.13) | no | 0.22 | 0.01 | no |
@@ -314,7 +316,7 @@ F1 by continent and VIIRS period (events in brackets):
 Rules in "Was the event caught?" above. 148 of the 170 events have at least 5 floodable cells flooded on a map day; the other 22 (13 with none) are left out here.
 
 | product | events | caught | false event | caught, no false event | median days to detection |
-|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- |
 | microwave vote | 148 | 74% (67%–80%) | 53% (45%–60%) | 24% (18%–31%) | −1 |
 | fusion | 148 | 68% (59%–75%) | 34% (26%–41%) | 36% (29%–44%) | −2 |
 | GFDS | 148 | 60% (52%–68%) | 39% (31%–47%) | 24% (18%–31%) | 0 |
@@ -326,7 +328,7 @@ Rules in "Was the event caught?" above. 148 of the 170 events have at least 5 fl
 Caught / false event, per continent (events):
 
 | continent | fusion | VIIRS | microwave vote | FloodScan | GFDS | GFM |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | Africa (72) | 60% / 31% | 54% / 38% | 67% / 51% | 49% / 31% | 57% / 38% | 29% / 10% |
 | Asia (53) | 72% / 36% | 55% / 45% | 79% / 58% | 57% / 38% | 60% / 42% | 68% / 11% |
 | Oceania (11) | 82% / 18% | 18% / 9% | 82% / 27% | 82% / 9% | 82% / 27% | 73% / 18% |
@@ -335,7 +337,7 @@ Caught / false event, per continent (events):
 Caught / false event, per land type (events with at least 5 flooded cells of that type):
 
 | land type | fusion | VIIRS | microwave vote | FloodScan | GFDS | GFM |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | open (143) | 70% / 37% | 52% / 43% | 75% / 56% | 58% / 34% | 62% / 40% | 54% / 13% |
 | urban (56) | 25% / 5% | 30% / 7% | 59% / 25% | 43% / 12% | 39% / 12% | 20% / 2% |
 | vegetated (99) | 53% / 16% | 45% / 24% | 67% / 39% | 58% / 25% | 49% / 26% | 41% / 3% |
@@ -351,14 +353,14 @@ This repeats the main results on two kinds of cell: those normally wet in that c
 F1, all cells:
 
 | cells | share of labelled cells | share of gold flood | fusion | microwave vote | FloodScan | VIIRS | GFM | GFDS |
-|---|---|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | normally wet | 7% | 38% | 0.60 (0.46–0.66) | 0.49 | 0.45 | 0.21 | 0.20 | 0.24 |
 | other | 93% | 62% | 0.36 (0.29–0.42) | 0.34 | 0.34 | 0.23 | 0.27 | 0.22 |
 
 Flood calls on gold-dry cells, which the scores count as false alarms. On normally-wet cells many of them are water the analyst treated as normal (the orange cells in the Bangladesh map). Each rate is the share of gold-dry cells a product saw where it called flood. Lift is how many times more often two products make that call on the same cell than they would if they were independent (1 = independent):
 
 | pair | normally wet: share of dry cells both saw | normally wet: share of joint false alarms | false-alarm rates, normally wet | false-alarm rates, other | lift, normally wet | lift, other |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | GFM + microwave vote | 5% | 41% | 5.6% / 26.4% | 0.5% / 9.5% | 1.6 | 3.7 |
 | GFM + VIIRS | 4% | 35% | 5.6% / 31.9% | 0.5% / 7.1% | 2.4 | 10.3 |
 | microwave vote + VIIRS | 3% | 18% | 22.5% / 23.7% | 5.9% / 3.4% | 2.2 | 8.1 |
@@ -366,14 +368,14 @@ Flood calls on gold-dry cells, which the scores count as false alarms. On normal
 Reliability, all land types:
 
 | cells | flooded share at P below 0.1 | flooded share at P 0.1 to 1 | slope (target 0.8–1.2) |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | normally wet | 39% | 65%–71% | 0.29 |
 | other | 4% | 27%–36% | 0.34 |
 
 Event level, with each event's footprint split by whether a cell is normally wet in the month of the first map:
 
 | product | normally-wet footprint (111 events): caught / false event | other footprint (144 events): caught / false event |
-|---|---|---|
+| --- | --- | --- |
 | fusion | 64% / 44% | 65% / 30% |
 | microwave vote | 75% / 60% | 72% / 53% |
 | FloodScan | 55% / 38% | 57% / 30% |
@@ -394,12 +396,112 @@ Event level, with each event's footprint split by whether a cell is normally wet
 
 **What follows.** Scored against these gold maps, fusion estimates water outside permanent water on event days, with seasonal water counted as flood about half the time. Two ways to make that explicit: separate rates for normally-wet cells (Next steps, 8), and later the water-first design (Water versus flood, above).
 
+### Ordinary days: how often each product cries flood when there is none
+
+Every precision above is from map days inside mapped floods, where 9% of labelled cells are flooded. On an ordinary day flood is about 60 times rarer, so the same false-alarm rate gives far lower precision. Two measurements, rules fixed before running (`scripts/fusion/cv_ordinary_days.py`):
+
+- **The days before and after each event:** the 30 days before the first map and 60 after the last, cells labelled dry under the adopted rule, cross-validated. Still near floods, in the same places, and unmapped water counts as dry, so this is an upper bound on false alarms.
+- **The random sample:** 30 places in the four continents with no mapped event, every day of 2023–2025 (32,880 block-days). There is no gold there, so GFM is the referee where it looked: its precision against gold is 0.86, but it sees only 7% of cell-days and misses 86% of flood, so agreement with GFM is a floor, not the truth. The numbers that need no referee are each product's flood-call rate against the base flood rate, and the block-level false events. Fusion here uses rates fitted on all 170 events; the sample was never fitted on.
+
+| product | days before and after events: flood calls per 100 dry cells | before / after +1–30 / after +31–60 | ordinary days (random sample): flood calls per 100 floodable cells | of its calls where GFM also looked, share GFM agreed | block-days with a false "event" (≥10% of cells flagged) |
+| --- | --- | --- | --- | --- | --- |
+| fusion | 3.00 | 1.91 / 4.01 / 3.08 | 1.06 | 1.7% | 2.7% |
+| cascade | 2.65 | 2.35 / 3.15 / 2.45 | 1.33 | 14.1% | 2.7% |
+| microwave vote | 3.34 | 2.85 / 4.01 / 3.17 | 2.44 | 0.5% | 5.3% |
+| FloodScan | 2.01 | 1.75 / 2.43 / 1.85 | 0.10 | 3.8% | 0.1% |
+| GFDS | 1.70 | 1.39 / 2.03 / 1.69 | 2.38 | 0.2% | 5.2% |
+| VIIRS | 0.73 | 0.61 / 0.86 / 0.71 | 0.39 | 2.9% | 0.2% |
+| GFM | 0.03 | 0.03 / 0.03 / 0.03 | 0.00 | 100% (the referee) | 0.0% |
+
+**Implied ordinary-day precision, open land** (a formula, not a measurement: map-day recall × base rate ÷ (that + false-alarm rate × (1 − base rate)), with the dry-day false-alarm rate and the base rate of 0.23%):
+
+| product | map-day recall | map-day precision | dry-day false-alarm rate | implied ordinary-day precision |
+| --- | --- | --- | --- | --- |
+| fusion | 0.44 | 0.51 | 3.71% | 0.03 |
+| microwave vote | 0.40 | 0.43 | 3.76% | 0.02 |
+| FloodScan | 0.33 | 0.49 | 2.30% | 0.03 |
+| GFDS | 0.17 | 0.41 | 1.99% | 0.02 |
+| VIIRS | 0.15 | 0.54 | 1.04% | 0.03 |
+| GFM | 0.14 | 0.87 | 0.04% | 0.46 |
+
+**Far from the flood.** The expert maps examine areas much larger than the flood and label the rest dry. Taking only days 31–60 after the last map and only cells at least 5 cells (about 5 km) from anything flooded on a map day gives the quietest labelled cells we have (`scripts/fusion/cv_far_from_flood.py`, rules fixed first). False alarms there are about half those near the flood, but still well above GFM's:
+
+| product | far from the flood: flood calls per 100 dry cells (open land) | within 5 km of the flood | implied ordinary-day precision, far cells |
+| --- | --- | --- | --- |
+| fusion | 2.24 | 6.51 | 0.04 |
+| fusion, FloodScan alone | 1.76 | 5.31 | 0.05 |
+| cascade | 1.85 | 4.63 | – |
+| microwave vote | 2.25 | 5.70 | 0.04 |
+| FloodScan | 1.29 | 3.44 | 0.06 |
+| GFDS | 1.26 | 3.17 | 0.03 |
+| VIIRS | 0.42 | 2.05 | 0.07 |
+| GFM | 0.01 | 0.07 | 0.69 |
+
+These cells are still inside mapped events, in the same places, and water the analysts did not map counts as dry, so the rates are an upper bound on false alarms and the implied precisions a lower bound. Together with the bounds above, fusion's ordinary-day precision is most likely in the range 0.04–0.2. The Sentinel-2 referee below narrows it to 0.04–0.09 outside normally-wet land.
+
+**The Sentinel-2 referee.** Sentinel-2's scene classification marks water at 20 m from an optical sensor none of the four inputs use (`scripts/fusion/experiment_s2_referee.py`, rules fixed first, 8d3b9af and b9d1bcc). On the 30 sample blocks, every cloud-free day of 2023–2025 (3.0 million observed cell-days on 1,073 scene-days), a cell is "water" by the same 50% observed / 30% rules as every other layer, and "unusual water" if it is water on a cell that is not normally wet in that month. Sentinel-2 sees water on 2.7 cells in 100 and unusual water on 0.94, about five times the 0.2 flood base rate, so unusual water is not all flood either.
+
+Fusion's ordinary-day calls split three ways: 69% on cells where Sentinel-2 saw no water that day, 22% on water in normally-wet cells, 9% on unusual water. So outside normally-wet land fusion's ordinary-day precision is 0.04–0.09, and a further fifth of its calls land on water that is normally there, which is not strictly wrong (see Water versus flood). Dropping GFDS halves the calls and roughly doubles precision against both labels while keeping most of the recall:
+
+| product | flood calls per 100 observed cell-days | precision vs water | precision vs unusual water | recall vs unusual water |
+| --- | --- | --- | --- | --- |
+| fusion (as built) | 1.38 | 0.31 | 0.09 | 0.13 |
+| fusion, FloodScan alone | 0.53 | 0.48 | 0.18 | 0.10 |
+| cascade | 1.47 | 0.26 | 0.09 | 0.14 |
+| VIIRS | 0.81 | 0.38 | 0.14 | 0.12 |
+| microwave vote | 2.97 | 0.15 | 0.04 | 0.11 |
+| GFDS | 2.89 | 0.14 | 0.03 | 0.11 |
+| FloodScan | 0.13 | 0.48 | 0.15 | 0.02 |
+| GFM | 0.00 | too few calls to score |  |  |
+
+Caveats. Sentinel-2 labels only cloud-free days, which are drier than average, so this is ordinary-day behaviour, not flood-day skill. Water under trees is invisible to it, so vegetated land reads worse than it is. The "no water" calls include water that drained after fusion's memory picked it up and shallow or turbid water the classifier misses, so they are not all false. The result is concentrated: 16 of 30 blocks have any Sentinel-2 water, Asia holds 96% of it, and three blocks hold 90% of fusion's calls (one Asian city-reserve block 43%); without that block fusion's precision is 0.30 against water and 0.06 against unusual water (a sensitivity, not pre-registered). GFM almost never flagged on cloud-free sample days, so it has no usable referee number. Ten of 9,629 scenes exist only on a pay-to-read bucket and were left out (listed in `results/experiment_s2_referee_excluded.csv`).
+
+**Reading.**
+
+- **On ordinary days, fusion says flood on about 1 in 100 floodable cells**, and where GFM also looked, GFM agreed with only 1.7% of those calls. But GFM is a poor referee: against the expert maps it misses 86% of flood, so some of fusion's "false" calls are water GFM did not see. The bounds that do not depend on a referee are these: real flood covers about 0.2 cells in 100 on an ordinary day, and fusion calls flood on 1.06 in 100, so even if every real flood were among its calls, precision could not exceed about 0.2. So fusion's ordinary-day precision lies between 0.03 (if GFM were right) and about 0.2 (if fusion were), against 0.46 on map days. Every product except GFM sits in the same range. GFM's calls are rare and mostly right.
+- **The microwave vote's ordinary-day noise is GFDS, not FloodScan.** On the random sample FloodScan calls flood on 0.10% of cell-days, GFDS on 2.4%; the vote (either says flood) inherits GFDS's rate. Near events the two are similar (2.0% and 1.7%), which is why the map-day scores never showed it. Combined with the earlier finding that FloodScan alone costs fusion only 0.01 F1, dropping GFDS from the vote looks right; a direct test is listed below.
+- **False alarms are highest in the month after an event** (fusion 4.0 per 100 cells, against 1.9 before): some of that is water still draining, counted as dry because it lies outside the cells the maps flooded.
+- **Block-level false events away from floods** (the check deferred in ADR 0007): fusion and the cascade flag at least 10% of a block's floodable cells on 2.7% of block-days, about 10 days a year per place; the microwave vote and GFDS on 5%; FloodScan, VIIRS and GFM almost never.
+- **Caveats.** The sample is 30 places, 8 of them cities in Asia. GFM as referee sees only 7% of cell-days and misses most flood (its recall against gold is 0.14), so "share GFM agreed" understates true precision for every product; the ranking between products is the usable part.
+
+### Dropping GFDS: three times fewer false alarms on ordinary days, for 0.01 F1
+
+Step 12 re-ran the ordinary-day measurements with FloodScan alone in fusion's microwave slot (and in the cascade), rates refitted the same way (`cv_ordinary_days.py --microwave floodscan`, added and committed after the first run and before this one):
+
+|  | microwave vote (as built) | FloodScan alone |
+| --- | --- | --- |
+| map-day F1 (from "Which microwave product does the work") | 0.44 | 0.43 (−0.011, −0.019 to −0.002) |
+| ordinary days: fusion's flood calls per 100 floodable cells | 1.06 | 0.34 |
+| of those calls where GFM also looked, share GFM agreed | 1.7% | 3.8% |
+| block-days with a false "event" (≥10% of cells flagged) | 2.7% (about 10 days a year per place) | 0.03% (about 1 day in 10 years) |
+| days before and after events: flood calls per 100 dry cells | 3.00 | 2.58 |
+| cascade, ordinary-day flood calls per 100 cells | 1.33 | 0.42 |
+
+**Reading.** GFDS supplies most of fusion's ordinary-day false alarms and almost none of its skill on map days. With FloodScan alone, fusion says flood three times less often on days with no flood, and false block-level events all but disappear, at a cost of 0.01 F1 on map days. GFDS's feed also stopped on 14 September 2026, so a live product could not use it anyway. **Recommendation:** make the microwave input FloodScan alone (`sources.gfds.enabled: false`). This changes fixed decision 2 of the original brief (the microwave vote), so it is yours to confirm. The remaining ordinary-day precision, about 0.03 implied, is still far below GFM's; that is the next problem, not this one.
+
+### Separate rates for normally-wet cells: it scores worse
+
+Step 8 tested fitting each product's hit and false-alarm rates per land type **and** whether the cell is normally wet in that month (six strata instead of three), everything else as built, same folds (`scripts/fusion/cv_normally_wet_strata.py`; rules and the expected result committed before running). The expectation was better precision on ordinary cells and little change elsewhere.
+
+| view | fusion as built | with normally-wet strata | change (95% interval) |
+| --- | --- | --- | --- |
+| pooled F1 | 0.44 | 0.37 | −0.069 (−0.091 to −0.029) |
+| basin-weighted F1 | 0.31 | 0.29 | −0.025 (−0.036 to −0.017) |
+| normally-wet cells | 0.60 | 0.40 | −0.202 (−0.252 to −0.133) |
+| other cells | 0.359 | 0.364 | +0.006 (+0.004 to +0.008) |
+| events caught / false events | 68% / 34% | 61% / 27% |  |
+| reliability slope (map days) | 0.43 | 0.39 |  |
+
+The fitted rates say why. On normally-wet cells the false-alarm rates are 4–9 times higher than elsewhere (VIIRS 19.5% against 2.2%, microwave 13.7% against 3.6%, GFM 3.3% against 0.4%), so the new model rightly discounts a flood report there. But gold counts water on those cells as flood about half the time (Water versus flood), so discounting them loses recall exactly where the gold flood sits: recall on normally-wet cells falls from 0.53 to 0.28. On other cells the gain is real but tiny.
+
+**Reading.** The better-specified model scores worse because the answer key is inconsistent on normally-wet cells. As built, fusion's single rate per land type happens to match gold's habit of calling that water flood. This is the water-versus-flood ambiguity again: until the target is defined (water, or water that is not normally there), fitting the rates more carefully cannot help. Not adopted.
+
 ### Fitted rates
 
 Hit rate and false-alarm rate per source and land type, as the range over the five folds (adopted rule):
 
 | source | land type | hit rate | false-alarm rate |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | GFM | open | 0.25–0.37 | 0.5%–0.6% |
 | GFM | urban | 0.38–0.47 | 0.1%–0.2% |
 | GFM | vegetated | 0.26–0.40 | 0.3%–0.3% |

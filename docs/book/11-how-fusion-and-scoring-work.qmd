@@ -26,7 +26,7 @@ Yesterday's value carries over, fading 10% a day back towards the base flood rat
 *The figure* uses a made-up gold map and product. The labels, values and counts in it come from the same code the pipeline runs. Flood drawn outside the examined area (the left column) is ignored. The product pixels here are about 230 m, but the rule is the same for any pixel size.
 
 |  | gold: flooded | gold: dry |
-|---|---|---|
+| --- | --- | --- |
 | product: flood | **hit** | **false alarm** |
 | product: dry | **miss** | **correct dry** |
 | product: couldn't see | miss (all cells) / dropped (observed cells) | correct dry (all cells) / dropped (observed cells) |

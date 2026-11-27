@@ -7,7 +7,15 @@ blobs map to the PNGs under docs/figures/ and results/cv/ (BLOBS below); embedde
 screenshots saved under docs/book/figures/.
 
 Run: uv run python scripts/fusion/doc_to_book.py --analysis analysis.xml --events events.xml [--glossary glossary.xml] --date YYYY-MM-DD
+ or: uv run python scripts/fusion/doc_to_book.py --analysis-md analysis.md --events events.xml --date YYYY-MM-DD
 Then: cd docs/book && quarto render
+
+--analysis-md takes the Docs `export` of the Analysis tab (format markdown, decoded). That export drops every
+figure (blob images and embedded diagrams), so figures are re-inserted where the previous book had them: for
+each figure in the existing chapters, the non-empty line before it is the anchor; the figure goes after the
+new block that starts with the same text. An anchor with no match raises (the paragraph was reworded: edit the
+anchor by hand or export the XML instead). Chapters that contain executable Quarto cells are never overwritten
+(the book stops being a pure export once numbers are read from results/; see docs/book/README.md).
 """
 
 from __future__ import annotations
@@ -152,20 +160,72 @@ def slug(s: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", s.lower()).strip("-")[:48]
 
 
+def md_blocks(text: str) -> list[str]:
+    """One block per blank-line-separated chunk; tables and lists stay whole. The markdown export leaves an
+    `&#91;image: caption\\]` placeholder where each figure was; those are dropped (figures are re-inserted)."""
+    blocks = [b.strip("\n") for b in re.split(r"\n\s*\n", text) if b.strip()]
+    return [b for b in blocks if not b.startswith("&#91;image:")]
+
+
+def figure_anchors() -> list[tuple[str, str]]:
+    """(anchor text, figure markdown) for every figure in the existing chapters, in reading order."""
+    out = []
+    for qmd in sorted(BOOK.glob("[0-9][0-9]-*.qmd")):
+        lines = qmd.read_text().splitlines()
+        for i, line in enumerate(lines):
+            if line.startswith("!["):
+                prev = next((l for l in reversed(lines[:i]) if l.strip()), None)
+                if prev is None:
+                    raise ValueError(f"{qmd.name}: figure with nothing before it: {line[:60]}")
+                out.append((prev.strip(), line))
+    return out
+
+
+def reinsert_figures(blocks: list[str], anchors: list[tuple[str, str]]) -> list[str]:
+    """Put each figure after the block whose first line matches its anchor's first 60 characters."""
+    missing = []
+    for anchor, fig in anchors:
+        key = anchor[:60]
+        hits = [i for i, b in enumerate(blocks) if not b.startswith("![") and any(l.strip()[:60] == key for l in b.splitlines())]
+        if len(hits) != 1:
+            missing.append((len(hits), anchor[:80]))
+            continue
+        blocks.insert(hits[0] + 1, fig)
+    if missing:
+        raise ValueError("figure anchors not matched exactly once (hits, anchor):\n  " + "\n  ".join(f"{n}: {t}" for n, t in missing))
+    return blocks
+
+
+def executable_chapters() -> list[str]:
+    return [q.name for q in sorted(BOOK.glob("*.qmd")) if "```{python}" in q.read_text() or "{python}" in q.read_text()]
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--analysis", required=True)
+    ap.add_argument("--analysis", default=None, help="Analysis tab XML (Docs read)")
+    ap.add_argument("--analysis-md", default=None, help="Analysis tab markdown (Docs export, decoded); figures re-inserted by anchor")
     ap.add_argument("--glossary", default=None, help="Glossary tab XML; without it the existing glossary.qmd is kept")
     ap.add_argument("--events", required=True)
     ap.add_argument("--append-md", default=None, help="markdown continuing the Analysis tab, when its read was capped and the rest came back inline")
     ap.add_argument("--date", required=True, help="checkpoint date, e.g. 2026-10-21")
     a = ap.parse_args()
+    if (a.analysis is None) == (a.analysis_md is None):
+        raise SystemExit("give exactly one of --analysis (XML) or --analysis-md (markdown export)")
+    if ex := executable_chapters():
+        raise SystemExit(f"refusing: these chapters hold executable cells and would be overwritten: {ex}. Edit them by hand.")
     (BOOK / "figures").mkdir(parents=True, exist_ok=True)
+    if a.analysis_md:
+        anchors = figure_anchors()
+        for src in BLOBS.values():  # refresh the PNGs the figures point at
+            shutil.copy(ROOT / src, BOOK / "figures" / Path(src).name)
+        blocks = reinsert_figures(md_blocks(Path(a.analysis_md).read_text()), anchors)
+        print(f"{len(anchors)} figures re-inserted")
     for old in BOOK.glob("[0-9][0-9]-*.qmd"):
         old.unlink()
-    blocks = doc_to_blocks(Path(a.analysis).read_text())
-    if a.append_md:  # one block per blank-line-separated chunk; tables and lists stay whole
-        blocks += [b for b in re.split(r"\n\s*\n", Path(a.append_md).read_text()) if b.strip()]
+    if a.analysis:
+        blocks = doc_to_blocks(Path(a.analysis).read_text())
+    if a.append_md:
+        blocks += md_blocks(Path(a.append_md).read_text())
     chapters = split_chapters(blocks)
     front = chapters[0][1]
     h1 = next((b[2:] for b in front if b.startswith("# ")), "Flood fusion")
@@ -191,7 +251,8 @@ def main() -> None:
         f"  subtitle: \"Analysis and results, checkpoint {a.date}\"\n  author: \"OCHA Centre for Humanitarian Data\"\n"
         "  date: today\n  sidebar:\n    collapse-level: 1\n  chapters:\n    - index.qmd\n"
         + "".join(f"    - {f}\n" for f in files)
-        + "  appendices:\n    - glossary.qmd\n    - events.qmd\n    - log.qmd\n\nformat:\n  html:\n    theme: cosmo\n    toc: true\n    number-sections: true\n")
+        + "  appendices:\n    - glossary.qmd\n    - events.qmd\n    - log.qmd\n\nformat:\n  html:\n    theme: cosmo\n"
+        "    include-before-body:\n      - home-link.html  # back-link to the landing page (team convention)\n    toc: true\n    number-sections: true\n")
     print("chapters:", *files, sep="\n  ")
 
 

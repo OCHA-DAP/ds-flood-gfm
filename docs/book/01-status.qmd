@@ -3,7 +3,7 @@
 Done: all 170 events are built and scored (15 October). Two rules were decided for you on 14 October, before any result existed, because you asked for the work to be finished without further questions: the rule for the days before and after each event, and the event-level rules. Both can be reversed in `configs/fusion.yaml`.
 
 | part | status |
-|---|---|
+| --- | --- |
 | Scope: Africa, Asia, South America, Oceania (ADR 0003) | done |
 | 170 events | all built (15 October); 148 have enough gold flood for the event-level scores |
 | Three land types: open, vegetated, urban; snow split dropped (ADR 0005) | done |

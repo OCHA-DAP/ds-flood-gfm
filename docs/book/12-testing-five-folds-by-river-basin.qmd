@@ -10,7 +10,7 @@ Every event is tested once, by a model fitted without it. A model scored on the 
 Balance of the five folds over the 170 events (99 basins). `scripts/fusion/make_folds.py` wrote the fold file, `results/event_folds.csv`, once, and it is frozen. Flood columns are each fold's share of that land type's gold flooded cell-days:
 
 | fold | Africa | Asia | Oceania | South America | open-land flood | vegetated flood | urban flood |
-|---|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- | --- |
 | 1 | 16 | 12 | 4 | 4 | 43% | 62% | 14% |
 | 2 | 16 | 13 | 2 | 3 | 17% | 11% | 26% |
 | 3 | 16 | 12 | 3 | 3 | 14% | 10% | 12% |

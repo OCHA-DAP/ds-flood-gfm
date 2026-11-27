@@ -3,7 +3,7 @@
 Four alternatives were tested on the first run's events. One, MODIS, is still worth adding to the optical vote, though its first-run numbers do not carry over (see its row); the other three are not used.
 
 | approach | idea | result | verdict |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | **MODIS flood product** (NASA MCDWD) | fill the 2021-01 to 2023-07 period, when the NOAA VIIRS archive has no files | first run (52 events on all continents, the old dry-day rule): MODIS alone reaches recall 0.19 · precision 0.73 (F1 0.30), and MODIS-or-GFM 0.27 · 0.76 (F1 0.40); fusion without optical input reached 0.13 · 0.45 (F1 0.20). These do not carry over: in this analysis, fusion without optical input scores 0.40 · 0.52 (F1 0.45) on the 55 gap events, above MODIS-or-GFM's first-run score | **add** as part of the optical vote (VIIRS or MODIS), to give fusion an optical input in the gap, where VIIRS adds 0.08 F1 elsewhere; MODIS's value inside fusion is unmeasured. Needs MODIS over whole event windows, a Databricks job |
 | **Agreement between sources** (no gold) | estimate each source's accuracy from how often the sources agree, without gold maps | the method assumes the sources err independently, but on gold-dry cells their false alarms coincide 4–18 times more often than that allows. Its "flood" class looks like seasonal water (2.4% of cell-days, 15 times the base flood rate) | not used; accuracy comes from gold |
 | **Seasonal mask** | ignore flood calls on normally-wet cells | every source got worse, because gold counts seasonal water as flood (see Water versus flood) | not used |
@@ -21,7 +21,7 @@ CYGNSS is a NASA constellation that measures GPS signals reflected off the groun
 **Scored on a few events.** The events were fixed by rule before running: the two with the most gold flood in each continent inside its coverage. That gives 8 events, 51 window map days and 161,934 gold flooded cell-days, 70% of them in Bangladesh (`scripts/fusion/experiment_cygnss.py`). Recall · precision (F1), gold-map days:
 
 | product | all cells | normally-wet cells | other cells | share of gold flood seen |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | CYGNSS | 0.67 · 0.37 (0.47) | 0.81 · 0.74 (0.77) | 0.58 · 0.24 (0.34) | 100% |
 | fusion (as built) | 0.47 · 0.53 (0.50) | 0.59 · 0.83 (0.69) | 0.39 · 0.38 (0.38) | 100% |
 | cascade | 0.35 · 0.65 (0.46) | 0.29 · 0.89 (0.44) | 0.39 · 0.56 (0.46) | 100% |
@@ -33,7 +33,7 @@ CYGNSS is a NASA constellation that measures GPS signals reflected off the groun
 F1 by event:
 
 | event | gold flooded cell-days | CYGNSS | fusion (as built) | cascade | microwave vote | FloodScan | GFM | VIIRS |
-|---|---|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | EMSR342 (Australia 2019) | 9,503 | 0.57 | 0.57 | 0.73 | 0.52 | 0.54 | 0.00 | 0.74 |
 | EMSR637 (Australia 2022) | 2,236 | 0.40 | 0.16 | 0.40 | 0.41 | 0.33 | 0.22 | 0.00 |
 | EMSR865 (Colombia 2026) | 791 | 0.22 | 0.32 | 0.44 | 0.28 | 0.28 | 0.29 | 0.25 |
@@ -51,3 +51,17 @@ F1 by event:
 - **A first look only:** eight events, 70% of the flood in Bangladesh, no intervals.
 
 **What it would take.** Score it on all 148 events in its coverage, about 590 map days to read (Next steps, 11). Then it could enter as a fourth input treated as a slowly updating layer, not as daily evidence. Or it could be the water source in a water-first design (Water versus flood), where a water mask is exactly what is wanted.
+
+**On all 148 events (26 October).** The same scoring on every event inside CYGNSS's dates and latitudes, with intervals from resampling events (`experiment_cygnss.py --all`): 330,980 gold flooded cell-days. F1, all cells, recall · precision:
+
+| product | all cells | normally-wet cells | other cells |
+| --- | --- | --- | --- |
+| CYGNSS | 0.73 · 0.23 (0.35, 0.27–0.40) | 0.82 · 0.62 (0.70) | 0.69 · 0.16 (0.26) |
+| fusion (as built) | 0.41 · 0.49 (0.45, 0.33–0.51) | 0.52 · 0.78 (0.62) | 0.35 · 0.38 (0.37) |
+| cascade | 0.42 · 0.55 (0.47, 0.41–0.54) | 0.32 · 0.81 (0.46) | 0.47 · 0.49 (0.48) |
+| microwave vote | 0.39 · 0.38 (0.38) | 0.38 · 0.75 (0.50) | 0.40 · 0.30 (0.34) |
+| FloodScan | 0.33 · 0.43 (0.37) | 0.33 · 0.77 (0.46) | 0.33 · 0.35 (0.34) |
+| GFM | 0.14 · 0.89 (0.25) | 0.11 · 0.91 (0.20) | 0.16 · 0.88 (0.27) |
+| VIIRS | 0.14 · 0.55 (0.23) | 0.11 · 0.71 (0.19) | 0.16 · 0.51 (0.25) |
+
+The first look's 0.47 does not hold: over all 148 events CYGNSS scores 0.35, below FloodScan (0.37), with the highest recall of anything (0.73) and the lowest precision (0.23). It is the best product by far on normally-wet cells (0.70) and the worst on other cells (0.26). That is what a water mask looks like scored against flood maps: it finds the water, including all the water that is normally there. As a flood input in the current design it would add false alarms; as the water layer in a water-first design, or as a background "how wet is this cell these weeks" level, it is the strongest candidate we have.

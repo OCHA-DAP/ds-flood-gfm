@@ -61,7 +61,7 @@ uv run --with h5py --with fsspec --with aiohttp python scripts/fusion/experiment
 - Five folds by HydroBASINS level-4 basin, big-flood basins placed first: `events.assign_folds`, `make_folds.py`, `tests/test_folds.py`. 4042ef2.
 - Rules fixed before any score (`docs/decisions/0003–0007`): three land types (snow split dropped); corrected dry-window rule adopted (`gold.dry_window_rule`); event-level rules (`event_level` in config: 10% + 5 cells, ±3 days, false-event days −30..−10). a0461a8. The unused `gold.dry_day_step` key removed (docs had said "every 3rd day"; code always used every day).
 - Cross-validation code: `fusion/crossval.py`, `scripts/fusion/phase5_crossval.py` (`make crossval`), `tests/test_crossval.py`. c97b019, 802bd33. `docs/methods.md` §10. 66ae80b.
-- Build of the 51 added events: 30 smaller ones 14 Oct; 21 large ones 14–15 Oct (laptop, restart loops; `data/fusion/resume/finish_build.sh`). No stage-C failures.
+- Build of the 51 added events: 30 smaller ones 14 Oct; 21 large ones 14–15 Oct (laptop, restart loops; `scripts/fusion/ops/finish_build.sh`). No stage-C failures.
 
 ### 2026-10-15: the cross-validated result
 - `make folds` → `results/event_folds.csv` (170 events, 99 basins). One basin (four UNOSAT Bangladesh floods) holds 40% of the gold flood; its fold holds 43% of open-land flood. ADR 0004 outcome.
@@ -84,7 +84,7 @@ uv run --with h5py --with fsspec --with aiohttp python scripts/fusion/experiment
 - GitHub Pages site restructured under the team's landing-page convention (KB `methods/static-data-apps.md`): landing page at <https://ocha-dap.github.io/ds-flood-gfm/>, the fusion book at `/fusion/`, the 2024 GFM exploration book moved from the root to `/gfm-exploration/` with forwarding stubs for its old URLs. `scripts/publish_pages.sh` (gh-pages worktree; only its own paths; refuses otherwise). KB: `surfaces:` on `pipelines/flood-fusion.md` and `flood-gfm.md`, in PR OCHA-DAP/ds-knowledge-base#757. Commits 4a69b75, f6c9936; gh-pages 4ac0c97.
 
 ### 2026-10-26: ordinary days (Next steps 6)
-- `cv_ordinary_days.py` (rules committed first, 23f69de) → `results/cv/ordinary_days_{dry_windows,sample,sample_blocks,implied_precision}.csv` (d14d285). Dry-window false-alarm rates: fusion 3.0%, cascade 2.65%, GFM 0.03%. Random sample (30 blocks, GFM referee): fusion flags 1.06% of floodable cell-days, 1.7% agreed by GFM; implied precision ~0.03 (GFM 0.46). GFDS is the noisy half of the microwave vote on ordinary days (2.4% vs FloodScan 0.1%). Needed the remaining 194 window-months of JRC masks (`data/fusion/resume/prefetch_baseline.py`, all months).
+- `cv_ordinary_days.py` (rules committed first, 23f69de) → `results/cv/ordinary_days_{dry_windows,sample,sample_blocks,implied_precision}.csv` (d14d285). Dry-window false-alarm rates: fusion 3.0%, cascade 2.65%, GFM 0.03%. Random sample (30 blocks, GFM referee): fusion flags 1.06% of floodable cell-days, 1.7% agreed by GFM; implied precision ~0.03 (GFM 0.46). GFDS is the noisy half of the microwave vote on ordinary days (2.4% vs FloodScan 0.1%). Needed the remaining 194 window-months of JRC masks (`scripts/fusion/ops/prefetch_baseline.py`, all months).
 - CYGNSS on all 148 events in coverage started (`experiment_cygnss.py --all`, resumable; 74c93ef + follow-up).
 
 ### 2026-10-26: normally-wet strata (Next steps 8)
@@ -99,7 +99,7 @@ uv run --with h5py --with fsspec --with aiohttp python scripts/fusion/experiment
 - `experiment_s2_referee.py` (rules first, 8d3b9af): Sentinel-2 SCL water on the 30 sample blocks as an input-independent referee; running (resumable, `data/fusion/metrics/s2_referee_rows.parquet`).
 
 ### 2026-10-27: Sentinel-2 referee done
-- First run died 8 times on scenes whose SCL exists only as JPEG2000 on the requester-pays bucket `s3://sentinel-s2-l2a` (10 of 9,629 scenes). Fix (b9d1bcc): those scenes are left out and listed in `results/experiment_s2_referee_excluded.csv`; the day's other tiles are still read. Relaunched with `data/fusion/resume/s2_referee.sh` (8-attempt loop); finished in about 2 h.
+- First run died 8 times on scenes whose SCL exists only as JPEG2000 on the requester-pays bucket `s3://sentinel-s2-l2a` (10 of 9,629 scenes). Fix (b9d1bcc): those scenes are left out and listed in `results/experiment_s2_referee_excluded.csv`; the day's other tiles are still read. Relaunched with `scripts/fusion/ops/s2_referee.sh` (8-attempt loop); finished in about 2 h.
 - `experiment_s2_referee.py` → `results/experiment_s2_referee.csv`: 3.04 M observed cell-days on 1,073 scene-days. Sentinel-2 water on 2.7% of cell-days, unusual water (not normally wet that month) 0.94%. Fusion calls 1.38 per 100: 69% no water visible, 22% normally-wet water, 9% unusual water (precision vs water 0.31, vs unusual 0.09; recall vs unusual 0.13). FloodScan-only fusion 0.53 per 100, precision 0.48 / 0.18, recall 0.10. Three blocks hold 90% of fusion's calls. Written to the doc (Ordinary days, Next steps) and final_report.
 
 ## Open decisions and next steps (as of 2026-10-21)

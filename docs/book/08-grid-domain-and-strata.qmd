@@ -5,7 +5,7 @@ Every cell gets three fixed attributes before any satellite data is read: whethe
 Land type matters because each source's accuracy depends on what covers the ground. Radar and optical sensors cannot see water under trees, and buildings confuse radar. So the model learns its hit and false-alarm rates separately for open, vegetated and urban cells. Each group of cells with one land type is a stratum.
 
 | layer | data, file | rule | used for |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | grid |  | 0.01° cells (about 1.1 km at the equator), EPSG:4326 | everything |
 | floodable | GLO-30 HAND (height above nearest drainage), 30 m; AWS `glo-30-hand`, 1° tiles | at least 30% of the cell lies less than 15 m above the nearest stream | domain |
 | permanent water | JRC Global Surface Water v1.4 occurrence (1984–2021), 30 m; Google Cloud `global-surface-water`, 10° tiles | removed if at least half the cell is water at least 90% of the time | domain |

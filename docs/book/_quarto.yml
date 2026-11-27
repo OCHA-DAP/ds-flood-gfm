@@ -4,7 +4,7 @@ project:
 
 book:
   title: "Flood fusion"
-  subtitle: "Analysis and results, checkpoint 2026-10-21"
+  subtitle: "Analysis and results, checkpoint 2026-11-27"
   author: "OCHA Centre for Humanitarian Data"
   date: today
   sidebar:
@@ -13,21 +13,22 @@ book:
     - index.qmd
     - 01-status.qmd
     - 02-the-basics-what-is-classified-and-how-it-is-scor.qmd
-    - 03-how-the-pieces-fit-together.qmd
-    - 04-scope-and-events.qmd
-    - 05-events-days-and-how-counts-add-up.qmd
-    - 06-inputs.qmd
-    - 07-grid-domain-and-strata.qmd
-    - 08-water-versus-flood.qmd
-    - 09-gold-labels.qmd
-    - 10-how-fusion-and-scoring-work.qmd
-    - 11-testing-five-folds-by-river-basin.qmd
-    - 12-from-counts-to-totals.qmd
-    - 13-was-the-event-caught.qmd
-    - 14-results.qmd
-    - 15-other-approaches-tried.qmd
-    - 16-not-yet-validated.qmd
-    - 17-next-steps.qmd
+    - 03-from-pixels-to-cells-how-every-layer-lands-on-on.qmd
+    - 04-how-the-pieces-fit-together.qmd
+    - 05-scope-and-events.qmd
+    - 06-events-days-and-how-counts-add-up.qmd
+    - 07-inputs.qmd
+    - 08-grid-domain-and-strata.qmd
+    - 09-water-versus-flood.qmd
+    - 10-gold-labels.qmd
+    - 11-how-fusion-and-scoring-work.qmd
+    - 12-testing-five-folds-by-river-basin.qmd
+    - 13-from-counts-to-totals.qmd
+    - 14-was-the-event-caught.qmd
+    - 15-results.qmd
+    - 16-other-approaches-tried.qmd
+    - 17-not-yet-validated.qmd
+    - 18-next-steps.qmd
   appendices:
     - glossary.qmd
     - events.qmd

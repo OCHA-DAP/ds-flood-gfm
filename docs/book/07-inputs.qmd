@@ -3,7 +3,7 @@
 Fusion uses three daily satellite sources plus the gold maps to test against. Every source is turned into one value per 0.01° cell per day: flood, dry or "couldn't see". "Couldn't see" is never counted as dry.
 
 | input | what it is | pixel | years | read from | cell is flood when | cell is "couldn't see" when |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | **GFM** | Copernicus Global Flood Monitoring, Sentinel-1 radar | 20 m, read at 80 m | 2015 on | EODC STAC (`stac.eodc.eu`), collection GFM: layers `ensemble_flood_extent`, `exclusion_mask`, `advisory_flags` | at least 30% of its observed pixels are flood | under half its pixels observed: no Sentinel-1 pass that day, excluded pixels, or GFM's own snow/frozen-ground flag |
 | **FloodScan** | AER flooded fraction (SFED) from passive microwave | about 9 km | 1998 on; outside Africa to 2026-03-31 | Africa: prod blob `raster/floodscan/daily/v5/processed/` (daily COGs). Asia-Australia and South America: dev blob `raster/floodscan/daily/v5/raw/` (one NetCDF per region) | the 9 km cell it sits in is at least 30% flooded | outside FloodScan's regions, or after its archive ends (2026-03-31 outside Africa). Inside, it has no cloud mask and always answers |
 | **GFDS** | JRC/GDACS Global Flood Detection System, passive microwave | about 9 km (0.09°) | 1997 to 2026-09-14 (feed ended); used from 2015 | `gdacs.org/flooddetection/DATA`: daily signal GeoTIFF plus GFDS's long-term mean | the signal's drop below its long-term mean implies at least 30% water | days GDACS has no file for, and pixels GFDS masks itself |

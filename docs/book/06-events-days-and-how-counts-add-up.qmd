@@ -13,7 +13,7 @@ Every score on this page is a sum of one kind of count: one labelled cell on one
 - The Events tab lists 46,191 cells for EMSR838: every cell in the rectangles of all 5 windows, examined or not.
 
 | kind of day | which days | labels | used for | in the 170 events (floodable cells) |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | **before** | the 30 days before the event's first map | every examined cell dry (except cells flooded on a map day in this window) | fitting false-alarm rates (every day); reliability | 11,280 window-days; 63.0 M dry cell-days |
 | **map days** | days in the event period on which this window has a map | flooded, dry or none per cell (see Gold labels) | fitting hit and false-alarm rates; **every recall, precision and F1** | 779 window-days; 404,014 flooded and 3,983,036 dry cell-days |
 | **between maps** | days in the event period without a map for this window | none | not used |  |

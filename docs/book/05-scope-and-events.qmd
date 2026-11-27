@@ -7,14 +7,14 @@ An **event** is one activation code in a gold catalog. Each of its gold maps cov
 An event is **built** once its data is prepared. For each window and each of its 91 or more days, the gold labels and every source's flood, dry or "couldn't see" value are put on the 0.01° grid. The result is saved as one file per window (an *event cube*). Fitting and scoring read only these files, which is why re-running them is cheap and building new events is not.
 
 | step | events |
-|---|---|
+| --- | --- |
 | In the gold catalogs: Copernicus EMS rapid mapping (283) and UNOSAT (180) | 463 |
 | Pass the gold rules: one acquisition day, 2015 or later (GFM starts in 2015), a map of the examined area, a flood layer, not drawn from coarse optical imagery | 353 |
 | In Africa, Asia, South America or Oceania | **170** |
-| with at least 5 floodable cells flooded on a map day (used for the event-level scores) | 148 |
+| &#32;with at least 5 floodable cells flooded on a map day (used for the event-level scores) | 148 |
 
 | continent | events | gold flooded cell-days |
-|---|---|---|
+| --- | --- | --- |
 | Asia | 61 | 270,263 (67%) |
 | Africa | 80 | 109,025 (27%) |
 | Oceania | 13 | 19,553 (5%) |

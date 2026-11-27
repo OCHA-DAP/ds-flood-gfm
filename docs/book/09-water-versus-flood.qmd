@@ -4,6 +4,8 @@ Every product here detects **water**. A **flood** is water that is not normally 
 
 ![Who counts which water as flood · three kinds of water; the gold maps, four products and fusion](figures/diagram_who_counts_water.png)
 
+&#91;embedded content: Who counts which water as flood · three kinds of water; the gold maps, four products and fusion\]
+
 **Three kinds of water.**
 
 - **Permanent water:** river channels and lakes, water nearly all the time (JRC Global Surface Water occurrence of at least 90%). Every product and the gold maps leave it out of "flood", and cells that are mostly permanent water are removed from the domain.
@@ -52,5 +54,7 @@ Scores are for this one day, on gold-labelled cells.
 **A cleaner design: detect water, then remove normal water once.**
 
 ![Where the normal-water step happens · today and water-first](figures/diagram_water_first.png)
+
+&#91;embedded content: Where the normal-water step happens · today and water-first\]
 
 Today each product removes normal water its own way before fusion sees it, so fusion mixes several definitions, and gold mixes them again. In a water-first design, each product gives fusion its water; fusion estimates the chance of water; and one normal-water baseline turns that into a chance of flood. The definition of flood becomes one setting that users can see and change. It would make the target clear. It would not by itself fix the over-confident probabilities, which persist on both kinds of cell (Results, Water versus flood: where the problems sit).
