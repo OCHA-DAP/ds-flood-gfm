@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>6&nbsp; Inputs – Flood fusion</title>
+<title>3&nbsp; From pixels to cells: how every layer lands on one grid – Flood fusion</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -33,8 +33,8 @@ ul.task-list li input[type="checkbox"] {
 <script src="site_libs/quarto-search/fuse.min.js"></script>
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
-<link href="./07-grid-domain-and-strata.html" rel="next">
-<link href="./05-events-days-and-how-counts-add-up.html" rel="prev">
+<link href="./04-how-the-pieces-fit-together.html" rel="next">
+<link href="./02-the-basics-what-is-classified-and-how-it-is-scor.html" rel="prev">
 <script src="site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
@@ -85,7 +85,7 @@ ul.task-list li input[type="checkbox"] {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./06-inputs.html"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Inputs</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./03-from-pixels-to-cells-how-every-layer-lands-on-on.html"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">From pixels to cells: how every layer lands on one grid</span></a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -130,92 +130,98 @@ ul.task-list li input[type="checkbox"] {
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./03-how-the-pieces-fit-together.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">How the pieces fit together</span></span></a>
+  <a href="./03-from-pixels-to-cells-how-every-layer-lands-on-on.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">From pixels to cells: how every layer lands on one grid</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./04-scope-and-events.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Scope and events</span></span></a>
+  <a href="./04-how-the-pieces-fit-together.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">How the pieces fit together</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./05-events-days-and-how-counts-add-up.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Events, days and how counts add up</span></span></a>
+  <a href="./05-scope-and-events.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scope and events</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./06-inputs.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Inputs</span></span></a>
+  <a href="./06-events-days-and-how-counts-add-up.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Events, days and how counts add up</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./07-grid-domain-and-strata.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Grid, domain and strata</span></span></a>
+  <a href="./07-inputs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Inputs</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./08-water-versus-flood.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Water versus flood</span></span></a>
+  <a href="./08-grid-domain-and-strata.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Grid, domain and strata</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./09-gold-labels.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Gold labels</span></span></a>
+  <a href="./09-water-versus-flood.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Water versus flood</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./10-how-fusion-and-scoring-work.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">How fusion and scoring work</span></span></a>
+  <a href="./10-gold-labels.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Gold labels</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./11-testing-five-folds-by-river-basin.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Testing: five folds by river basin</span></span></a>
+  <a href="./11-how-fusion-and-scoring-work.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">How fusion and scoring work</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./12-from-counts-to-totals.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">From counts to totals</span></span></a>
+  <a href="./12-testing-five-folds-by-river-basin.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Testing: five folds by river basin</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./13-was-the-event-caught.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Was the event caught?</span></span></a>
+  <a href="./13-from-counts-to-totals.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">From counts to totals</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./14-results.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Results</span></span></a>
+  <a href="./14-was-the-event-caught.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Was the event caught?</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./15-other-approaches-tried.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Other approaches tried</span></span></a>
+  <a href="./15-results.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Results</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./16-not-yet-validated.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Not yet validated</span></span></a>
+  <a href="./16-other-approaches-tried.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Other approaches tried</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./17-next-steps.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Next steps</span></span></a>
+  <a href="./17-not-yet-validated.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Not yet validated</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./18-next-steps.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Next steps</span></span></a>
   </div>
 </li>
         <li class="sidebar-item sidebar-item-section">
@@ -263,7 +269,7 @@ ul.task-list li input[type="checkbox"] {
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Inputs</span></h1>
+<h1 class="title"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">From pixels to cells: how every layer lands on one grid</span></h1>
 </div>
 
 
@@ -280,93 +286,112 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<p>Fusion uses three daily satellite sources plus the gold maps to test against. Every source is turned into one value per 0.01° cell per day: flood, dry or “couldn’t see”. “Couldn’t see” is never counted as dry.</p>
+<p>Nothing is compared at a product’s own resolution. Every layer, from 20 m radar to 9 km microwave, is first put onto the same grid of 0.01° <strong>cells</strong> (about 1.1 km). “Pixel” on this page always means a product’s own native pixel; “cell” always means our grid square. The rules below are the whole resampling; each lives in <code>configs/fusion.yaml</code> under the key shown.</p>
 <table class="caption-top table">
 <colgroup>
-<col style="width: 14%">
-<col style="width: 14%">
-<col style="width: 14%">
-<col style="width: 14%">
-<col style="width: 14%">
-<col style="width: 14%">
-<col style="width: 14%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
 </colgroup>
 <thead>
 <tr class="header">
-<th>input</th>
-<th>what it is</th>
-<th>pixel</th>
-<th>years</th>
-<th>read from</th>
-<th>cell is flood when</th>
-<th>cell is “couldn’t see” when</th>
+<th>layer</th>
+<th>native pixel</th>
+<th>how it reaches a cell</th>
+<th>cell is observed when</th>
+<th>cell is positive when</th>
+<th>config</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td><strong>GFM</strong></td>
-<td>Copernicus Global Flood Monitoring, Sentinel-1 radar</td>
-<td>20 m, read at 80 m</td>
-<td>2015 on</td>
-<td>EODC STAC (<code>stac.eodc.eu</code>), collection GFM: layers <code>ensemble_flood_extent</code>, <code>exclusion_mask</code>, <code>advisory_flags</code></td>
-<td>at least 30% of its observed pixels are flood</td>
-<td>under half its pixels observed: no Sentinel-1 pass that day, excluded pixels, or GFM’s own snow/frozen-ground flag</td>
+<td>GFM flood</td>
+<td>20 m, read at 80 m (every 4th pixel)</td>
+<td>each pixel goes to the cell holding its centre; about 190 pixels per cell</td>
+<td>at least 50% of the expected pixels were evaluated (not excluded, not flagged)</td>
+<td>at least 30% of the observed pixels are flood</td>
+<td><code>sources.gfm</code></td>
 </tr>
 <tr class="even">
-<td><strong>FloodScan</strong></td>
-<td>AER flooded fraction (SFED) from passive microwave</td>
-<td>about 9 km</td>
-<td>1998 on; outside Africa to 2026-03-31</td>
-<td>Africa: prod blob <code>raster/floodscan/daily/v5/processed/</code> (daily COGs). Asia-Australia and South America: dev blob <code>raster/floodscan/daily/v5/raw/</code> (one NetCDF per region)</td>
-<td>the 9 km cell it sits in is at least 30% flooded</td>
-<td>outside FloodScan’s regions, or after its archive ends (2026-03-31 outside Africa). Inside, it has no cloud mask and always answers</td>
-</tr>
-<tr class="odd">
-<td><strong>GFDS</strong></td>
-<td>JRC/GDACS Global Flood Detection System, passive microwave</td>
-<td>about 9 km (0.09°)</td>
-<td>1997 to 2026-09-14 (feed ended); used from 2015</td>
-<td><code>gdacs.org/flooddetection/DATA</code>: daily signal GeoTIFF plus GFDS’s long-term mean</td>
-<td>the signal’s drop below its long-term mean implies at least 30% water</td>
-<td>days GDACS has no file for, and pixels GFDS masks itself</td>
-</tr>
-<tr class="even">
-<td><strong>microwave vote</strong></td>
-<td>FloodScan and GFDS combined into one vote, since they measure the same thing</td>
-<td></td>
-<td></td>
-<td></td>
-<td>either says flood</td>
-<td>both couldn’t see (possible only outside FloodScan’s regions)</td>
-</tr>
-<tr class="odd">
-<td><strong>VIIRS</strong></td>
-<td>NOAA VIIRS flood map, optical</td>
+<td>VIIRS flood map</td>
 <td>375 m</td>
-<td>2012–2020 and 2023-08 on (no files 2021-01 to 2023-07)</td>
-<td>AWS <code>s3://noaa-jpss/</code>, <code>VFM_1day_GLB</code></td>
-<td>at least 30% of its observed pixels are flood</td>
-<td>under half its pixels observed: cloud, shadow, snow or ice, no data</td>
+<td>same: pixel centre to cell; about 9 pixels per cell</td>
+<td>at least 50% of its pixels observed (not cloud, shadow, snow or no data)</td>
+<td>at least 30% of the observed pixels are flood</td>
+<td><code>sources.viirs</code></td>
+</tr>
+<tr class="odd">
+<td>FloodScan SFED</td>
+<td>about 9 km (300 arcsec): one value, the flooded fraction</td>
+<td>each cell takes the FloodScan pixel that contains the cell’s centre; about 81 cells share one pixel</td>
+<td>the region’s file exists for that day</td>
+<td>that pixel’s flooded fraction is at least 30%</td>
+<td><code>sources.floodscan</code></td>
 </tr>
 <tr class="even">
-<td><strong>gold maps</strong></td>
-<td>analyst flood maps: Copernicus EMS rapid mapping and UNOSAT</td>
-<td>vector, burned at 0.001°</td>
-<td>2015 on</td>
-<td>dev blob <code>global/copernicus_ems/flood/gold/</code> and <code>global/unosat/gold/</code></td>
-<td>see Gold labels</td>
-<td>not examined by the analyst</td>
+<td>GFDS</td>
+<td>about 9 km</td>
+<td>same containing-pixel rule; the signal is turned into a flooded fraction against GFDS’s long-term mean</td>
+<td>the day’s file exists</td>
+<td>that fraction is at least 30%</td>
+<td><code>sources.gfds</code></td>
+</tr>
+<tr class="odd">
+<td>CYGNSS watermask (experiment)</td>
+<td>0.01°, but offset by half a cell</td>
+<td>each cell is the average of the four CYGNSS pixels at its corners, a quarter each</td>
+<td>at least 50% of that area has data</td>
+<td>at least 30% of the observed area is water</td>
+<td><code>experiment_cygnss.py</code></td>
+</tr>
+<tr class="even">
+<td>gold map (flood polygons and examined area)</td>
+<td>vector</td>
+<td>drawn onto a 0.001° grid: 10 × 10 = 100 sub-pixels per cell</td>
+<td>at least 50% of the sub-pixels are inside the examined area (otherwise no label)</td>
+<td>at least 30% of the examined sub-pixels are flood; “flood possible” above 30% gives no label</td>
+<td><code>gold</code></td>
+</tr>
+<tr class="odd">
+<td>HAND (floodable)</td>
+<td>30 m, read at every 4th pixel</td>
+<td>fraction of samples per cell</td>
+<td>always</td>
+<td>at least 30% of the cell is under 15 m above the nearest stream</td>
+<td><code>static.hand</code></td>
+</tr>
+<tr class="even">
+<td>permanent water (JRC occurrence)</td>
+<td>30 m, every 4th pixel</td>
+<td>fraction per cell</td>
+<td>always</td>
+<td>removed from the domain if at least 50% of the cell is water at least 90% of the time</td>
+<td><code>static.gsw</code></td>
+</tr>
+<tr class="odd">
+<td>land type (ESA WorldCover)</td>
+<td>10 m, every 4th pixel</td>
+<td>fraction per cell</td>
+<td>always</td>
+<td>urban if built-up is at least 20%; else vegetated if trees at least 30%; else open</td>
+<td><code>static.worldcover</code></td>
+</tr>
+<tr class="even">
+<td>normally wet (JRC monthly recurrence)</td>
+<td>30 m: exactly 40 × 40 pixels per cell</td>
+<td>fraction per cell and calendar month</td>
+<td>always</td>
+<td>at least 30% of the pixels were water in that month in at least half the years</td>
+<td><code>baseline</code></td>
 </tr>
 </tbody>
 </table>
-<p><strong>From pixels to cells.</strong> Each product pixel goes to the cell that holds its centre. A cell is “couldn’t see” if fewer than half its pixels were observed that day. Otherwise it is flood if at least 30% of the observed pixels are flood, and dry if not. FloodScan and GFDS pixels are larger than a cell (about 9 km), so every cell copies the value of the 9 km pixel it sits in.</p>
-<p><strong>Why the sources have gaps.</strong></p>
-<ul>
-<li><strong>GFM:</strong> Sentinel-1 passes over a given place only every 6 to 12 days, so GFM has no image on most days.</li>
-<li><strong>VIIRS:</strong> it sees reflected sunlight like a camera, so cloud blocks it, and floods come with cloud.</li>
-<li><strong>Passive microwave</strong> (FloodScan, GFDS): it measures the energy the ground itself gives off. It sees through cloud every day, but only at about 9 km.</li>
-</ul>
-<p>The in-cell rules (at least half observed, at least 30% flood) are the same for every source and for gold. A river that floods 10% of a cell is therefore dry everywhere. MODIS was tested only as an experiment; see Other approaches tried. FloodScan is used under AER’s commercial licence, and whether it covers the non-Africa regions is still to be confirmed.</p>
+<p><strong>Why the same 50% and 30% everywhere.</strong> Half observed before a cell counts as seen, and 30% flooded before it counts as flood, are applied to every product and to gold alike, so no product is held to a different standard than the answer key. The cost is that a flood covering less than 30% of a cell is invisible to everyone, gold included.</p>
+<p><strong>What this means for the coarse products.</strong> One FloodScan or GFDS pixel sets about 81 of our cells at once, so their hits and false alarms come in 9 km blocks (visible as squares in the maps on this page). They are scored cell by cell like everything else, which is fair to them where a flood is large and harsh where it is narrow.</p>
+<p><strong>Days.</strong> Every layer is daily except the static ones (HAND, permanent water, land type: fixed) and normally wet (one map per calendar month). A product that has no file for a day gives “couldn’t see” on every cell, never dry.</p>
 
 
 
@@ -773,13 +798,13 @@ ul.task-list li input[type="checkbox"] {
   </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="./05-events-days-and-how-counts-add-up.html" class="pagination-link" aria-label="Events, days and how counts add up">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Events, days and how counts add up</span></span>
+      <a href="./02-the-basics-what-is-classified-and-how-it-is-scor.html" class="pagination-link" aria-label="The basics: what is classified, and how it is scored">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">The basics: what is classified, and how it is scored</span></span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="./07-grid-domain-and-strata.html" class="pagination-link" aria-label="Grid, domain and strata">
-        <span class="nav-page-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Grid, domain and strata</span></span> <i class="bi bi-arrow-right-short"></i>
+      <a href="./04-how-the-pieces-fit-together.html" class="pagination-link" aria-label="How the pieces fit together">
+        <span class="nav-page-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">How the pieces fit together</span></span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>

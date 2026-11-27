@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>8&nbsp; Water versus flood – Flood fusion</title>
+<title>8&nbsp; Grid, domain and strata – Flood fusion</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -33,8 +33,8 @@ ul.task-list li input[type="checkbox"] {
 <script src="site_libs/quarto-search/fuse.min.js"></script>
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
-<link href="./09-gold-labels.html" rel="next">
-<link href="./07-grid-domain-and-strata.html" rel="prev">
+<link href="./09-water-versus-flood.html" rel="next">
+<link href="./07-inputs.html" rel="prev">
 <script src="site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
@@ -85,7 +85,7 @@ ul.task-list li input[type="checkbox"] {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./08-water-versus-flood.html"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Water versus flood</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./08-grid-domain-and-strata.html"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Grid, domain and strata</span></a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -130,92 +130,98 @@ ul.task-list li input[type="checkbox"] {
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./03-how-the-pieces-fit-together.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">How the pieces fit together</span></span></a>
+  <a href="./03-from-pixels-to-cells-how-every-layer-lands-on-on.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">From pixels to cells: how every layer lands on one grid</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./04-scope-and-events.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Scope and events</span></span></a>
+  <a href="./04-how-the-pieces-fit-together.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">How the pieces fit together</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./05-events-days-and-how-counts-add-up.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Events, days and how counts add up</span></span></a>
+  <a href="./05-scope-and-events.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scope and events</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./06-inputs.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Inputs</span></span></a>
+  <a href="./06-events-days-and-how-counts-add-up.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Events, days and how counts add up</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./07-grid-domain-and-strata.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Grid, domain and strata</span></span></a>
+  <a href="./07-inputs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Inputs</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./08-water-versus-flood.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Water versus flood</span></span></a>
+  <a href="./08-grid-domain-and-strata.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Grid, domain and strata</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./09-gold-labels.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Gold labels</span></span></a>
+  <a href="./09-water-versus-flood.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Water versus flood</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./10-how-fusion-and-scoring-work.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">How fusion and scoring work</span></span></a>
+  <a href="./10-gold-labels.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Gold labels</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./11-testing-five-folds-by-river-basin.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Testing: five folds by river basin</span></span></a>
+  <a href="./11-how-fusion-and-scoring-work.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">How fusion and scoring work</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./12-from-counts-to-totals.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">From counts to totals</span></span></a>
+  <a href="./12-testing-five-folds-by-river-basin.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Testing: five folds by river basin</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./13-was-the-event-caught.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Was the event caught?</span></span></a>
+  <a href="./13-from-counts-to-totals.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">From counts to totals</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./14-results.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Results</span></span></a>
+  <a href="./14-was-the-event-caught.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Was the event caught?</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./15-other-approaches-tried.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Other approaches tried</span></span></a>
+  <a href="./15-results.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Results</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./16-not-yet-validated.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Not yet validated</span></span></a>
+  <a href="./16-other-approaches-tried.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Other approaches tried</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./17-next-steps.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Next steps</span></span></a>
+  <a href="./17-not-yet-validated.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Not yet validated</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./18-next-steps.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Next steps</span></span></a>
   </div>
 </li>
         <li class="sidebar-item sidebar-item-section">
@@ -263,7 +269,7 @@ ul.task-list li input[type="checkbox"] {
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Water versus flood</span></h1>
+<h1 class="title"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Grid, domain and strata</span></h1>
 </div>
 
 
@@ -280,70 +286,95 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<p>Every product here detects <strong>water</strong>. A <strong>flood</strong> is water that is not normally there. Deciding what counts as normal is a separate step, done after the water is detected, and each product does it its own way. The gold maps make that call too, by eye. This section shows where they differ and what that does to the scores.</p>
+<p>Every cell gets three fixed attributes before any satellite data is read: whether it can flood (the domain), its land type (the stratum), and, through its event, a continent and a river basin. Only the land type changes the model. Continent and basin are used for scope, for building the test folds and for reporting.</p>
+<p>Land type matters because each source’s accuracy depends on what covers the ground. Radar and optical sensors cannot see water under trees, and buildings confuse radar. So the model learns its hit and false-alarm rates separately for open, vegetated and urban cells. Each group of cells with one land type is a stratum.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>layer</th>
+<th>data, file</th>
+<th>rule</th>
+<th>used for</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>grid</td>
+<td></td>
+<td>0.01° cells (about 1.1 km at the equator), EPSG:4326</td>
+<td>everything</td>
+</tr>
+<tr class="even">
+<td>floodable</td>
+<td>GLO-30 HAND (height above nearest drainage), 30 m; AWS <code>glo-30-hand</code>, 1° tiles</td>
+<td>at least 30% of the cell lies less than 15 m above the nearest stream</td>
+<td>domain</td>
+</tr>
+<tr class="odd">
+<td>permanent water</td>
+<td>JRC Global Surface Water v1.4 occurrence (1984–2021), 30 m; Google Cloud <code>global-surface-water</code>, 10° tiles</td>
+<td>removed if at least half the cell is water at least 90% of the time</td>
+<td>domain</td>
+</tr>
+<tr class="even">
+<td><strong>domain</strong></td>
+<td></td>
+<td>floodable and not permanent water; nothing outside it is predicted or scored</td>
+<td>everything</td>
+</tr>
+<tr class="odd">
+<td>land type</td>
+<td>ESA WorldCover 2021 v200, 10 m; AWS <code>esa-worldcover</code>, 3° tiles</td>
+<td><strong>urban</strong> if built-up (class 50) covers at least 20% of the cell; else <strong>vegetated</strong> if tree cover (class 10) covers at least 30%; else <strong>open</strong>. Cropland, grassland, shrubs, bare ground, wetland and mangroves all count as open</td>
+<td><strong>strata</strong></td>
+</tr>
+<tr class="even">
+<td>snow season (not used)</td>
+<td>ERA5-Land monthly snow cover, 2014–2023, 0.25°; Copernicus CDS</td>
+<td>a calendar month is snow season if its mean snow cover is at least 50%</td>
+<td>dropped: 518 of the 520 snow-season gold flood cell-days are in Europe</td>
+</tr>
+<tr class="odd">
+<td>continent</td>
+<td>Natural Earth 1:50m countries, field <code>CONTINENT</code></td>
+<td>the country at the event’s centre (nearest country if offshore)</td>
+<td>scope, fold balance, reporting</td>
+</tr>
+<tr class="even">
+<td>river basin</td>
+<td>HydroBASINS level 4 (v1c)</td>
+<td>the basin nearest the event’s centre</td>
+<td>folds: a basin’s events stay together</td>
+</tr>
+<tr class="odd">
+<td>climate zone</td>
+<td>Köppen main groups (Beck et al.&nbsp;2018), 0.083°</td>
+<td></td>
+<td>only to draw the global random sample: 53 blocks with no gold maps, with every day of 2023–2025 prepared. 30 are random 0.25° blocks, one per climate zone × continent; 12 are 0.5° blocks centred on cities, because urban cells are rare; 11 are reserves added to reach enough cells in every land type. The sample gives the base flood rate (the prior), and ordinary-day precision will be measured on it</td>
+</tr>
+</tbody>
+</table>
+<p>The fine layers are read at every 4th pixel, so each cell’s fractions rest on 80–900 samples. The rules and thresholds live in <code>configs/fusion.yaml</code> under <code>static</code>, and the code in <code>src/ds_flood_gfm/fusion/static.py</code>.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="figures/diagram_who_counts_water.png" class="img-fluid figure-img"></p>
-<figcaption>Who counts which water as flood · three kinds of water; the gold maps, four products and fusion</figcaption>
+<p><img src="figures/strata_example.png" class="img-fluid figure-img"></p>
+<figcaption>How each cell is classified: HAND, permanent water, WorldCover land type and the resulting domain and strata, for one window of Typhoon Yagi, northern Viet Nam, 2024</figcaption>
 </figure>
 </div>
-<p><strong>Three kinds of water.</strong></p>
-<ul>
-<li><strong>Permanent water:</strong> river channels and lakes, water nearly all the time (JRC Global Surface Water occurrence of at least 90%). Every product and the gold maps leave it out of “flood”, and cells that are mostly permanent water are removed from the domain.</li>
-<li><strong>Normally wet this month:</strong> water that is usually there at this time of year: a wet-season floodplain, a wetland, a flooded rice paddy. A cell is normally wet in a month if at least 30% of its 30 m pixels were water in that calendar month in at least half the years from 1984 to 2021 (JRC monthly recurrence). This is where the products and gold disagree.</li>
-<li><strong>Unusual water:</strong> water that is not normally there this month. This is the flood everyone agrees on.</li>
-</ul>
-<p><strong>How each draws the line on normally-wet cells.</strong></p>
-<ul>
-<li>GFM subtracts its own reference water, so it reports only unusual water.</li>
-<li>GFDS compares each day’s signal with its long-term mean, so wet-season water reads as above normal and counts as flood.</li>
-<li>VIIRS and FloodScan appear to count seasonal water as flood; this is not confirmed.</li>
-<li>The gold maps are split. On map days, of the labelled cells that are normally wet, 52% are labelled flooded and 48% dry. These cells are only 7% of the labelled cells, but hold 38% of the gold flood. One map can do both, as in the example below: the analyst left the main river channel out of the flood but counted a large seasonal wetland as flooded.</li>
-</ul>
-<div class="quarto-figure quarto-figure-center">
-<figure class="figure">
-<p><img src="figures/water_vs_flood_cells.png" class="img-fluid figure-img"></p>
-<figcaption>Bangladesh, 22 August 2017: normally-wet cells, the gold map, fusion’s flood calls, and how each call is scored</figcaption>
-</figure>
-</div>
-<p><em>How to read it.</em> Bangladesh, 22 August 2017 (FL20170815BGD), one of the four Bangladesh floods that hold 40% of the gold flood. Fusion here is the cross-validated model, fitted without this event.</p>
-<ul>
-<li><strong>A:</strong> cells normally wet in August. The Jamuna river and its side channels run north to south; the large area in the east is a seasonal wetland.</li>
-<li><strong>B:</strong> the gold map. Inside the satellite footprint (the tilted rectangle) the analyst marked flooded cells (blue) and dry cells (sand). The river channel is mostly marked dry: the analyst left it out of the flood, presumably as normal water. The eastern wetland is marked flooded.</li>
-<li><strong>C:</strong> fusion’s flood calls. The square blocks are the microwave products’ 9 km cells.</li>
-<li><strong>D:</strong> how each of fusion’s calls is scored. Green: a hit. Orange: fusion says flood on a cell gold calls dry but that is normally wet, mostly the river channel. Red: fusion says flood on a gold-dry cell that is normally dry, mostly the edges of the coarse microwave blocks. Grey: flood fusion missed.</li>
-</ul>
-<p><strong>Is orange a false alarm?</strong> Only if the target is flood. Fusion saw water there, and on a cell that is normally wet this month the water is probably really there; gold left it out of the flood, most likely as normal water. The scores count it as a false alarm because gold says dry. A product that reports water, and leaves “is this normal?” to a later, explicit step, is not wrong; that is the water-first design at the end of this section.</p>
-<p><strong>How much this changes the scores.</strong> Over all 170 events, on map days:</p>
-<ul>
-<li>fusion makes 202,714 flood calls on gold-dry cells, and 39,076 of them (19%) are on normally-wet cells, the orange kind;</li>
-<li>not counting those, fusion’s precision would be 0.51 instead of 0.46;</li>
-<li>the other 81%, the red kind, are on cells that are normally dry. They are coarse microwave cells reaching past the flood edge, water the analysts did not map, water the JRC record misses (it cannot see through persistent cloud), or plain errors. These labels cannot tell them apart.</li>
-</ul>
-<p><strong>Removing normal water after the fact does not work with these labels.</strong> If fusion dropped every flood call on a normally-wet cell, as one more post-processing step, it would remove the 39,076 calls gold labels dry but also 82,037 calls gold labels flooded. Recall would fall from 0.43 to 0.22, precision from 0.46 to 0.36, and F1 from 0.44 to 0.27. Every single product lost the same way in the first run (VIIRS recall 0.41 to 0.35, microwave 0.47 to 0.39). The reason is that gold counts about half of that water as flood: a masked product cannot be scored fairly against unmasked gold. GFM’s recall (all cells) is lower on normally-wet cells than elsewhere (0.11 against 0.16); whether that is its stricter definition or less coverage there has not been separated.</p>
-<p>A second example, where little of the flood is normally wet:</p>
-<div class="quarto-figure quarto-figure-center">
-<figure class="figure">
-<p><img src="figures/water_vs_flood_example.png" class="img-fluid figure-img"></p>
-<figcaption>Water versus flood on one day: gold map, normally-wet water in August, and GFM, VIIRS and FloodScan, Punjab, Pakistan, 28 August 2025</figcaption>
-</figure>
-</div>
-<p><em>How to read it.</em> Punjab, Pakistan, 28 August 2025 (EMSR838, one window).</p>
-<ul>
-<li><strong>Gold</strong> maps 1,152 flooded cells along the river. Only 11% of them are normally wet in August: the river channel itself (top middle).</li>
-<li><strong>GFM</strong> could not see a large patch (grey), which counts against its recall here (0.62, all cells). Where it saw, nearly every flood call was right: precision 0.97.</li>
-<li><strong>VIIRS</strong> caught almost all of the mapped flood (recall 0.95). It also flagged water outside it (precision 0.63), some of which may be real water the analysts did not map.</li>
-<li><strong>FloodScan’s</strong> 9 km cells catch the flood only in coarse blocks: recall 0.37, precision 0.58.</li>
-</ul>
-<p>Scores are for this one day, on gold-labelled cells.</p>
-<p><strong>A cleaner design: detect water, then remove normal water once.</strong></p>
-<div class="quarto-figure quarto-figure-center">
-<figure class="figure">
-<p><img src="figures/diagram_water_first.png" class="img-fluid figure-img"></p>
-<figcaption>Where the normal-water step happens · today and water-first</figcaption>
-</figure>
-</div>
-<p>Today each product removes normal water its own way before fusion sees it, so fusion mixes several definitions, and gold mixes them again. In a water-first design, each product gives fusion its water; fusion estimates the chance of water; and one normal-water baseline turns that into a chance of flood. The definition of flood becomes one setting that users can see and change. It would make the target clear. It would not by itself fix the over-confident probabilities, which persist on both kinds of cell (Results, Water versus flood: where the problems sit).</p>
+<p><em>How to read it.</em> One window of Typhoon Yagi (northern Viet Nam, September 2024):</p>
+<ol type="1">
+<li>The delta’s low ground (dark purple) is floodable: at least 30% of each cell lies less than 15 m above the nearest stream (GLO-30 HAND). The hills to the west and north are not.</li>
+<li>Permanent water is mostly the sea in the south-east, plus the river channels.</li>
+<li>WorldCover sorts every cell into open, vegetated or urban, before any domain rule is applied.</li>
+<li>Keeping only floodable cells that are not permanent water leaves 24,859 cells: 7,329 open, 13,206 vegetated and 4,324 urban.</li>
+</ol>
+<p>The white corner at the bottom right of panels 2–4 is open sea with no data. Elsewhere in panel 2, white means the cell is almost never water. Drawn from the pipeline’s cached layers by <code>scripts/fusion/figure_event_layers.py</code>.</p>
 
 
 
@@ -750,13 +781,13 @@ ul.task-list li input[type="checkbox"] {
   </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="./07-grid-domain-and-strata.html" class="pagination-link" aria-label="Grid, domain and strata">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Grid, domain and strata</span></span>
+      <a href="./07-inputs.html" class="pagination-link" aria-label="Inputs">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Inputs</span></span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="./09-gold-labels.html" class="pagination-link" aria-label="Gold labels">
-        <span class="nav-page-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Gold labels</span></span> <i class="bi bi-arrow-right-short"></i>
+      <a href="./09-water-versus-flood.html" class="pagination-link" aria-label="Water versus flood">
+        <span class="nav-page-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Water versus flood</span></span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>

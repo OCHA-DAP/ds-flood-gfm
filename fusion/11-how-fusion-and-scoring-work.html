@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>16&nbsp; Not yet validated – Flood fusion</title>
+<title>11&nbsp; How fusion and scoring work – Flood fusion</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -33,8 +33,8 @@ ul.task-list li input[type="checkbox"] {
 <script src="site_libs/quarto-search/fuse.min.js"></script>
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
-<link href="./17-next-steps.html" rel="next">
-<link href="./15-other-approaches-tried.html" rel="prev">
+<link href="./12-testing-five-folds-by-river-basin.html" rel="next">
+<link href="./10-gold-labels.html" rel="prev">
 <script src="site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
@@ -85,7 +85,7 @@ ul.task-list li input[type="checkbox"] {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./16-not-yet-validated.html"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Not yet validated</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./11-how-fusion-and-scoring-work.html"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">How fusion and scoring work</span></a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -130,92 +130,98 @@ ul.task-list li input[type="checkbox"] {
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./03-how-the-pieces-fit-together.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">How the pieces fit together</span></span></a>
+  <a href="./03-from-pixels-to-cells-how-every-layer-lands-on-on.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">From pixels to cells: how every layer lands on one grid</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./04-scope-and-events.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Scope and events</span></span></a>
+  <a href="./04-how-the-pieces-fit-together.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">How the pieces fit together</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./05-events-days-and-how-counts-add-up.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Events, days and how counts add up</span></span></a>
+  <a href="./05-scope-and-events.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scope and events</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./06-inputs.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Inputs</span></span></a>
+  <a href="./06-events-days-and-how-counts-add-up.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Events, days and how counts add up</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./07-grid-domain-and-strata.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Grid, domain and strata</span></span></a>
+  <a href="./07-inputs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Inputs</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./08-water-versus-flood.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Water versus flood</span></span></a>
+  <a href="./08-grid-domain-and-strata.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Grid, domain and strata</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./09-gold-labels.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Gold labels</span></span></a>
+  <a href="./09-water-versus-flood.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Water versus flood</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./10-how-fusion-and-scoring-work.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">How fusion and scoring work</span></span></a>
+  <a href="./10-gold-labels.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Gold labels</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./11-testing-five-folds-by-river-basin.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Testing: five folds by river basin</span></span></a>
+  <a href="./11-how-fusion-and-scoring-work.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">How fusion and scoring work</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./12-from-counts-to-totals.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">From counts to totals</span></span></a>
+  <a href="./12-testing-five-folds-by-river-basin.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Testing: five folds by river basin</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./13-was-the-event-caught.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Was the event caught?</span></span></a>
+  <a href="./13-from-counts-to-totals.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">From counts to totals</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./14-results.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Results</span></span></a>
+  <a href="./14-was-the-event-caught.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Was the event caught?</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./15-other-approaches-tried.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Other approaches tried</span></span></a>
+  <a href="./15-results.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Results</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./16-not-yet-validated.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Not yet validated</span></span></a>
+  <a href="./16-other-approaches-tried.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Other approaches tried</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./17-next-steps.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Next steps</span></span></a>
+  <a href="./17-not-yet-validated.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Not yet validated</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./18-next-steps.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Next steps</span></span></a>
   </div>
 </li>
         <li class="sidebar-item sidebar-item-section">
@@ -252,8 +258,16 @@ ul.task-list li input[type="checkbox"] {
 </nav>
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
-        
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#fusions-probability" id="toc-fusions-probability" class="nav-link active" data-scroll-target="#fusions-probability"><span class="header-section-number">11.0.1</span> Fusion’s probability</a></li>
+  <li><a href="#scoring-one-cell-one-gold-day-one-count" id="toc-scoring-one-cell-one-gold-day-one-count" class="nav-link" data-scroll-target="#scoring-one-cell-one-gold-day-one-count"><span class="header-section-number">11.0.2</span> Scoring: one cell, one gold day, one count</a></li>
+  <li><a href="#two-views-and-how-totals-are-formed" id="toc-two-views-and-how-totals-are-formed" class="nav-link" data-scroll-target="#two-views-and-how-totals-are-formed"><span class="header-section-number">11.0.3</span> Two views, and how totals are formed</a></li>
+  </ul>
+</nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
@@ -263,7 +277,7 @@ ul.task-list li input[type="checkbox"] {
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Not yet validated</span></h1>
+<h1 class="title"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">How fusion and scoring work</span></h1>
 </div>
 
 
@@ -280,6 +294,32 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
+<section id="fusions-probability" class="level3" data-number="11.0.1">
+<h3 data-number="11.0.1" class="anchored" data-anchor-id="fusions-probability"><span class="header-section-number">11.0.1</span> Fusion’s probability</h3>
+<p>For each cell and day, fusion adds up evidence from the sources that observed it:</p>
+<ul>
+<li>a source saying <strong>flood</strong> raises the odds by its hit rate divided by its false-alarm rate, in that land type;</li>
+<li>a source saying <strong>dry</strong> lowers them by its miss rate (1 − hit rate) divided by its correct-dry rate (1 − false-alarm rate);</li>
+<li><strong>couldn’t see</strong> adds nothing.</li>
+</ul>
+<p><strong>Odds, with an example.</strong> Odds are P / (1 − P); a probability of 0.002 is odds of about 1 to 500. In open land, in the first run, the base flood rate is 0.16%, and VIIRS’s hit rate is 0.66 with a false-alarm rate of 5.5%. One VIIRS flood report multiplies the odds by 0.66 / 0.055 = 12, which lifts P from 0.0016 to about 0.02. Reaching 0.5 takes several sources agreeing, or several days in a row.</p>
+<p>Yesterday’s value carries over, fading 10% a day back towards the base flood rate for that land type. The base rate comes from the global random sample: how often GFM sees flood on an ordinary day. Fusion counts as <strong>flood when P ≥ 0.5</strong>. The hit and false-alarm rates are fitted only on the events in the other four folds (see Testing).</p>
+<p><strong>Fitting is counting.</strong> For each source and land type, two shares are counted on the events used for fitting:</p>
+<ul>
+<li><strong>hit rate:</strong> of the gold-flooded cells the source observed, the share it called flood;</li>
+<li><strong>false-alarm rate:</strong> of the gold-dry cells it observed, the share it called flood.</li>
+</ul>
+<p><code>docs/methods.md</code> calls these sensitivity and 1 − specificity. Half a hit is added to each count and one to each total, so no rate is ever exactly 0 or 1. The daily fading works on the log of the odds, not on P.</p>
+</section>
+<section id="scoring-one-cell-one-gold-day-one-count" class="level3" data-number="11.0.2">
+<h3 data-number="11.0.2" class="anchored" data-anchor-id="scoring-one-cell-one-gold-day-one-count"><span class="header-section-number">11.0.2</span> Scoring: one cell, one gold day, one count</h3>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="figures/scoring_mechanics.png" class="img-fluid figure-img"></p>
+<figcaption>A synthetic example: a gold map and a product become hits, misses and false alarms. Numbers come from the pipeline’s own functions.</figcaption>
+</figure>
+</div>
+<p><em>The figure</em> uses a made-up gold map and product. The labels, values and counts in it come from the same code the pipeline runs. Flood drawn outside the examined area (the left column) is ignored. The product pixels here are about 230 m, but the rule is the same for any pixel size.</p>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 33%">
@@ -288,61 +328,48 @@ ul.task-list li input[type="checkbox"] {
 </colgroup>
 <thead>
 <tr class="header">
-<th>gap</th>
-<th>why it matters</th>
-<th>what would close it</th>
+<th></th>
+<th>gold: flooded</th>
+<th>gold: dry</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td>precision on ordinary days</td>
-<td>all precision above is measured inside mapped floods, where about a tenth of labelled cells on map days are flooded (12% in open land); elsewhere it will be far lower</td>
-<td>score the global random sample (53 blocks, 2023–2025) with GFM as stand-in truth, and the false-event check</td>
+<td>product: flood</td>
+<td><strong>hit</strong></td>
+<td><strong>false alarm</strong></td>
 </tr>
 <tr class="even">
-<td>one dominant basin</td>
-<td>four Bangladesh floods in one basin hold 40% of the gold flood, so pooled scores follow them</td>
-<td>Results shows every score with and without that basin; mapped events from other large floodplains would reduce the weight</td>
+<td>product: dry</td>
+<td><strong>miss</strong></td>
+<td><strong>correct dry</strong></td>
 </tr>
 <tr class="odd">
-<td>independence from GFM</td>
-<td>many Copernicus maps are drawn from Sentinel-1, GFM’s own satellite</td>
-<td>partly done: Results scores every product on map days without Sentinel-1 maps (GFM falls to F1 0.12, fusion keeps 0.46); a gold source fully independent of Sentinel-1 is still missing</td>
-</tr>
-<tr class="even">
-<td>river gauges</td>
-<td>an independent check on timing and on floods the analysts never mapped</td>
-<td>not started; the best-documented gauge network with flood thresholds (USGS/NWS) is in North America, now out of scope. Candidates are in <code>docs/gauge_sources.md</code></td>
-</tr>
-<tr class="odd">
-<td>small floods</td>
-<td>a flood covering under 30% of a 1 km cell is dry for gold and products alike</td>
-<td>a finer grid, at much higher cost</td>
-</tr>
-<tr class="even">
-<td>GFM on seasonal floodplains</td>
-<td>GFM’s stricter water definition probably costs recall there</td>
-<td>score GFM on normally-wet versus other cells</td>
-</tr>
-<tr class="odd">
-<td>uncertainty</td>
-<td>per-continent counts are small</td>
-<td>intervals by resampling whole events are beside every score; Oceania (13 events) and South America (16) stay thin, and more mapped events would help</td>
-</tr>
-<tr class="even">
-<td>FloodScan outside Africa</td>
-<td>the licence for the Asia-Australia and South America files is unconfirmed</td>
-<td>check with whoever holds the AER agreement</td>
-</tr>
-<tr class="odd">
-<td>seasonal water in VIIRS and FloodScan</td>
-<td>whether they count it as flood decides how they compare with GFM on floodplains</td>
-<td>compare each source’s flood-call rate on normally-wet and other cells on ordinary days, month by month, using the built events and the global sample</td>
+<td>product: couldn’t see</td>
+<td>miss (all cells) / dropped (observed cells)</td>
+<td>correct dry (all cells) / dropped (observed cells)</td>
 </tr>
 </tbody>
 </table>
+<ul>
+<li><strong>Recall</strong> = hits ÷ (hits + misses): the share of gold-flooded cells the product flags.</li>
+<li><strong>Precision</strong> = hits ÷ (hits + false alarms): the share of its flood calls that gold confirms.</li>
+<li><strong>F1</strong> = 2 × hits ÷ (2 × hits + misses + false alarms): the balance of recall and precision, high only when both are. It is the headline single score.</li>
+<li><strong>CSI</strong> = hits ÷ (hits + misses + false alarms): of all cells the product or gold calls flooded, the share where both do. It ranks products the same as F1 and appears only where criterion (b) needs it.</li>
+</ul>
+<p><strong>A worked example.</strong> One gold day, 100 labelled cells, 30 of them flooded. A product flags 25 cells, 20 of them among the 30 flooded. That is 20 hits, 5 false alarms, 10 misses and 65 correct dry: recall 0.67, precision 0.80, F1 0.73.</p>
+</section>
+<section id="two-views-and-how-totals-are-formed" class="level3" data-number="11.0.3">
+<h3 data-number="11.0.3" class="anchored" data-anchor-id="two-views-and-how-totals-are-formed"><span class="header-section-number">11.0.3</span> Two views, and how totals are formed</h3>
+<ul>
+<li><strong>All cells</strong> answers “what does a user get on a given day?”. A cell the product couldn’t see counts against it as a miss, which lowers recall but never precision.</li>
+<li><strong>Observed cells</strong> answers “how good is the product when it looks?”. It scores only the cells a product saw, and fusion is scored on the same cells for a fair comparison.</li>
+<li><strong>Totals</strong> are formed as described in From counts to totals: large floods weigh more, so every score is also reported per continent and per land type.</li>
+</ul>
+<p><strong>Precision here is measured inside mapped flood areas on flood days,</strong> where about a tenth of labelled cells on map days are flooded (12% in open land). On ordinary days far fewer are, so precision there is much lower. Measuring it needs non-event data: the global random sample, with GFM as stand-in truth. The event-level false-event check below covers part of this.</p>
 
 
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
@@ -747,13 +774,13 @@ ul.task-list li input[type="checkbox"] {
   </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="./15-other-approaches-tried.html" class="pagination-link" aria-label="Other approaches tried">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Other approaches tried</span></span>
+      <a href="./10-gold-labels.html" class="pagination-link" aria-label="Gold labels">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Gold labels</span></span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="./17-next-steps.html" class="pagination-link" aria-label="Next steps">
-        <span class="nav-page-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Next steps</span></span> <i class="bi bi-arrow-right-short"></i>
+      <a href="./12-testing-five-folds-by-river-basin.html" class="pagination-link" aria-label="Testing: five folds by river basin">
+        <span class="nav-page-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Testing: five folds by river basin</span></span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>
