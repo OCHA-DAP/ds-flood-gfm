@@ -601,7 +601,8 @@ answers whether the method or the year was doing the work.
 
 2023 was a low-flood year in FloodScan (half of 2024's LGA peaks) and our
 chain produced twice as much flooding as in 2024. Diagnostics
-(scratchpad `q_level_by_year.py`, `sahel_tables_diag.py`):
+(`experiments/floodscan_repro/diagnostics/q_level_by_year.py` and
+`sahel_tables_diag.py`; the run itself is `diagnostics/holdout_2023.sh`):
 
 - Not calibration: monthly land medians of Q and of the 18 GHz Tb agree
   across 2023 (FCDR), 2024 (ICDR) and 2025 (FCDR) to 0.001 / 1 K.
