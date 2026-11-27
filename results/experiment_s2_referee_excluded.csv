@@ -1,0 +1,11 @@
+block_id,id,day,scl
+b0018_random,S2A_34PFV_20240831_0_L2A,2024-08-31,s3://sentinel-s2-l2a/tiles/34/P/FV/2024/8/31/0/R20m/SCL.jp2
+b0018_random,S2A_34PFA_20240831_1_L2A,2024-08-31,s3://sentinel-s2-l2a/tiles/34/P/FA/2024/8/31/1/R20m/SCL.jp2
+b0068_random,S2A_19HDC_20240123_0_L2A,2024-01-23,s3://sentinel-s2-l2a/tiles/19/H/DC/2024/1/23/0/R20m/SCL.jp2
+b0085_random,S2B_18GXN_20230907_0_L2A,2023-09-07,s3://sentinel-s2-l2a/tiles/18/G/XN/2023/9/7/0/R20m/SCL.jp2
+b0089_city,S2C_50SMJ_20250212_0_L2A,2025-02-12,s3://sentinel-s2-l2a/tiles/50/S/MJ/2025/2/12/0/R20m/SCL.jp2
+b0089_city,S2C_50TMK_20250212_0_L2A,2025-02-12,s3://sentinel-s2-l2a/tiles/50/T/MK/2025/2/12/0/R20m/SCL.jp2
+b0093_city,S2C_50SMH_20250212_0_L2A,2025-02-12,s3://sentinel-s2-l2a/tiles/50/S/MH/2025/2/12/0/R20m/SCL.jp2
+b0093_city,S2C_50SNH_20250212_0_L2A,2025-02-12,s3://sentinel-s2-l2a/tiles/50/S/NH/2025/2/12/0/R20m/SCL.jp2
+b0093_city,S2C_50SMJ_20250212_0_L2A,2025-02-12,s3://sentinel-s2-l2a/tiles/50/S/MJ/2025/2/12/0/R20m/SCL.jp2
+b0093_city,S2C_50SNJ_20250212_0_L2A,2025-02-12,s3://sentinel-s2-l2a/tiles/50/S/NJ/2025/2/12/0/R20m/SCL.jp2

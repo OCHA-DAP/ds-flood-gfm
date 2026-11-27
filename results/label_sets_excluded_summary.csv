@@ -1,0 +1,9 @@
+source,reason,n_label_sets
+cems,"acquisition is a window, not a day",3
+cems,before 2015 (no GFM archive),128
+cems,no label_day,217
+unosat,before 2015 (no GFM archive),29
+unosat,"coarse optical label (candidate input, not gold)",9
+unosat,no flood layer,113
+unosat,no label_day,251
+unosat,no valid mask (dry cells unknowable),90

@@ -1,0 +1,37 @@
+stratum,day_type,cells,cell_days,p_ge_0.5,p_ge_0.9
+open_nosnow,pre,flooded on a gold day,893618,136034,107464
+open_nosnow,pre,never flooded on a gold day,2992165,83984,57253
+vegetated_nosnow,pre,flooded on a gold day,82914,5355,3944
+vegetated_nosnow,pre,never flooded on a gold day,1467779,14497,8278
+urban_nosnow,pre,flooded on a gold day,7440,186,123
+urban_nosnow,pre,never flooded on a gold day,183604,458,246
+open_nosnow,post 1-30,flooded on a gold day,894250,440404,390624
+open_nosnow,post 1-30,never flooded on a gold day,2999450,220132,178336
+vegetated_nosnow,post 1-30,flooded on a gold day,91768,30988,26947
+vegetated_nosnow,post 1-30,never flooded on a gold day,1666378,35188,24696
+urban_nosnow,post 1-30,flooded on a gold day,7440,1634,1355
+urban_nosnow,post 1-30,never flooded on a gold day,184475,5307,3428
+open_nosnow,post 31-60,flooded on a gold day,894270,232152,202811
+open_nosnow,post 31-60,never flooded on a gold day,2999730,172191,145161
+vegetated_nosnow,post 31-60,flooded on a gold day,92460,12493,10207
+vegetated_nosnow,post 31-60,never flooded on a gold day,1670640,24300,15236
+urban_nosnow,post 31-60,flooded on a gold day,7440,780,588
+urban_nosnow,post 31-60,never flooded on a gold day,184260,3358,1995
+open_snow,post 1-30,flooded on a gold day,20,2,0
+open_snow,post 1-30,never flooded on a gold day,640,0,0
+vegetated_snow,post 1-30,flooded on a gold day,692,4,2
+vegetated_snow,post 1-30,never flooded on a gold day,5162,0,0
+urban_snow,post 1-30,flooded on a gold day,0,0,0
+urban_snow,post 1-30,never flooded on a gold day,415,0,0
+open_snow,post 31-60,flooded on a gold day,0,0,0
+open_snow,post 31-60,never flooded on a gold day,360,0,0
+vegetated_snow,post 31-60,flooded on a gold day,0,0,0
+vegetated_snow,post 31-60,never flooded on a gold day,900,0,0
+urban_snow,post 31-60,flooded on a gold day,0,0,0
+urban_snow,post 31-60,never flooded on a gold day,630,0,0
+open_snow,pre,flooded on a gold day,652,1,0
+open_snow,pre,never flooded on a gold day,7925,135,40
+vegetated_snow,pre,flooded on a gold day,9546,18,8
+vegetated_snow,pre,never flooded on a gold day,203761,246,74
+urban_snow,pre,flooded on a gold day,0,0,0
+urban_snow,pre,never flooded on a gold day,1286,0,0

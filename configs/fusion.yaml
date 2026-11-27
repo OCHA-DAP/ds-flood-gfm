@@ -1,0 +1,206 @@
+# Flood fusion v1 configuration. Every threshold, window, path and source
+# switch the pipeline uses lives here; docs/decisions.md says why each value
+# was chosen. Change a value here, not in code.
+
+version: v1
+
+paths:
+  local_root: data/fusion          # gitignored local cache (inputs + intermediates)
+  results_dir: results              # committed small deliverables (CSV tables, figures)
+  blob:
+    stage: dev                      # KB precedent for team project data (flood-gfm writes dev)
+    container: projects
+    raw: raw                        # -> ds-flood-gfm/raw/{datasource}/...
+    processed: processed/flood_fusion_v1   # -> ds-flood-gfm/processed/flood_fusion_v1/...
+
+grid:
+  res_deg: 0.01                     # target grid, EPSG:4326, cell edges on multiples of 0.01
+  tile_deg: 10                      # processing tiles: 1000 x 1000 cells
+
+static:
+  hand:
+    # ASF/Copernicus GLO-30 HAND (AWS open data), 1-degree COG tiles, ~30 m.
+    url_template: "https://glo-30-hand.s3.amazonaws.com/v1/2021/Copernicus_DSM_COG_10_{lat}_00_{lon}_00_HAND.tif"
+    threshold_m: 15
+    floodable_min_frac: 0.30        # cell floodable iff >= 30% of its area has HAND < 15 m
+  gsw:
+    # JRC Global Surface Water v1.4 (2021) occurrence, 10-degree tiles, 30 m.
+    url_template: "https://storage.googleapis.com/global-surface-water/downloads2021/occurrence/occurrence_{lon}_{lat}v1_4_2021.tif"
+    permanent_occurrence: 90
+    permanent_min_frac: 0.50        # cell removed iff >= 50% of it is occurrence >= 90%
+  worldcover:
+    # ESA WorldCover 2021 v200, 3-degree COG tiles, 10 m.
+    url_template: "https://esa-worldcover.s3.eu-central-1.amazonaws.com/v200/2021/map/ESA_WorldCover_10m_2021_v200_{tile}_Map.tif"
+    tree_class: 10
+    built_class: 50
+    tree_min_frac: 0.30
+    built_min_frac: 0.20            # urban takes precedence over vegetated
+  snow:
+    # ERA5-Land monthly snow cover (%) via the Copernicus CDS API (~/.cdsapirc);
+    # stands in for the MODIS MOD10CM climatology, which needs an Earthdata login.
+    cds_dataset: reanalysis-era5-land-monthly-means
+    variable: snow_cover
+    years: [2014, 2023]             # inclusive climatology period
+    grid_deg: 0.25
+    snow_season_min_cover_pct: 50   # month is "snow season" iff mean snow cover >= 50%
+  sample_read_step: 4               # read fine static rasters every 4th pixel when building fractions
+
+gold:
+  blob_stage: dev
+  blob_container: global
+  cems_index: copernicus_ems/flood/gold/label_index.parquet
+  cems_labels: copernicus_ems/flood/gold/labels/code={code}/data.parquet
+  unosat_index: unosat/gold/label_index.parquet
+  unosat_labels_prefix: unosat/gold/
+  min_year: 2015                    # GFM archive starts 2015
+  acq_precision: [date, minute]     # one acquisition day is required for same-day matching
+  exclude_sensor_class: [optical_coarse]   # VIIRS/MODIS-derived maps are candidate inputs, not gold
+  burn_res_deg: 0.001               # rasterise gold at 10x10 sub-cells, then block-average
+  valid_min_frac: 0.50              # cell has a gold label iff >= 50% of it is inside the valid mask
+  flood_threshold: 0.30             # flooded fraction (of valid area) to call a cell flood
+  possible_exclude_frac: 0.30       # "flood possible" fraction above which the cell is unlabelled
+  max_label_bytes: 300000000        # partitions above this are excluded from v1 (cost), and listed
+  dry_pre_days: 30                  # dry window: [start - 30, start - 1]
+  dry_post_gap_days: 0              # dry window: [end + 1 + gap, end + gap + 60]
+  dry_post_days: 60
+  dry_window_rule: corrected         # corrected: cells flooded on any map day of their window get no label in the
+                                    # dry windows (ADR 0006, D-45) | literal: every examined cell is dry (v1, D-12)
+  holdout_frac: 0.25
+  split_seed: 20261012
+  n_folds: 5                        # cross-validation: whole basins per fold (D-43)
+  fold_seed: 20261014
+  fold_big_basin_share: 0.02        # basins with >= 2% of all gold flood are spread first, by flooded area
+  basins_level: 4                   # HydroBASINS level for grouping events into basins
+
+scope:
+  # D-42 (2026-10-14): the analysis covers these continents; Europe and North America are set aside
+  continents: [Africa, Asia, South America, Oceania]
+
+event_level:                        # ADR 0007, D-46: was the event caught, how early, false events
+  min_share: 0.10                   # caught: flags >= 10% of the event's gold footprint ...
+  min_cells: 5                      # ... and >= 5 cells, on one day
+  days_around_maps: 3               # caught: from 3 days before the first map to 3 days after the last
+  false_event_days: [-30, -10]      # false event: the same rule on days 30 to 10 before the first map
+
+sources:
+  gfm:
+    enabled: true
+    stac_url: https://stac.eodc.eu/api/v1
+    collection: GFM
+    flood_asset: ensemble_flood_extent
+    exclusion_asset: exclusion_mask
+    advisory_asset: advisory_flags
+    advisory_nodata_values: [1, 3]  # 1 = snow/frozen/dry soil, 3 = 1 + rough water (GFM PUM)
+    on_missing_asset: drop_scene    # HTTP 404 on an asset file = absent upstream: drop that scene, record its id
+    on_unlisted_advisory: read_without_flag   # scene's product version has no advisory layer: no snow flag to apply; recorded
+    nodata: 255
+    overview_level: 1               # rasterio overview_level 1 = factor 4 = 80 m
+    observed_min_frac: 0.50         # cell observed iff >= 50% of its samples are evaluated
+    flood_threshold: 0.30
+  floodscan:
+    enabled: true
+    africa:
+      stage: prod
+      container: raster
+      blob_template: floodscan/daily/v5/processed/aer_area_300s_v{date}_v05r01.tif
+      band: SFED
+    regional_nc:                    # historical SFED NetCDFs outside Africa (dev raster)
+      stage: dev
+      container: raster
+      # grid (cell-edge left/top, size) and last day, verified 2026-10-12; checked again on open
+      files:
+        asia_australia: {blob: floodscan/daily/v5/raw/aer_sfed_area_300s_19980112_20260331_v05r01_aa_no_ndt.nc, left: 50.0, top: 78.0, ncols: 1260, nrows: 1476, last_day: "2026-03-31"}
+        north_america: {blob: floodscan/daily/v5/raw/aer_sfed_area_300s_19980112_20260331_v05r01_na_no_ndt.nc, left: -169.0, top: 84.0, ncols: 1404, nrows: 924, last_day: "2026-03-31"}
+        south_america: {blob: floodscan/daily/v5/raw/aer_sfed_area_300s_19980112_20260331_v05r01_sa_no_ndt.nc, left: -82.0, top: 13.0, ncols: 576, nrows: 828, last_day: "2026-03-31"}
+    flood_threshold: 0.30
+  gfds:
+    enabled: true
+    base_url: https://www.gdacs.org/flooddetection/DATA
+    baseline_avg: ALL/AveragesAndSd/bt_signal_avg.tif
+    sentinels: [-32000, -2147483648]
+    signal_scale: 1000000
+    k_emissivity: 0.35              # R1 physics: 1 - eps_water/eps_land at 36 GHz H-pol
+    flood_threshold: 0.30
+    min_seconds_between_requests: 1.0   # per connection
+    max_concurrent_requests: 4          # connections; server sees <= 4 req/s (D-19)
+    band_merge_gap_rows: 16             # merge needed rows into bands across gaps <= 16 rows
+    user_agent: "OCHA-CHD-DS ds-flood-gfm flood-fusion v1"
+  viirs:
+    # NOAA/GMU VIIRS flood map v2r0, 1-day global composite (s3://noaa-jpss, public).
+    # Fills the optical slot because MODIS cannot be reached (D-16).
+    enabled: true
+    aoi_reference_day: "2024-09-01"
+    observed_min_frac: 0.50
+    flood_threshold: 0.30
+  modis:
+    # NASA LANCE MCDWD flood product (Terra+Aqua MODIS, 250 m), LAADS DAAC (D-37). Scripted downloads
+    # need an Earthdata token in the environment variable below (never in code). Not a model
+    # source yet: scored against gold first (scripts/fusion/experiment_modis_gold.py).
+    enabled: false
+    archive: "https://ladsweb.modaps.eosdis.nasa.gov/archive"
+    collection: 61
+    product_reprocessed: MCDWD_L3       # reprocessed, complete 2000-2025
+    product_nrt_archive: MCDWD_L3_NRT   # archived near-real-time files from 2026-01-01
+    reprocessed_until: "2025-12-31"
+    token_env: EARTHDATA_TOKEN
+    login_user_env: IMERG_USERNAME      # jobs: the team's shared Earthdata login (dsci scope), turned into a token
+    login_password_env: IMERG_PASSWORD
+    threads: 6                          # concurrent tile downloads (scripts/fusion/modis_windows.py)
+    layer: FloodCS_1Day_250m            # daily evidence: 1-day only (2/3-day composites reuse passes across days)
+    recurring_as: flood                 # code 2 "recurring (seasonal) flood": flood | dry
+    observed_min_frac: 0.50
+    flood_threshold: 0.30
+
+fetch:
+  day_threads: 8                    # concurrent days per window for GFM/VIIRS reads (network-bound)
+
+fusion:
+  decay: 0.9                        # logodds_t = prior + decay * (logodds_{t-1} - prior) + evidence_t
+  prob_threshold: 0.5               # P >= 0.5 -> flood when scoring the fused map
+  logodds_clip: 20.0                # numerical guard only; never reached with clipped sens/spec
+  sens_spec_clip: [0.001, 0.999]
+
+accuracy:
+  em_min_gold_cells: 50000          # strata with fewer observed gold cells get Dawid-Skene EM
+  bootstrap_reps: 500
+  ci_flag_width: 0.15
+  min_obs_for_interval: 30          # fewer observed flood (or dry) cells: interval untrustworthy, flagged
+  em_prior_strength: 200            # Beta pseudo-count for MAP-EM centred on the nearest stratum's gold values
+  agreement:                        # plan v2 Phase 3, ADR 0002: unsupervised EM on the random sample, compared with gold
+    weight_tolerance: 0.405         # log(1.5): tables "agree" if a report's evidence weight differs by <= this
+    max_iter: 200000                # rare flood classes converge slowly (tens of thousands of iterations)
+    tol: 1.0e-10
+    prev_clip_low: 1.0e-8           # urban sample flood rates (~4e-5) sit below the semi-supervised 1e-4 floor
+    start_ll_tolerance: 1.0         # another start within this many log-units of the best ...
+    param_tolerance: 0.02           # ... at sens/spec differing by more than this = flat likelihood (unstable)
+    boundary: 0.001                 # sens within this of 0 or 1 = degenerate fit
+
+baseline:                           # seasonal "normally wet" baseline (D-38), JRC GSW monthly recurrence 1984-2021
+  wet_recurrence_pct: 50            # a pixel is normally wet in month m if water in >= 50% of observed years
+  normal_wet_min_frac: 0.30         # a cell is normally wet if >= 30% of its pixels are (same as the flood threshold)
+
+sample:
+  years: [2023, 2025]               # inclusive; stratified random sample period (D-23)
+  block_deg: 0.25                   # random blocks
+  city_block_deg: 0.5               # city-centred blocks (urban strata are rare)
+  blocks_per_cell: 1                # random blocks per Koppen group x continent
+  city_blocks_snow: 6               # largest cities in Koppen D/E climates
+  city_blocks_other: 6
+  max_topup_blocks: 40              # cap on reserve blocks added to reach the target
+  snow_reserve_random: 30           # extra reserve candidates in Koppen D/E (snow strata top-up)
+  snow_reserve_cities: 20           # snow-climate cities ranked beyond the chosen ones
+  min_cell_days_per_stratum: 2000000
+  seed: 20261012
+
+validation:
+  reliability_bins: 10
+  slope_ok: [0.8, 1.2]
+
+operational:
+  # v1 scheduled scope (D-26): AOIs whose static layers are built on first run and cached
+  # on blob. Global daily coverage needs the global static build (static_build job).
+  lag_days: 1                       # run for UTC today - 1 (VIIRS/FloodScan arrive next day)
+  tile_deg: 1                       # job tiles
+  aois:
+    - {name: nga_niger_benue, bbox: [5.5, 6.5, 9.0, 9.5]}
+    - {name: tcd_logone_chari, bbox: [14.0, 9.5, 16.0, 12.5]}

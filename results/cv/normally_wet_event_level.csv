@@ -1,0 +1,1687 @@
+code,continent,group,product,footprint_cells,eligible,need,caught,days_to_detection,false_event
+EMSR116,Africa,normally wet,fusion,6,True,5.0,False,,False
+EMSR116,Africa,normally wet,gfm,6,True,5.0,False,,False
+EMSR116,Africa,normally wet,microwave,6,True,5.0,False,,False
+EMSR116,Africa,normally wet,viirs,6,True,5.0,True,-1.0,False
+EMSR116,Africa,normally wet,floodscan,6,True,5.0,False,,False
+EMSR116,Africa,normally wet,gfds,6,True,5.0,False,,False
+EMSR116,Africa,other,fusion,175,True,18.0,True,-3.0,True
+EMSR116,Africa,other,gfm,175,True,18.0,True,0.0,False
+EMSR116,Africa,other,microwave,175,True,18.0,True,-3.0,True
+EMSR116,Africa,other,viirs,175,True,18.0,True,-3.0,True
+EMSR116,Africa,other,floodscan,175,True,18.0,True,-3.0,True
+EMSR116,Africa,other,gfds,175,True,18.0,True,-3.0,False
+EMSR130,Asia,normally wet,fusion,4517,True,452.0,True,-3.0,True
+EMSR130,Asia,normally wet,gfm,4517,True,452.0,True,2.0,False
+EMSR130,Asia,normally wet,microwave,4517,True,452.0,True,-3.0,True
+EMSR130,Asia,normally wet,viirs,4517,True,452.0,True,-3.0,True
+EMSR130,Asia,normally wet,floodscan,4517,True,452.0,True,-3.0,True
+EMSR130,Asia,normally wet,gfds,4517,True,452.0,True,-3.0,True
+EMSR130,Asia,other,fusion,2560,True,256.0,True,-3.0,False
+EMSR130,Asia,other,gfm,2560,True,256.0,True,2.0,False
+EMSR130,Asia,other,microwave,2560,True,256.0,True,-3.0,True
+EMSR130,Asia,other,viirs,2560,True,256.0,True,-3.0,True
+EMSR130,Asia,other,floodscan,2560,True,256.0,True,-3.0,False
+EMSR130,Asia,other,gfds,2560,True,256.0,True,-3.0,True
+EMSR184,Oceania,normally wet,fusion,148,True,15.0,True,-3.0,True
+EMSR184,Oceania,normally wet,gfm,148,True,15.0,True,2.0,True
+EMSR184,Oceania,normally wet,microwave,148,True,15.0,True,-3.0,True
+EMSR184,Oceania,normally wet,viirs,148,True,15.0,True,-2.0,True
+EMSR184,Oceania,normally wet,floodscan,148,True,15.0,True,-3.0,True
+EMSR184,Oceania,normally wet,gfds,148,True,15.0,True,-3.0,True
+EMSR184,Oceania,other,fusion,887,True,89.0,True,-3.0,False
+EMSR184,Oceania,other,gfm,887,True,89.0,True,2.0,False
+EMSR184,Oceania,other,microwave,887,True,89.0,True,-3.0,True
+EMSR184,Oceania,other,viirs,887,True,89.0,True,-2.0,True
+EMSR184,Oceania,other,floodscan,887,True,89.0,True,-3.0,False
+EMSR184,Oceania,other,gfds,887,True,89.0,True,-3.0,True
+EMSR199,South America,normally wet,fusion,242,True,25.0,True,-3.0,True
+EMSR199,South America,normally wet,gfm,242,True,25.0,True,0.0,True
+EMSR199,South America,normally wet,microwave,242,True,25.0,True,0.0,True
+EMSR199,South America,normally wet,viirs,242,True,25.0,True,-3.0,True
+EMSR199,South America,normally wet,floodscan,242,True,25.0,False,,True
+EMSR199,South America,normally wet,gfds,242,True,25.0,True,0.0,True
+EMSR199,South America,other,fusion,500,True,50.0,True,-3.0,True
+EMSR199,South America,other,gfm,500,True,50.0,True,0.0,True
+EMSR199,South America,other,microwave,500,True,50.0,True,-3.0,True
+EMSR199,South America,other,viirs,500,True,50.0,True,-3.0,True
+EMSR199,South America,other,floodscan,500,True,50.0,False,,False
+EMSR199,South America,other,gfds,500,True,50.0,True,-3.0,True
+EMSR205,Asia,other,fusion,3,False,,,,
+EMSR205,Asia,other,gfm,3,False,,,,
+EMSR205,Asia,other,microwave,3,False,,,,
+EMSR205,Asia,other,viirs,3,False,,,,
+EMSR205,Asia,other,floodscan,3,False,,,,
+EMSR205,Asia,other,gfds,3,False,,,,
+EMSR235,Africa,normally wet,fusion,4,False,,,,
+EMSR235,Africa,normally wet,gfm,4,False,,,,
+EMSR235,Africa,normally wet,microwave,4,False,,,,
+EMSR235,Africa,normally wet,viirs,4,False,,,,
+EMSR235,Africa,normally wet,floodscan,4,False,,,,
+EMSR235,Africa,normally wet,gfds,4,False,,,,
+EMSR286,South America,normally wet,fusion,1,False,,,,
+EMSR286,South America,normally wet,gfm,1,False,,,,
+EMSR286,South America,normally wet,microwave,1,False,,,,
+EMSR286,South America,normally wet,viirs,1,False,,,,
+EMSR286,South America,normally wet,floodscan,1,False,,,,
+EMSR286,South America,normally wet,gfds,1,False,,,,
+EMSR314,Africa,normally wet,fusion,268,True,27.0,True,-3.0,True
+EMSR314,Africa,normally wet,gfm,268,True,27.0,True,1.0,True
+EMSR314,Africa,normally wet,microwave,268,True,27.0,True,-3.0,True
+EMSR314,Africa,normally wet,viirs,268,True,27.0,True,-3.0,True
+EMSR314,Africa,normally wet,floodscan,268,True,27.0,True,-3.0,True
+EMSR314,Africa,normally wet,gfds,268,True,27.0,True,-3.0,True
+EMSR314,Africa,other,fusion,833,True,84.0,True,-3.0,True
+EMSR314,Africa,other,gfm,833,True,84.0,True,1.0,True
+EMSR314,Africa,other,microwave,833,True,84.0,True,-3.0,True
+EMSR314,Africa,other,viirs,833,True,84.0,True,-3.0,True
+EMSR314,Africa,other,floodscan,833,True,84.0,True,-3.0,True
+EMSR314,Africa,other,gfds,833,True,84.0,True,-3.0,True
+EMSR319,Africa,other,fusion,2,False,,,,
+EMSR319,Africa,other,gfm,2,False,,,,
+EMSR319,Africa,other,microwave,2,False,,,,
+EMSR319,Africa,other,viirs,2,False,,,,
+EMSR319,Africa,other,floodscan,2,False,,,,
+EMSR319,Africa,other,gfds,2,False,,,,
+EMSR342,Oceania,normally wet,fusion,169,True,17.0,True,8.0,False
+EMSR342,Oceania,normally wet,gfm,169,True,17.0,True,0.0,False
+EMSR342,Oceania,normally wet,microwave,169,True,17.0,True,-1.0,True
+EMSR342,Oceania,normally wet,viirs,169,True,17.0,True,7.0,True
+EMSR342,Oceania,normally wet,floodscan,169,True,17.0,True,8.0,True
+EMSR342,Oceania,normally wet,gfds,169,True,17.0,True,-1.0,True
+EMSR342,Oceania,other,fusion,3763,True,377.0,True,9.0,False
+EMSR342,Oceania,other,gfm,3763,True,377.0,False,,False
+EMSR342,Oceania,other,microwave,3763,True,377.0,True,5.0,False
+EMSR342,Oceania,other,viirs,3763,True,377.0,True,7.0,False
+EMSR342,Oceania,other,floodscan,3763,True,377.0,True,8.0,False
+EMSR342,Oceania,other,gfds,3763,True,377.0,True,5.0,False
+EMSR349,Africa,normally wet,fusion,2,False,,,,
+EMSR349,Africa,normally wet,gfm,2,False,,,,
+EMSR349,Africa,normally wet,microwave,2,False,,,,
+EMSR349,Africa,normally wet,viirs,2,False,,,,
+EMSR349,Africa,normally wet,floodscan,2,False,,,,
+EMSR349,Africa,normally wet,gfds,2,False,,,,
+EMSR349,Africa,other,fusion,3,False,,,,
+EMSR349,Africa,other,gfm,3,False,,,,
+EMSR349,Africa,other,microwave,3,False,,,,
+EMSR349,Africa,other,viirs,3,False,,,,
+EMSR349,Africa,other,floodscan,3,False,,,,
+EMSR349,Africa,other,gfds,3,False,,,,
+EMSR352,Asia,normally wet,fusion,1833,True,184.0,True,-3.0,True
+EMSR352,Asia,normally wet,gfm,1833,True,184.0,True,0.0,False
+EMSR352,Asia,normally wet,microwave,1833,True,184.0,True,-3.0,True
+EMSR352,Asia,normally wet,viirs,1833,True,184.0,True,-3.0,True
+EMSR352,Asia,normally wet,floodscan,1833,True,184.0,False,,False
+EMSR352,Asia,normally wet,gfds,1833,True,184.0,True,-3.0,True
+EMSR352,Asia,other,fusion,5194,True,520.0,True,-3.0,True
+EMSR352,Asia,other,gfm,5194,True,520.0,True,0.0,False
+EMSR352,Asia,other,microwave,5194,True,520.0,True,-3.0,True
+EMSR352,Asia,other,viirs,5194,True,520.0,True,-3.0,True
+EMSR352,Asia,other,floodscan,5194,True,520.0,False,,False
+EMSR352,Asia,other,gfds,5194,True,520.0,True,-3.0,True
+EMSR392,Asia,other,fusion,7,True,5.0,False,,False
+EMSR392,Asia,other,gfm,7,True,5.0,False,,False
+EMSR392,Asia,other,microwave,7,True,5.0,False,,False
+EMSR392,Asia,other,viirs,7,True,5.0,False,,False
+EMSR392,Asia,other,floodscan,7,True,5.0,False,,False
+EMSR392,Asia,other,gfds,7,True,5.0,False,,False
+EMSR399,Asia,normally wet,fusion,2,False,,,,
+EMSR399,Asia,normally wet,gfm,2,False,,,,
+EMSR399,Asia,normally wet,microwave,2,False,,,,
+EMSR399,Asia,normally wet,viirs,2,False,,,,
+EMSR399,Asia,normally wet,floodscan,2,False,,,,
+EMSR399,Asia,normally wet,gfds,2,False,,,,
+EMSR404,Africa,other,fusion,25,True,5.0,True,-3.0,False
+EMSR404,Africa,other,gfm,25,True,5.0,False,,False
+EMSR404,Africa,other,microwave,25,True,5.0,False,,False
+EMSR404,Africa,other,viirs,25,True,5.0,True,-3.0,False
+EMSR404,Africa,other,floodscan,25,True,5.0,False,,False
+EMSR404,Africa,other,gfds,25,True,5.0,False,,False
+EMSR410,Africa,normally wet,fusion,5,True,5.0,False,,False
+EMSR410,Africa,normally wet,gfm,5,True,5.0,False,,False
+EMSR410,Africa,normally wet,microwave,5,True,5.0,False,,False
+EMSR410,Africa,normally wet,viirs,5,True,5.0,False,,False
+EMSR410,Africa,normally wet,floodscan,5,True,5.0,False,,False
+EMSR410,Africa,normally wet,gfds,5,True,5.0,False,,False
+EMSR410,Africa,other,fusion,16,True,5.0,False,,False
+EMSR410,Africa,other,gfm,16,True,5.0,False,,False
+EMSR410,Africa,other,microwave,16,True,5.0,False,,False
+EMSR410,Africa,other,viirs,16,True,5.0,False,,False
+EMSR410,Africa,other,floodscan,16,True,5.0,False,,False
+EMSR410,Africa,other,gfds,16,True,5.0,False,,False
+EMSR419,Asia,normally wet,fusion,8,True,5.0,True,6.0,False
+EMSR419,Asia,normally wet,gfm,8,True,5.0,False,,False
+EMSR419,Asia,normally wet,microwave,8,True,5.0,True,1.0,True
+EMSR419,Asia,normally wet,viirs,8,True,5.0,False,,False
+EMSR419,Asia,normally wet,floodscan,8,True,5.0,False,,False
+EMSR419,Asia,normally wet,gfds,8,True,5.0,True,1.0,True
+EMSR419,Asia,other,fusion,179,True,18.0,True,2.0,False
+EMSR419,Asia,other,gfm,179,True,18.0,False,,False
+EMSR419,Asia,other,microwave,179,True,18.0,True,-3.0,True
+EMSR419,Asia,other,viirs,179,True,18.0,True,2.0,False
+EMSR419,Asia,other,floodscan,179,True,18.0,False,,False
+EMSR419,Asia,other,gfds,179,True,18.0,True,-3.0,True
+EMSR424,Africa,normally wet,fusion,960,True,96.0,True,-3.0,True
+EMSR424,Africa,normally wet,gfm,960,True,96.0,True,4.0,False
+EMSR424,Africa,normally wet,microwave,960,True,96.0,True,-3.0,True
+EMSR424,Africa,normally wet,viirs,960,True,96.0,True,-3.0,True
+EMSR424,Africa,normally wet,floodscan,960,True,96.0,True,-3.0,True
+EMSR424,Africa,normally wet,gfds,960,True,96.0,True,-3.0,False
+EMSR424,Africa,other,fusion,3238,True,324.0,True,-3.0,True
+EMSR424,Africa,other,gfm,3238,True,324.0,False,,False
+EMSR424,Africa,other,microwave,3238,True,324.0,True,-3.0,True
+EMSR424,Africa,other,viirs,3238,True,324.0,True,-3.0,True
+EMSR424,Africa,other,floodscan,3238,True,324.0,True,-3.0,True
+EMSR424,Africa,other,gfds,3238,True,324.0,True,-3.0,False
+EMSR431,Asia,normally wet,fusion,1,False,,,,
+EMSR431,Asia,normally wet,gfm,1,False,,,,
+EMSR431,Asia,normally wet,microwave,1,False,,,,
+EMSR431,Asia,normally wet,viirs,1,False,,,,
+EMSR431,Asia,normally wet,floodscan,1,False,,,,
+EMSR431,Asia,normally wet,gfds,1,False,,,,
+EMSR431,Asia,other,fusion,7,True,5.0,False,,False
+EMSR431,Asia,other,gfm,7,True,5.0,False,,False
+EMSR431,Asia,other,microwave,7,True,5.0,False,,False
+EMSR431,Asia,other,viirs,7,True,5.0,False,,False
+EMSR431,Asia,other,floodscan,7,True,5.0,False,,False
+EMSR431,Asia,other,gfds,7,True,5.0,False,,False
+EMSR438,Africa,normally wet,fusion,25,True,5.0,True,4.0,False
+EMSR438,Africa,normally wet,gfm,25,True,5.0,True,4.0,False
+EMSR438,Africa,normally wet,microwave,25,True,5.0,False,,False
+EMSR438,Africa,normally wet,viirs,25,True,5.0,True,-3.0,False
+EMSR438,Africa,normally wet,floodscan,25,True,5.0,False,,False
+EMSR438,Africa,normally wet,gfds,25,True,5.0,False,,False
+EMSR438,Africa,other,fusion,78,True,8.0,True,8.0,False
+EMSR438,Africa,other,gfm,78,True,8.0,False,,False
+EMSR438,Africa,other,microwave,78,True,8.0,True,-2.0,True
+EMSR438,Africa,other,viirs,78,True,8.0,True,-1.0,False
+EMSR438,Africa,other,floodscan,78,True,8.0,False,,False
+EMSR438,Africa,other,gfds,78,True,8.0,True,-2.0,True
+EMSR446,Africa,normally wet,fusion,54,True,6.0,True,-3.0,True
+EMSR446,Africa,normally wet,gfm,54,True,6.0,True,0.0,True
+EMSR446,Africa,normally wet,microwave,54,True,6.0,False,,False
+EMSR446,Africa,normally wet,viirs,54,True,6.0,True,-3.0,True
+EMSR446,Africa,normally wet,floodscan,54,True,6.0,False,,False
+EMSR446,Africa,normally wet,gfds,54,True,6.0,False,,False
+EMSR446,Africa,other,fusion,214,True,22.0,True,0.0,False
+EMSR446,Africa,other,gfm,214,True,22.0,False,,False
+EMSR446,Africa,other,microwave,214,True,22.0,False,,False
+EMSR446,Africa,other,viirs,214,True,22.0,True,-3.0,True
+EMSR446,Africa,other,floodscan,214,True,22.0,False,,False
+EMSR446,Africa,other,gfds,214,True,22.0,False,,False
+EMSR450,Asia,other,fusion,1,False,,,,
+EMSR450,Asia,other,gfm,1,False,,,,
+EMSR450,Asia,other,microwave,1,False,,,,
+EMSR450,Asia,other,viirs,1,False,,,,
+EMSR450,Asia,other,floodscan,1,False,,,,
+EMSR450,Asia,other,gfds,1,False,,,,
+EMSR466,Africa,other,fusion,82,True,9.0,True,-2.0,False
+EMSR466,Africa,other,gfm,82,True,9.0,True,5.0,False
+EMSR466,Africa,other,microwave,82,True,9.0,True,-1.0,False
+EMSR466,Africa,other,viirs,82,True,9.0,True,-2.0,True
+EMSR466,Africa,other,floodscan,82,True,9.0,True,-1.0,False
+EMSR466,Africa,other,gfds,82,True,9.0,False,,False
+EMSR470,Africa,normally wet,fusion,35,True,5.0,True,-3.0,True
+EMSR470,Africa,normally wet,gfm,35,True,5.0,True,0.0,True
+EMSR470,Africa,normally wet,microwave,35,True,5.0,False,,True
+EMSR470,Africa,normally wet,viirs,35,True,5.0,True,-3.0,True
+EMSR470,Africa,normally wet,floodscan,35,True,5.0,False,,True
+EMSR470,Africa,normally wet,gfds,35,True,5.0,False,,False
+EMSR470,Africa,other,fusion,385,True,39.0,True,-3.0,True
+EMSR470,Africa,other,gfm,385,True,39.0,True,0.0,True
+EMSR470,Africa,other,microwave,385,True,39.0,True,-3.0,True
+EMSR470,Africa,other,viirs,385,True,39.0,True,-3.0,True
+EMSR470,Africa,other,floodscan,385,True,39.0,True,-3.0,True
+EMSR470,Africa,other,gfds,385,True,39.0,False,,False
+EMSR504,Oceania,normally wet,fusion,97,True,10.0,True,6.0,False
+EMSR504,Oceania,normally wet,gfm,97,True,10.0,True,0.0,False
+EMSR504,Oceania,normally wet,microwave,97,True,10.0,True,4.0,False
+EMSR504,Oceania,normally wet,viirs,97,True,10.0,False,,False
+EMSR504,Oceania,normally wet,floodscan,97,True,10.0,True,4.0,False
+EMSR504,Oceania,normally wet,gfds,97,True,10.0,False,,False
+EMSR504,Oceania,other,fusion,709,True,71.0,True,6.0,False
+EMSR504,Oceania,other,gfm,709,True,71.0,True,0.0,False
+EMSR504,Oceania,other,microwave,709,True,71.0,True,4.0,False
+EMSR504,Oceania,other,viirs,709,True,71.0,False,,False
+EMSR504,Oceania,other,floodscan,709,True,71.0,True,4.0,False
+EMSR504,Oceania,other,gfds,709,True,71.0,True,5.0,False
+EMSR507,Asia,other,fusion,16,True,5.0,False,,False
+EMSR507,Asia,other,gfm,16,True,5.0,False,,False
+EMSR507,Asia,other,microwave,16,True,5.0,False,,False
+EMSR507,Asia,other,viirs,16,True,5.0,False,,False
+EMSR507,Asia,other,floodscan,16,True,5.0,False,,False
+EMSR507,Asia,other,gfds,16,True,5.0,False,,False
+EMSR514,South America,normally wet,fusion,16,True,5.0,False,,False
+EMSR514,South America,normally wet,gfm,16,True,5.0,True,0.0,True
+EMSR514,South America,normally wet,microwave,16,True,5.0,False,,False
+EMSR514,South America,normally wet,viirs,16,True,5.0,False,,False
+EMSR514,South America,normally wet,floodscan,16,True,5.0,False,,False
+EMSR514,South America,normally wet,gfds,16,True,5.0,False,,False
+EMSR514,South America,other,fusion,164,True,17.0,False,,False
+EMSR514,South America,other,gfm,164,True,17.0,False,,True
+EMSR514,South America,other,microwave,164,True,17.0,False,,False
+EMSR514,South America,other,viirs,164,True,17.0,False,,False
+EMSR514,South America,other,floodscan,164,True,17.0,False,,False
+EMSR514,South America,other,gfds,164,True,17.0,False,,False
+EMSR550,Oceania,other,fusion,11,True,5.0,False,,False
+EMSR550,Oceania,other,gfm,11,True,5.0,False,,False
+EMSR550,Oceania,other,microwave,11,True,5.0,False,,False
+EMSR550,Oceania,other,viirs,11,True,5.0,False,,False
+EMSR550,Oceania,other,floodscan,11,True,5.0,False,,False
+EMSR550,Oceania,other,gfds,11,True,5.0,False,,False
+EMSR554,Oceania,normally wet,fusion,4,False,,,,
+EMSR554,Oceania,normally wet,gfm,4,False,,,,
+EMSR554,Oceania,normally wet,microwave,4,False,,,,
+EMSR554,Oceania,normally wet,viirs,4,False,,,,
+EMSR554,Oceania,normally wet,floodscan,4,False,,,,
+EMSR554,Oceania,normally wet,gfds,4,False,,,,
+EMSR554,Oceania,other,fusion,545,True,55.0,True,2.0,False
+EMSR554,Oceania,other,gfm,545,True,55.0,True,4.0,False
+EMSR554,Oceania,other,microwave,545,True,55.0,True,-2.0,False
+EMSR554,Oceania,other,viirs,545,True,55.0,False,,False
+EMSR554,Oceania,other,floodscan,545,True,55.0,True,-2.0,False
+EMSR554,Oceania,other,gfds,545,True,55.0,True,-2.0,False
+EMSR559,Africa,normally wet,fusion,248,True,25.0,True,0.0,False
+EMSR559,Africa,normally wet,gfm,248,True,25.0,True,7.0,False
+EMSR559,Africa,normally wet,microwave,248,True,25.0,True,-3.0,True
+EMSR559,Africa,normally wet,viirs,248,True,25.0,False,,False
+EMSR559,Africa,normally wet,floodscan,248,True,25.0,True,-3.0,True
+EMSR559,Africa,normally wet,gfds,248,True,25.0,True,3.0,False
+EMSR559,Africa,other,fusion,239,True,24.0,True,-3.0,True
+EMSR559,Africa,other,gfm,239,True,24.0,True,2.0,False
+EMSR559,Africa,other,microwave,239,True,24.0,True,-3.0,True
+EMSR559,Africa,other,viirs,239,True,24.0,False,,False
+EMSR559,Africa,other,floodscan,239,True,24.0,True,-3.0,True
+EMSR559,Africa,other,gfds,239,True,24.0,True,1.0,False
+EMSR561,Africa,normally wet,fusion,3,False,,,,
+EMSR561,Africa,normally wet,gfm,3,False,,,,
+EMSR561,Africa,normally wet,microwave,3,False,,,,
+EMSR561,Africa,normally wet,viirs,3,False,,,,
+EMSR561,Africa,normally wet,floodscan,3,False,,,,
+EMSR561,Africa,normally wet,gfds,3,False,,,,
+EMSR561,Africa,other,fusion,144,True,15.0,True,3.0,False
+EMSR561,Africa,other,gfm,144,True,15.0,True,0.0,False
+EMSR561,Africa,other,microwave,144,True,15.0,True,-1.0,True
+EMSR561,Africa,other,viirs,144,True,15.0,False,,False
+EMSR561,Africa,other,floodscan,144,True,15.0,True,0.0,True
+EMSR561,Africa,other,gfds,144,True,15.0,True,-1.0,False
+EMSR562,Oceania,normally wet,fusion,26,True,5.0,False,,False
+EMSR562,Oceania,normally wet,gfm,26,True,5.0,False,,False
+EMSR562,Oceania,normally wet,microwave,26,True,5.0,True,-3.0,False
+EMSR562,Oceania,normally wet,viirs,26,True,5.0,False,,False
+EMSR562,Oceania,normally wet,floodscan,26,True,5.0,True,-3.0,False
+EMSR562,Oceania,normally wet,gfds,26,True,5.0,True,12.0,False
+EMSR562,Oceania,other,fusion,68,True,7.0,True,341.0,False
+EMSR562,Oceania,other,gfm,68,True,7.0,False,,False
+EMSR562,Oceania,other,microwave,68,True,7.0,True,-3.0,False
+EMSR562,Oceania,other,viirs,68,True,7.0,False,,False
+EMSR562,Oceania,other,floodscan,68,True,7.0,True,-3.0,False
+EMSR562,Oceania,other,gfds,68,True,7.0,True,12.0,False
+EMSR567,Oceania,normally wet,fusion,17,True,5.0,True,11.0,False
+EMSR567,Oceania,normally wet,gfm,17,True,5.0,True,10.0,False
+EMSR567,Oceania,normally wet,microwave,17,True,5.0,True,9.0,False
+EMSR567,Oceania,normally wet,viirs,17,True,5.0,False,,False
+EMSR567,Oceania,normally wet,floodscan,17,True,5.0,True,9.0,False
+EMSR567,Oceania,normally wet,gfds,17,True,5.0,True,11.0,False
+EMSR567,Oceania,other,fusion,560,True,56.0,True,11.0,False
+EMSR567,Oceania,other,gfm,560,True,56.0,True,10.0,False
+EMSR567,Oceania,other,microwave,560,True,56.0,True,9.0,False
+EMSR567,Oceania,other,viirs,560,True,56.0,False,,False
+EMSR567,Oceania,other,floodscan,560,True,56.0,True,9.0,False
+EMSR567,Oceania,other,gfds,560,True,56.0,True,11.0,False
+EMSR568,Africa,normally wet,fusion,8,True,5.0,False,,False
+EMSR568,Africa,normally wet,gfm,8,True,5.0,False,,False
+EMSR568,Africa,normally wet,microwave,8,True,5.0,False,,False
+EMSR568,Africa,normally wet,viirs,8,True,5.0,False,,False
+EMSR568,Africa,normally wet,floodscan,8,True,5.0,False,,False
+EMSR568,Africa,normally wet,gfds,8,True,5.0,False,,False
+EMSR568,Africa,other,fusion,27,True,5.0,False,,False
+EMSR568,Africa,other,gfm,27,True,5.0,False,,False
+EMSR568,Africa,other,microwave,27,True,5.0,False,,False
+EMSR568,Africa,other,viirs,27,True,5.0,False,,False
+EMSR568,Africa,other,floodscan,27,True,5.0,False,,False
+EMSR568,Africa,other,gfds,27,True,5.0,False,,False
+EMSR570,Oceania,other,fusion,305,True,31.0,True,1.0,True
+EMSR570,Oceania,other,gfm,305,True,31.0,True,1.0,True
+EMSR570,Oceania,other,microwave,305,True,31.0,True,-2.0,True
+EMSR570,Oceania,other,viirs,305,True,31.0,False,,False
+EMSR570,Oceania,other,floodscan,305,True,31.0,True,-2.0,True
+EMSR570,Oceania,other,gfds,305,True,31.0,True,0.0,True
+EMSR574,Oceania,normally wet,fusion,2,False,,,,
+EMSR574,Oceania,normally wet,gfm,2,False,,,,
+EMSR574,Oceania,normally wet,microwave,2,False,,,,
+EMSR574,Oceania,normally wet,viirs,2,False,,,,
+EMSR574,Oceania,normally wet,floodscan,2,False,,,,
+EMSR574,Oceania,normally wet,gfds,2,False,,,,
+EMSR574,Oceania,other,fusion,17,True,5.0,False,,False
+EMSR574,Oceania,other,gfm,17,True,5.0,True,20.0,False
+EMSR574,Oceania,other,microwave,17,True,5.0,False,,False
+EMSR574,Oceania,other,viirs,17,True,5.0,False,,False
+EMSR574,Oceania,other,floodscan,17,True,5.0,False,,False
+EMSR574,Oceania,other,gfds,17,True,5.0,False,,False
+EMSR586,Oceania,normally wet,fusion,9,True,5.0,False,,False
+EMSR586,Oceania,normally wet,gfm,9,True,5.0,False,,False
+EMSR586,Oceania,normally wet,microwave,9,True,5.0,False,,False
+EMSR586,Oceania,normally wet,viirs,9,True,5.0,False,,False
+EMSR586,Oceania,normally wet,floodscan,9,True,5.0,False,,False
+EMSR586,Oceania,normally wet,gfds,9,True,5.0,False,,False
+EMSR586,Oceania,other,fusion,434,True,44.0,True,4.0,False
+EMSR586,Oceania,other,gfm,434,True,44.0,True,1.0,False
+EMSR586,Oceania,other,microwave,434,True,44.0,True,3.0,True
+EMSR586,Oceania,other,viirs,434,True,44.0,False,,False
+EMSR586,Oceania,other,floodscan,434,True,44.0,True,3.0,False
+EMSR586,Oceania,other,gfds,434,True,44.0,True,3.0,True
+EMSR629,Asia,normally wet,fusion,223,True,23.0,True,-2.0,True
+EMSR629,Asia,normally wet,gfm,223,True,23.0,False,,True
+EMSR629,Asia,normally wet,microwave,223,True,23.0,True,-2.0,True
+EMSR629,Asia,normally wet,viirs,223,True,23.0,False,,False
+EMSR629,Asia,normally wet,floodscan,223,True,23.0,True,-2.0,True
+EMSR629,Asia,normally wet,gfds,223,True,23.0,True,-2.0,True
+EMSR629,Asia,other,fusion,1850,True,185.0,True,-3.0,True
+EMSR629,Asia,other,gfm,1850,True,185.0,False,,False
+EMSR629,Asia,other,microwave,1850,True,185.0,True,-3.0,True
+EMSR629,Asia,other,viirs,1850,True,185.0,False,,False
+EMSR629,Asia,other,floodscan,1850,True,185.0,True,-3.0,True
+EMSR629,Asia,other,gfds,1850,True,185.0,True,-2.0,True
+EMSR631,Asia,other,fusion,88,True,9.0,True,484.0,False
+EMSR631,Asia,other,gfm,88,True,9.0,False,,False
+EMSR631,Asia,other,microwave,88,True,9.0,True,474.0,False
+EMSR631,Asia,other,viirs,88,True,9.0,False,,False
+EMSR631,Asia,other,floodscan,88,True,9.0,True,481.0,False
+EMSR631,Asia,other,gfds,88,True,9.0,True,474.0,False
+EMSR637,Oceania,normally wet,fusion,23,True,5.0,True,-3.0,True
+EMSR637,Oceania,normally wet,gfm,23,True,5.0,True,13.0,True
+EMSR637,Oceania,normally wet,microwave,23,True,5.0,True,23.0,True
+EMSR637,Oceania,normally wet,viirs,23,True,5.0,False,,False
+EMSR637,Oceania,normally wet,floodscan,23,True,5.0,True,24.0,True
+EMSR637,Oceania,normally wet,gfds,23,True,5.0,True,23.0,False
+EMSR637,Oceania,other,fusion,1237,True,124.0,True,25.0,False
+EMSR637,Oceania,other,gfm,1237,True,124.0,True,11.0,False
+EMSR637,Oceania,other,microwave,1237,True,124.0,True,9.0,False
+EMSR637,Oceania,other,viirs,1237,True,124.0,False,,False
+EMSR637,Oceania,other,floodscan,1237,True,124.0,True,11.0,False
+EMSR637,Oceania,other,gfds,1237,True,124.0,True,9.0,False
+EMSR650,Africa,normally wet,fusion,31,True,5.0,False,,False
+EMSR650,Africa,normally wet,gfm,31,True,5.0,False,,False
+EMSR650,Africa,normally wet,microwave,31,True,5.0,True,2.0,False
+EMSR650,Africa,normally wet,viirs,31,True,5.0,False,,False
+EMSR650,Africa,normally wet,floodscan,31,True,5.0,True,7.0,False
+EMSR650,Africa,normally wet,gfds,31,True,5.0,True,2.0,False
+EMSR650,Africa,other,fusion,409,True,41.0,True,4.0,False
+EMSR650,Africa,other,gfm,409,True,41.0,True,0.0,False
+EMSR650,Africa,other,microwave,409,True,41.0,True,1.0,False
+EMSR650,Africa,other,viirs,409,True,41.0,False,,False
+EMSR650,Africa,other,floodscan,409,True,41.0,True,1.0,False
+EMSR650,Africa,other,gfds,409,True,41.0,True,2.0,False
+EMSR663,Africa,normally wet,fusion,6,True,5.0,True,-3.0,True
+EMSR663,Africa,normally wet,gfm,6,True,5.0,False,,False
+EMSR663,Africa,normally wet,microwave,6,True,5.0,True,-3.0,True
+EMSR663,Africa,normally wet,viirs,6,True,5.0,False,,False
+EMSR663,Africa,normally wet,floodscan,6,True,5.0,True,-3.0,True
+EMSR663,Africa,normally wet,gfds,6,True,5.0,True,-3.0,True
+EMSR663,Africa,other,fusion,37,True,5.0,True,-3.0,True
+EMSR663,Africa,other,gfm,37,True,5.0,True,-2.0,True
+EMSR663,Africa,other,microwave,37,True,5.0,True,-3.0,True
+EMSR663,Africa,other,viirs,37,True,5.0,False,,False
+EMSR663,Africa,other,floodscan,37,True,5.0,True,-3.0,True
+EMSR663,Africa,other,gfds,37,True,5.0,True,-3.0,True
+EMSR696,Africa,normally wet,fusion,1,False,,,,
+EMSR696,Africa,normally wet,gfm,1,False,,,,
+EMSR696,Africa,normally wet,microwave,1,False,,,,
+EMSR696,Africa,normally wet,viirs,1,False,,,,
+EMSR696,Africa,normally wet,floodscan,1,False,,,,
+EMSR696,Africa,normally wet,gfds,1,False,,,,
+EMSR696,Africa,other,fusion,43,True,5.0,True,68.0,True
+EMSR696,Africa,other,gfm,43,True,5.0,False,,False
+EMSR696,Africa,other,microwave,43,True,5.0,True,1.0,True
+EMSR696,Africa,other,viirs,43,True,5.0,False,,False
+EMSR696,Africa,other,floodscan,43,True,5.0,False,,False
+EMSR696,Africa,other,gfds,43,True,5.0,True,1.0,True
+EMSR720,South America,other,fusion,53,True,6.0,False,,False
+EMSR720,South America,other,gfm,53,True,6.0,False,,False
+EMSR720,South America,other,microwave,53,True,6.0,True,-1.0,False
+EMSR720,South America,other,viirs,53,True,6.0,True,1.0,False
+EMSR720,South America,other,floodscan,53,True,6.0,False,,False
+EMSR720,South America,other,gfds,53,True,6.0,True,-1.0,False
+EMSR750,Africa,other,fusion,26,True,5.0,False,,False
+EMSR750,Africa,other,gfm,26,True,5.0,False,,False
+EMSR750,Africa,other,microwave,26,True,5.0,False,,False
+EMSR750,Africa,other,viirs,26,True,5.0,False,,False
+EMSR750,Africa,other,floodscan,26,True,5.0,False,,False
+EMSR750,Africa,other,gfds,26,True,5.0,False,,False
+EMSR753,Africa,other,fusion,84,True,9.0,True,3.0,False
+EMSR753,Africa,other,gfm,84,True,9.0,False,,False
+EMSR753,Africa,other,microwave,84,True,9.0,True,1.0,False
+EMSR753,Africa,other,viirs,84,True,9.0,True,1.0,False
+EMSR753,Africa,other,floodscan,84,True,9.0,True,1.0,False
+EMSR753,Africa,other,gfds,84,True,9.0,False,,False
+EMSR754,Asia,normally wet,fusion,62,True,7.0,True,2.0,False
+EMSR754,Asia,normally wet,gfm,62,True,7.0,True,-3.0,False
+EMSR754,Asia,normally wet,microwave,62,True,7.0,False,,False
+EMSR754,Asia,normally wet,viirs,62,True,7.0,True,2.0,True
+EMSR754,Asia,normally wet,floodscan,62,True,7.0,False,,False
+EMSR754,Asia,normally wet,gfds,62,True,7.0,False,,False
+EMSR754,Asia,other,fusion,81,True,9.0,True,2.0,False
+EMSR754,Asia,other,gfm,81,True,9.0,True,-1.0,False
+EMSR754,Asia,other,microwave,81,True,9.0,False,,False
+EMSR754,Asia,other,viirs,81,True,9.0,True,0.0,True
+EMSR754,Asia,other,floodscan,81,True,9.0,False,,False
+EMSR754,Asia,other,gfds,81,True,9.0,False,,False
+EMSR772,Africa,normally wet,fusion,60,True,6.0,True,-3.0,True
+EMSR772,Africa,normally wet,gfm,60,True,6.0,False,,True
+EMSR772,Africa,normally wet,microwave,60,True,6.0,True,-3.0,True
+EMSR772,Africa,normally wet,viirs,60,True,6.0,True,-3.0,True
+EMSR772,Africa,normally wet,floodscan,60,True,6.0,True,-3.0,True
+EMSR772,Africa,normally wet,gfds,60,True,6.0,True,-3.0,True
+EMSR772,Africa,other,fusion,741,True,75.0,True,-3.0,True
+EMSR772,Africa,other,gfm,741,True,75.0,False,,False
+EMSR772,Africa,other,microwave,741,True,75.0,True,-3.0,True
+EMSR772,Africa,other,viirs,741,True,75.0,True,-3.0,True
+EMSR772,Africa,other,floodscan,741,True,75.0,True,-3.0,True
+EMSR772,Africa,other,gfds,741,True,75.0,True,-3.0,True
+EMSR779,Africa,normally wet,fusion,160,True,16.0,True,-3.0,True
+EMSR779,Africa,normally wet,gfm,160,True,16.0,True,0.0,True
+EMSR779,Africa,normally wet,microwave,160,True,16.0,True,-3.0,True
+EMSR779,Africa,normally wet,viirs,160,True,16.0,True,-3.0,True
+EMSR779,Africa,normally wet,floodscan,160,True,16.0,True,-3.0,True
+EMSR779,Africa,normally wet,gfds,160,True,16.0,True,-3.0,True
+EMSR779,Africa,other,fusion,1462,True,147.0,True,-3.0,True
+EMSR779,Africa,other,gfm,1462,True,147.0,True,0.0,True
+EMSR779,Africa,other,microwave,1462,True,147.0,True,-3.0,True
+EMSR779,Africa,other,viirs,1462,True,147.0,True,-3.0,True
+EMSR779,Africa,other,floodscan,1462,True,147.0,True,-3.0,True
+EMSR779,Africa,other,gfds,1462,True,147.0,True,-3.0,True
+EMSR789,South America,other,fusion,39,True,5.0,True,1.0,False
+EMSR789,South America,other,gfm,39,True,5.0,True,0.0,False
+EMSR789,South America,other,microwave,39,True,5.0,True,1.0,True
+EMSR789,South America,other,viirs,39,True,5.0,True,0.0,False
+EMSR789,South America,other,floodscan,39,True,5.0,True,6.0,False
+EMSR789,South America,other,gfds,39,True,5.0,True,1.0,True
+EMSR796,South America,other,fusion,3,False,,,,
+EMSR796,South America,other,gfm,3,False,,,,
+EMSR796,South America,other,microwave,3,False,,,,
+EMSR796,South America,other,viirs,3,False,,,,
+EMSR796,South America,other,floodscan,3,False,,,,
+EMSR796,South America,other,gfds,3,False,,,,
+EMSR799,South America,normally wet,fusion,51,True,6.0,True,-1.0,True
+EMSR799,South America,normally wet,gfm,51,True,6.0,False,,False
+EMSR799,South America,normally wet,microwave,51,True,6.0,True,-1.0,True
+EMSR799,South America,normally wet,viirs,51,True,6.0,True,-2.0,False
+EMSR799,South America,normally wet,floodscan,51,True,6.0,True,-1.0,True
+EMSR799,South America,normally wet,gfds,51,True,6.0,True,6.0,False
+EMSR799,South America,other,fusion,257,True,26.0,True,-3.0,True
+EMSR799,South America,other,gfm,257,True,26.0,False,,False
+EMSR799,South America,other,microwave,257,True,26.0,True,-3.0,True
+EMSR799,South America,other,viirs,257,True,26.0,True,-2.0,True
+EMSR799,South America,other,floodscan,257,True,26.0,True,-3.0,True
+EMSR799,South America,other,gfds,257,True,26.0,True,-2.0,True
+EMSR838,Asia,normally wet,fusion,298,True,30.0,True,-3.0,True
+EMSR838,Asia,normally wet,gfm,298,True,30.0,True,0.0,False
+EMSR838,Asia,normally wet,microwave,298,True,30.0,True,-1.0,True
+EMSR838,Asia,normally wet,viirs,298,True,30.0,True,-1.0,True
+EMSR838,Asia,normally wet,floodscan,298,True,30.0,True,0.0,True
+EMSR838,Asia,normally wet,gfds,298,True,30.0,True,1.0,False
+EMSR838,Asia,other,fusion,3073,True,308.0,True,-1.0,True
+EMSR838,Asia,other,gfm,3073,True,308.0,True,0.0,False
+EMSR838,Asia,other,microwave,3073,True,308.0,True,-1.0,True
+EMSR838,Asia,other,viirs,3073,True,308.0,True,-1.0,False
+EMSR838,Asia,other,floodscan,3073,True,308.0,True,0.0,True
+EMSR838,Asia,other,gfds,3073,True,308.0,True,1.0,False
+EMSR844,Asia,normally wet,fusion,2,False,,,,
+EMSR844,Asia,normally wet,gfm,2,False,,,,
+EMSR844,Asia,normally wet,microwave,2,False,,,,
+EMSR844,Asia,normally wet,viirs,2,False,,,,
+EMSR844,Asia,normally wet,floodscan,2,False,,,,
+EMSR844,Asia,normally wet,gfds,2,False,,,,
+EMSR844,Asia,other,fusion,2,False,,,,
+EMSR844,Asia,other,gfm,2,False,,,,
+EMSR844,Asia,other,microwave,2,False,,,,
+EMSR844,Asia,other,viirs,2,False,,,,
+EMSR844,Asia,other,floodscan,2,False,,,,
+EMSR844,Asia,other,gfds,2,False,,,,
+EMSR848,Asia,normally wet,fusion,83,True,9.0,False,,False
+EMSR848,Asia,normally wet,gfm,83,True,9.0,True,46.0,False
+EMSR848,Asia,normally wet,microwave,83,True,9.0,True,50.0,False
+EMSR848,Asia,normally wet,viirs,83,True,9.0,True,27.0,False
+EMSR848,Asia,normally wet,floodscan,83,True,9.0,True,78.0,False
+EMSR848,Asia,normally wet,gfds,83,True,9.0,True,50.0,False
+EMSR848,Asia,other,fusion,1781,True,179.0,True,86.0,False
+EMSR848,Asia,other,gfm,1781,True,179.0,True,46.0,False
+EMSR848,Asia,other,microwave,1781,True,179.0,True,77.0,False
+EMSR848,Asia,other,viirs,1781,True,179.0,True,49.0,False
+EMSR848,Asia,other,floodscan,1781,True,179.0,True,77.0,False
+EMSR848,Asia,other,gfds,1781,True,179.0,True,105.0,False
+EMSR851,Asia,other,fusion,28,True,5.0,False,,False
+EMSR851,Asia,other,gfm,28,True,5.0,False,,False
+EMSR851,Asia,other,microwave,28,True,5.0,False,,False
+EMSR851,Asia,other,viirs,28,True,5.0,True,0.0,False
+EMSR851,Asia,other,floodscan,28,True,5.0,False,,False
+EMSR851,Asia,other,gfds,28,True,5.0,False,,False
+EMSR853,South America,other,fusion,70,True,7.0,True,1.0,True
+EMSR853,South America,other,gfm,70,True,7.0,True,1.0,True
+EMSR853,South America,other,microwave,70,True,7.0,True,0.0,False
+EMSR853,South America,other,viirs,70,True,7.0,True,-3.0,True
+EMSR853,South America,other,floodscan,70,True,7.0,True,0.0,False
+EMSR853,South America,other,gfds,70,True,7.0,False,,False
+EMSR857,Africa,normally wet,fusion,43,True,5.0,True,10.0,False
+EMSR857,Africa,normally wet,gfm,43,True,5.0,True,9.0,False
+EMSR857,Africa,normally wet,microwave,43,True,5.0,True,6.0,False
+EMSR857,Africa,normally wet,viirs,43,True,5.0,True,-3.0,True
+EMSR857,Africa,normally wet,floodscan,43,True,5.0,True,8.0,False
+EMSR857,Africa,normally wet,gfds,43,True,5.0,True,6.0,False
+EMSR857,Africa,other,fusion,3742,True,375.0,True,6.0,False
+EMSR857,Africa,other,gfm,3742,True,375.0,True,4.0,False
+EMSR857,Africa,other,microwave,3742,True,375.0,True,4.0,True
+EMSR857,Africa,other,viirs,3742,True,375.0,True,9.0,False
+EMSR857,Africa,other,floodscan,3742,True,375.0,True,4.0,False
+EMSR857,Africa,other,gfds,3742,True,375.0,True,5.0,True
+EMSR865,South America,normally wet,fusion,15,True,5.0,True,-3.0,True
+EMSR865,South America,normally wet,gfm,15,True,5.0,False,,False
+EMSR865,South America,normally wet,microwave,15,True,5.0,True,-3.0,True
+EMSR865,South America,normally wet,viirs,15,True,5.0,True,2.0,True
+EMSR865,South America,normally wet,floodscan,15,True,5.0,True,-3.0,True
+EMSR865,South America,normally wet,gfds,15,True,5.0,True,7.0,True
+EMSR865,South America,other,fusion,480,True,48.0,True,-3.0,True
+EMSR865,South America,other,gfm,480,True,48.0,True,6.0,False
+EMSR865,South America,other,microwave,480,True,48.0,True,2.0,True
+EMSR865,South America,other,viirs,480,True,48.0,True,2.0,True
+EMSR865,South America,other,floodscan,480,True,48.0,True,2.0,False
+EMSR865,South America,other,gfds,480,True,48.0,True,5.0,False
+EMSR870,South America,normally wet,fusion,30,True,5.0,True,-3.0,True
+EMSR870,South America,normally wet,gfm,30,True,5.0,True,6.0,True
+EMSR870,South America,normally wet,microwave,30,True,5.0,True,-3.0,True
+EMSR870,South America,normally wet,viirs,30,True,5.0,True,1.0,True
+EMSR870,South America,normally wet,floodscan,30,True,5.0,True,-1.0,True
+EMSR870,South America,normally wet,gfds,30,True,5.0,True,-3.0,True
+EMSR870,South America,other,fusion,20,True,5.0,True,-3.0,True
+EMSR870,South America,other,gfm,20,True,5.0,True,6.0,True
+EMSR870,South America,other,microwave,20,True,5.0,True,-3.0,True
+EMSR870,South America,other,viirs,20,True,5.0,True,1.0,True
+EMSR870,South America,other,floodscan,20,True,5.0,True,-1.0,True
+EMSR870,South America,other,gfds,20,True,5.0,True,-3.0,True
+EMSR927,Asia,other,fusion,7,True,5.0,False,,False
+EMSR927,Asia,other,gfm,7,True,5.0,False,,False
+EMSR927,Asia,other,microwave,7,True,5.0,False,,False
+EMSR927,Asia,other,viirs,7,True,5.0,False,,False
+EMSR927,Asia,other,floodscan,7,True,5.0,False,,False
+EMSR927,Asia,other,gfds,7,True,5.0,False,,False
+FL20150703MMR,Asia,normally wet,fusion,876,True,88.0,True,-3.0,True
+FL20150703MMR,Asia,normally wet,gfm,876,True,88.0,True,5.0,False
+FL20150703MMR,Asia,normally wet,microwave,876,True,88.0,True,-3.0,True
+FL20150703MMR,Asia,normally wet,viirs,876,True,88.0,True,-2.0,True
+FL20150703MMR,Asia,normally wet,floodscan,876,True,88.0,True,-3.0,True
+FL20150703MMR,Asia,normally wet,gfds,876,True,88.0,True,-3.0,True
+FL20150703MMR,Asia,other,fusion,673,True,68.0,True,-3.0,True
+FL20150703MMR,Asia,other,gfm,673,True,68.0,False,,True
+FL20150703MMR,Asia,other,microwave,673,True,68.0,True,-3.0,True
+FL20150703MMR,Asia,other,viirs,673,True,68.0,True,-2.0,False
+FL20150703MMR,Asia,other,floodscan,673,True,68.0,True,-3.0,True
+FL20150703MMR,Asia,other,gfds,673,True,68.0,True,-3.0,False
+FL20170815BGD,Asia,normally wet,fusion,11503,True,1151.0,True,-3.0,True
+FL20170815BGD,Asia,normally wet,gfm,11503,True,1151.0,True,0.0,False
+FL20170815BGD,Asia,normally wet,microwave,11503,True,1151.0,True,-3.0,True
+FL20170815BGD,Asia,normally wet,viirs,11503,True,1151.0,True,2.0,True
+FL20170815BGD,Asia,normally wet,floodscan,11503,True,1151.0,True,-3.0,True
+FL20170815BGD,Asia,normally wet,gfds,11503,True,1151.0,True,2.0,True
+FL20170815BGD,Asia,other,fusion,15156,True,1516.0,True,-3.0,True
+FL20170815BGD,Asia,other,gfm,15156,True,1516.0,True,0.0,False
+FL20170815BGD,Asia,other,microwave,15156,True,1516.0,True,-3.0,True
+FL20170815BGD,Asia,other,viirs,15156,True,1516.0,True,7.0,True
+FL20170815BGD,Asia,other,floodscan,15156,True,1516.0,True,-3.0,True
+FL20170815BGD,Asia,other,gfds,15156,True,1516.0,True,4.0,True
+FL20170828NER,Africa,normally wet,fusion,39,True,5.0,False,,False
+FL20170828NER,Africa,normally wet,gfm,39,True,5.0,False,,False
+FL20170828NER,Africa,normally wet,microwave,39,True,5.0,False,,False
+FL20170828NER,Africa,normally wet,viirs,39,True,5.0,False,,False
+FL20170828NER,Africa,normally wet,floodscan,39,True,5.0,False,,False
+FL20170828NER,Africa,normally wet,gfds,39,True,5.0,False,,False
+FL20170828NER,Africa,other,fusion,61,True,7.0,False,,False
+FL20170828NER,Africa,other,gfm,61,True,7.0,False,,False
+FL20170828NER,Africa,other,microwave,61,True,7.0,False,,False
+FL20170828NER,Africa,other,viirs,61,True,7.0,False,,False
+FL20170828NER,Africa,other,floodscan,61,True,7.0,False,,False
+FL20170828NER,Africa,other,gfds,61,True,7.0,False,,False
+FL20170926TCD,Africa,normally wet,fusion,61,True,7.0,True,-3.0,True
+FL20170926TCD,Africa,normally wet,gfm,61,True,7.0,False,,False
+FL20170926TCD,Africa,normally wet,microwave,61,True,7.0,True,-3.0,True
+FL20170926TCD,Africa,normally wet,viirs,61,True,7.0,True,1.0,True
+FL20170926TCD,Africa,normally wet,floodscan,61,True,7.0,True,-3.0,True
+FL20170926TCD,Africa,normally wet,gfds,61,True,7.0,True,1.0,True
+FL20170926TCD,Africa,other,fusion,238,True,24.0,True,-3.0,True
+FL20170926TCD,Africa,other,gfm,238,True,24.0,True,0.0,False
+FL20170926TCD,Africa,other,microwave,238,True,24.0,True,-3.0,True
+FL20170926TCD,Africa,other,viirs,238,True,24.0,True,1.0,True
+FL20170926TCD,Africa,other,floodscan,238,True,24.0,True,-3.0,True
+FL20170926TCD,Africa,other,gfds,238,True,24.0,True,0.0,False
+FL20171106VNM,Asia,normally wet,fusion,467,True,47.0,False,,False
+FL20171106VNM,Asia,normally wet,gfm,467,True,47.0,False,,False
+FL20171106VNM,Asia,normally wet,microwave,467,True,47.0,False,,False
+FL20171106VNM,Asia,normally wet,viirs,467,True,47.0,True,6.0,True
+FL20171106VNM,Asia,normally wet,floodscan,467,True,47.0,False,,False
+FL20171106VNM,Asia,normally wet,gfds,467,True,47.0,False,,False
+FL20171106VNM,Asia,other,fusion,459,True,46.0,False,,False
+FL20171106VNM,Asia,other,gfm,459,True,46.0,True,3.0,False
+FL20171106VNM,Asia,other,microwave,459,True,46.0,True,-1.0,False
+FL20171106VNM,Asia,other,viirs,459,True,46.0,True,0.0,True
+FL20171106VNM,Asia,other,floodscan,459,True,46.0,True,-1.0,False
+FL20171106VNM,Asia,other,gfds,459,True,46.0,False,,False
+FL20180501SOM,Africa,other,fusion,44,True,5.0,False,,False
+FL20180501SOM,Africa,other,gfm,44,True,5.0,True,0.0,False
+FL20180501SOM,Africa,other,microwave,44,True,5.0,False,,True
+FL20180501SOM,Africa,other,viirs,44,True,5.0,True,1.0,True
+FL20180501SOM,Africa,other,floodscan,44,True,5.0,False,,True
+FL20180501SOM,Africa,other,gfds,44,True,5.0,False,,False
+FL20180518BGD,Asia,normally wet,fusion,1,False,,,,
+FL20180518BGD,Asia,normally wet,gfm,1,False,,,,
+FL20180518BGD,Asia,normally wet,microwave,1,False,,,,
+FL20180518BGD,Asia,normally wet,viirs,1,False,,,,
+FL20180518BGD,Asia,normally wet,floodscan,1,False,,,,
+FL20180518BGD,Asia,normally wet,gfds,1,False,,,,
+FL20180518BGD,Asia,other,fusion,7,True,5.0,False,,False
+FL20180518BGD,Asia,other,gfm,7,True,5.0,False,,False
+FL20180518BGD,Asia,other,microwave,7,True,5.0,True,-1.0,True
+FL20180518BGD,Asia,other,viirs,7,True,5.0,False,,False
+FL20180518BGD,Asia,other,floodscan,7,True,5.0,False,,False
+FL20180518BGD,Asia,other,gfds,7,True,5.0,True,-1.0,True
+FL20180619BGD,Asia,normally wet,fusion,4178,True,418.0,True,-3.0,True
+FL20180619BGD,Asia,normally wet,gfm,4178,True,418.0,True,0.0,True
+FL20180619BGD,Asia,normally wet,microwave,4178,True,418.0,True,0.0,True
+FL20180619BGD,Asia,normally wet,viirs,4178,True,418.0,True,3.0,True
+FL20180619BGD,Asia,normally wet,floodscan,4178,True,418.0,True,0.0,True
+FL20180619BGD,Asia,normally wet,gfds,4178,True,418.0,True,1.0,True
+FL20180619BGD,Asia,other,fusion,3677,True,368.0,True,-2.0,True
+FL20180619BGD,Asia,other,gfm,3677,True,368.0,True,-2.0,False
+FL20180619BGD,Asia,other,microwave,3677,True,368.0,True,-1.0,True
+FL20180619BGD,Asia,other,viirs,3677,True,368.0,True,3.0,True
+FL20180619BGD,Asia,other,floodscan,3677,True,368.0,True,-1.0,True
+FL20180619BGD,Asia,other,gfds,3677,True,368.0,True,0.0,True
+FL20180723LAO,Asia,normally wet,fusion,1,False,,,,
+FL20180723LAO,Asia,normally wet,gfm,1,False,,,,
+FL20180723LAO,Asia,normally wet,microwave,1,False,,,,
+FL20180723LAO,Asia,normally wet,viirs,1,False,,,,
+FL20180723LAO,Asia,normally wet,floodscan,1,False,,,,
+FL20180723LAO,Asia,normally wet,gfds,1,False,,,,
+FL20180723LAO,Asia,other,fusion,215,True,22.0,False,,False
+FL20180723LAO,Asia,other,gfm,215,True,22.0,True,15.0,False
+FL20180723LAO,Asia,other,microwave,215,True,22.0,True,13.0,False
+FL20180723LAO,Asia,other,viirs,215,True,22.0,False,,True
+FL20180723LAO,Asia,other,floodscan,215,True,22.0,True,13.0,False
+FL20180723LAO,Asia,other,gfds,215,True,22.0,False,,False
+FL20190321IRN,Asia,normally wet,fusion,130,True,13.0,True,-3.0,True
+FL20190321IRN,Asia,normally wet,gfm,130,True,13.0,True,0.0,False
+FL20190321IRN,Asia,normally wet,microwave,130,True,13.0,True,-2.0,False
+FL20190321IRN,Asia,normally wet,viirs,130,True,13.0,True,-2.0,True
+FL20190321IRN,Asia,normally wet,floodscan,130,True,13.0,False,,False
+FL20190321IRN,Asia,normally wet,gfds,130,True,13.0,True,-2.0,False
+FL20190321IRN,Asia,other,fusion,1090,True,109.0,True,0.0,False
+FL20190321IRN,Asia,other,gfm,1090,True,109.0,True,0.0,False
+FL20190321IRN,Asia,other,microwave,1090,True,109.0,True,-2.0,False
+FL20190321IRN,Asia,other,viirs,1090,True,109.0,True,-1.0,False
+FL20190321IRN,Asia,other,floodscan,1090,True,109.0,False,,False
+FL20190321IRN,Asia,other,gfds,1090,True,109.0,True,-2.0,False
+FL20190815SDN,Africa,normally wet,fusion,59,True,6.0,True,-3.0,True
+FL20190815SDN,Africa,normally wet,gfm,59,True,6.0,False,,False
+FL20190815SDN,Africa,normally wet,microwave,59,True,6.0,True,-3.0,True
+FL20190815SDN,Africa,normally wet,viirs,59,True,6.0,True,-3.0,True
+FL20190815SDN,Africa,normally wet,floodscan,59,True,6.0,False,,True
+FL20190815SDN,Africa,normally wet,gfds,59,True,6.0,True,-3.0,True
+FL20190815SDN,Africa,other,fusion,60,True,6.0,True,-3.0,True
+FL20190815SDN,Africa,other,gfm,60,True,6.0,True,2.0,False
+FL20190815SDN,Africa,other,microwave,60,True,6.0,False,,True
+FL20190815SDN,Africa,other,viirs,60,True,6.0,True,-3.0,True
+FL20190815SDN,Africa,other,floodscan,60,True,6.0,False,,True
+FL20190815SDN,Africa,other,gfds,60,True,6.0,False,,True
+FL20190905LAO,Asia,normally wet,fusion,103,True,11.0,True,-3.0,False
+FL20190905LAO,Asia,normally wet,gfm,103,True,11.0,True,-3.0,True
+FL20190905LAO,Asia,normally wet,microwave,103,True,11.0,True,0.0,False
+FL20190905LAO,Asia,normally wet,viirs,103,True,11.0,True,0.0,True
+FL20190905LAO,Asia,normally wet,floodscan,103,True,11.0,True,0.0,False
+FL20190905LAO,Asia,normally wet,gfds,103,True,11.0,True,0.0,False
+FL20190905LAO,Asia,other,fusion,969,True,97.0,True,1.0,False
+FL20190905LAO,Asia,other,gfm,969,True,97.0,True,-3.0,False
+FL20190905LAO,Asia,other,microwave,969,True,97.0,True,0.0,False
+FL20190905LAO,Asia,other,viirs,969,True,97.0,True,1.0,False
+FL20190905LAO,Asia,other,floodscan,969,True,97.0,True,0.0,False
+FL20190905LAO,Asia,other,gfds,969,True,97.0,True,2.0,False
+FL20191017CMR,Africa,normally wet,fusion,44,True,5.0,True,-3.0,True
+FL20191017CMR,Africa,normally wet,gfm,44,True,5.0,False,,False
+FL20191017CMR,Africa,normally wet,microwave,44,True,5.0,True,-2.0,True
+FL20191017CMR,Africa,normally wet,viirs,44,True,5.0,True,-3.0,True
+FL20191017CMR,Africa,normally wet,floodscan,44,True,5.0,True,-2.0,True
+FL20191017CMR,Africa,normally wet,gfds,44,True,5.0,True,5.0,False
+FL20191017CMR,Africa,other,fusion,1587,True,159.0,True,-3.0,True
+FL20191017CMR,Africa,other,gfm,1587,True,159.0,False,,False
+FL20191017CMR,Africa,other,microwave,1587,True,159.0,True,-3.0,True
+FL20191017CMR,Africa,other,viirs,1587,True,159.0,True,-3.0,True
+FL20191017CMR,Africa,other,floodscan,1587,True,159.0,True,-3.0,True
+FL20191017CMR,Africa,other,gfds,1587,True,159.0,True,8.0,False
+FL20191029TGO,Africa,other,fusion,19,True,5.0,True,-3.0,False
+FL20191029TGO,Africa,other,gfm,19,True,5.0,False,,False
+FL20191029TGO,Africa,other,microwave,19,True,5.0,True,-3.0,True
+FL20191029TGO,Africa,other,viirs,19,True,5.0,True,3.0,True
+FL20191029TGO,Africa,other,floodscan,19,True,5.0,False,,False
+FL20191029TGO,Africa,other,gfds,19,True,5.0,True,-3.0,True
+FL20191030SOM,Africa,normally wet,fusion,56,True,6.0,True,-3.0,True
+FL20191030SOM,Africa,normally wet,gfm,56,True,6.0,False,,True
+FL20191030SOM,Africa,normally wet,microwave,56,True,6.0,False,,True
+FL20191030SOM,Africa,normally wet,viirs,56,True,6.0,True,-3.0,True
+FL20191030SOM,Africa,normally wet,floodscan,56,True,6.0,False,,False
+FL20191030SOM,Africa,normally wet,gfds,56,True,6.0,False,,True
+FL20191030SOM,Africa,other,fusion,775,True,78.0,True,-3.0,True
+FL20191030SOM,Africa,other,gfm,775,True,78.0,False,,False
+FL20191030SOM,Africa,other,microwave,775,True,78.0,True,-2.0,True
+FL20191030SOM,Africa,other,viirs,775,True,78.0,True,-3.0,True
+FL20191030SOM,Africa,other,floodscan,775,True,78.0,False,,False
+FL20191030SOM,Africa,other,gfds,775,True,78.0,True,-2.0,True
+FL20191217MYS,Asia,normally wet,fusion,20,True,5.0,False,,False
+FL20191217MYS,Asia,normally wet,gfm,20,True,5.0,False,,False
+FL20191217MYS,Asia,normally wet,microwave,20,True,5.0,False,,False
+FL20191217MYS,Asia,normally wet,viirs,20,True,5.0,False,,True
+FL20191217MYS,Asia,normally wet,floodscan,20,True,5.0,False,,False
+FL20191217MYS,Asia,normally wet,gfds,20,True,5.0,False,,False
+FL20191217MYS,Asia,other,fusion,40,True,5.0,False,,False
+FL20191217MYS,Asia,other,gfm,40,True,5.0,True,-1.0,False
+FL20191217MYS,Asia,other,microwave,40,True,5.0,False,,False
+FL20191217MYS,Asia,other,viirs,40,True,5.0,False,,False
+FL20191217MYS,Asia,other,floodscan,40,True,5.0,False,,False
+FL20191217MYS,Asia,other,gfds,40,True,5.0,False,,False
+FL20200305ZMB,Africa,normally wet,fusion,1102,True,111.0,True,-3.0,True
+FL20200305ZMB,Africa,normally wet,gfm,1102,True,111.0,True,2.0,True
+FL20200305ZMB,Africa,normally wet,microwave,1102,True,111.0,True,-3.0,True
+FL20200305ZMB,Africa,normally wet,viirs,1102,True,111.0,True,-3.0,True
+FL20200305ZMB,Africa,normally wet,floodscan,1102,True,111.0,True,-3.0,True
+FL20200305ZMB,Africa,normally wet,gfds,1102,True,111.0,True,-3.0,True
+FL20200305ZMB,Africa,other,fusion,840,True,84.0,True,-3.0,True
+FL20200305ZMB,Africa,other,gfm,840,True,84.0,False,,False
+FL20200305ZMB,Africa,other,microwave,840,True,84.0,True,-3.0,True
+FL20200305ZMB,Africa,other,viirs,840,True,84.0,True,-3.0,True
+FL20200305ZMB,Africa,other,floodscan,840,True,84.0,True,-3.0,True
+FL20200305ZMB,Africa,other,gfds,840,True,84.0,True,-3.0,True
+FL20200324IRN,Asia,normally wet,fusion,6,True,5.0,False,,False
+FL20200324IRN,Asia,normally wet,gfm,6,True,5.0,False,,False
+FL20200324IRN,Asia,normally wet,microwave,6,True,5.0,True,0.0,True
+FL20200324IRN,Asia,normally wet,viirs,6,True,5.0,False,,False
+FL20200324IRN,Asia,normally wet,floodscan,6,True,5.0,False,,False
+FL20200324IRN,Asia,normally wet,gfds,6,True,5.0,True,0.0,True
+FL20200324IRN,Asia,other,fusion,58,True,6.0,True,-3.0,True
+FL20200324IRN,Asia,other,gfm,58,True,6.0,False,,True
+FL20200324IRN,Asia,other,microwave,58,True,6.0,True,-3.0,True
+FL20200324IRN,Asia,other,viirs,58,True,6.0,False,,True
+FL20200324IRN,Asia,other,floodscan,58,True,6.0,False,,False
+FL20200324IRN,Asia,other,gfds,58,True,6.0,True,-3.0,True
+FL20200428SOM,Africa,other,fusion,13,True,5.0,False,,False
+FL20200428SOM,Africa,other,gfm,13,True,5.0,False,,False
+FL20200428SOM,Africa,other,microwave,13,True,5.0,False,,False
+FL20200428SOM,Africa,other,viirs,13,True,5.0,True,-2.0,False
+FL20200428SOM,Africa,other,floodscan,13,True,5.0,False,,False
+FL20200428SOM,Africa,other,gfds,13,True,5.0,False,,False
+FL20200708NPL,Asia,normally wet,fusion,121,True,13.0,True,0.0,True
+FL20200708NPL,Asia,normally wet,gfm,121,True,13.0,True,6.0,False
+FL20200708NPL,Asia,normally wet,microwave,121,True,13.0,True,-2.0,True
+FL20200708NPL,Asia,normally wet,viirs,121,True,13.0,True,0.0,True
+FL20200708NPL,Asia,normally wet,floodscan,121,True,13.0,True,-2.0,False
+FL20200708NPL,Asia,normally wet,gfds,121,True,13.0,True,7.0,False
+FL20200708NPL,Asia,other,fusion,1346,True,135.0,True,-3.0,False
+FL20200708NPL,Asia,other,gfm,1346,True,135.0,False,,False
+FL20200708NPL,Asia,other,microwave,1346,True,135.0,True,-3.0,True
+FL20200708NPL,Asia,other,viirs,1346,True,135.0,True,-1.0,True
+FL20200708NPL,Asia,other,floodscan,1346,True,135.0,True,-3.0,True
+FL20200708NPL,Asia,other,gfds,1346,True,135.0,True,-3.0,False
+FL20200713BGD,Asia,normally wet,fusion,19089,True,1909.0,True,-3.0,True
+FL20200713BGD,Asia,normally wet,gfm,19089,True,1909.0,False,,False
+FL20200713BGD,Asia,normally wet,microwave,19089,True,1909.0,True,-3.0,True
+FL20200713BGD,Asia,normally wet,viirs,19089,True,1909.0,True,-3.0,True
+FL20200713BGD,Asia,normally wet,floodscan,19089,True,1909.0,True,-3.0,True
+FL20200713BGD,Asia,normally wet,gfds,19089,True,1909.0,True,-3.0,True
+FL20200713BGD,Asia,other,fusion,17877,True,1788.0,True,-3.0,True
+FL20200713BGD,Asia,other,gfm,17877,True,1788.0,True,6.0,False
+FL20200713BGD,Asia,other,microwave,17877,True,1788.0,True,-3.0,True
+FL20200713BGD,Asia,other,viirs,17877,True,1788.0,True,6.0,True
+FL20200713BGD,Asia,other,floodscan,17877,True,1788.0,True,-3.0,True
+FL20200713BGD,Asia,other,gfds,17877,True,1788.0,True,0.0,False
+FL20210520GUY,South America,normally wet,fusion,3,False,,,,
+FL20210520GUY,South America,normally wet,gfm,3,False,,,,
+FL20210520GUY,South America,normally wet,microwave,3,False,,,,
+FL20210520GUY,South America,normally wet,viirs,3,False,,,,
+FL20210520GUY,South America,normally wet,floodscan,3,False,,,,
+FL20210520GUY,South America,normally wet,gfds,3,False,,,,
+FL20210520GUY,South America,other,fusion,555,True,56.0,True,11.0,False
+FL20210520GUY,South America,other,gfm,555,True,56.0,True,-1.0,False
+FL20210520GUY,South America,other,microwave,555,True,56.0,True,7.0,False
+FL20210520GUY,South America,other,viirs,555,True,56.0,False,,False
+FL20210520GUY,South America,other,floodscan,555,True,56.0,True,7.0,False
+FL20210520GUY,South America,other,gfds,555,True,56.0,False,,False
+FL20210630NPL,Asia,normally wet,fusion,892,True,90.0,True,4.0,False
+FL20210630NPL,Asia,normally wet,gfm,892,True,90.0,False,,False
+FL20210630NPL,Asia,normally wet,microwave,892,True,90.0,True,1.0,True
+FL20210630NPL,Asia,normally wet,viirs,892,True,90.0,False,,False
+FL20210630NPL,Asia,normally wet,floodscan,892,True,90.0,True,1.0,True
+FL20210630NPL,Asia,normally wet,gfds,892,True,90.0,False,,False
+FL20210630NPL,Asia,other,fusion,6022,True,603.0,True,-2.0,False
+FL20210630NPL,Asia,other,gfm,6022,True,603.0,True,1.0,False
+FL20210630NPL,Asia,other,microwave,6022,True,603.0,True,-2.0,True
+FL20210630NPL,Asia,other,viirs,6022,True,603.0,False,,False
+FL20210630NPL,Asia,other,floodscan,6022,True,603.0,True,1.0,True
+FL20210630NPL,Asia,other,gfds,6022,True,603.0,True,-2.0,True
+FL20210729BGD,Asia,normally wet,fusion,1096,True,110.0,False,,False
+FL20210729BGD,Asia,normally wet,gfm,1096,True,110.0,False,,False
+FL20210729BGD,Asia,normally wet,microwave,1096,True,110.0,True,3.0,True
+FL20210729BGD,Asia,normally wet,viirs,1096,True,110.0,False,,False
+FL20210729BGD,Asia,normally wet,floodscan,1096,True,110.0,True,13.0,False
+FL20210729BGD,Asia,normally wet,gfds,1096,True,110.0,True,6.0,True
+FL20210729BGD,Asia,other,fusion,1995,True,200.0,False,,False
+FL20210729BGD,Asia,other,gfm,1995,True,200.0,True,0.0,False
+FL20210729BGD,Asia,other,microwave,1995,True,200.0,True,6.0,True
+FL20210729BGD,Asia,other,viirs,1995,True,200.0,False,,False
+FL20210729BGD,Asia,other,floodscan,1995,True,200.0,False,,False
+FL20210729BGD,Asia,other,gfds,1995,True,200.0,True,6.0,True
+FL20210812SDN,Africa,normally wet,fusion,12,True,5.0,False,,False
+FL20210812SDN,Africa,normally wet,gfm,12,True,5.0,False,,False
+FL20210812SDN,Africa,normally wet,microwave,12,True,5.0,False,,True
+FL20210812SDN,Africa,normally wet,viirs,12,True,5.0,False,,False
+FL20210812SDN,Africa,normally wet,floodscan,12,True,5.0,False,,False
+FL20210812SDN,Africa,normally wet,gfds,12,True,5.0,False,,True
+FL20210812SDN,Africa,other,fusion,306,True,31.0,False,,False
+FL20210812SDN,Africa,other,gfm,306,True,31.0,True,-2.0,False
+FL20210812SDN,Africa,other,microwave,306,True,31.0,True,-1.0,True
+FL20210812SDN,Africa,other,viirs,306,True,31.0,False,,False
+FL20210812SDN,Africa,other,floodscan,306,True,31.0,True,-1.0,False
+FL20210812SDN,Africa,other,gfds,306,True,31.0,False,,True
+FL20210831MMR,Asia,normally wet,fusion,1575,True,158.0,True,-3.0,False
+FL20210831MMR,Asia,normally wet,gfm,1575,True,158.0,False,,False
+FL20210831MMR,Asia,normally wet,microwave,1575,True,158.0,True,-3.0,True
+FL20210831MMR,Asia,normally wet,viirs,1575,True,158.0,False,,False
+FL20210831MMR,Asia,normally wet,floodscan,1575,True,158.0,False,,False
+FL20210831MMR,Asia,normally wet,gfds,1575,True,158.0,True,-3.0,True
+FL20210831MMR,Asia,other,fusion,765,True,77.0,True,0.0,True
+FL20210831MMR,Asia,other,gfm,765,True,77.0,False,,True
+FL20210831MMR,Asia,other,microwave,765,True,77.0,True,-3.0,True
+FL20210831MMR,Asia,other,viirs,765,True,77.0,False,,False
+FL20210831MMR,Asia,other,floodscan,765,True,77.0,False,,True
+FL20210831MMR,Asia,other,gfds,765,True,77.0,True,-3.0,True
+FL20210907SDN,Africa,normally wet,fusion,27,True,5.0,False,,False
+FL20210907SDN,Africa,normally wet,gfm,27,True,5.0,False,,False
+FL20210907SDN,Africa,normally wet,microwave,27,True,5.0,False,,True
+FL20210907SDN,Africa,normally wet,viirs,27,True,5.0,False,,False
+FL20210907SDN,Africa,normally wet,floodscan,27,True,5.0,False,,False
+FL20210907SDN,Africa,normally wet,gfds,27,True,5.0,False,,True
+FL20210907SDN,Africa,other,fusion,729,True,73.0,True,5.0,False
+FL20210907SDN,Africa,other,gfm,729,True,73.0,True,2.0,False
+FL20210907SDN,Africa,other,microwave,729,True,73.0,True,1.0,True
+FL20210907SDN,Africa,other,viirs,729,True,73.0,False,,False
+FL20210907SDN,Africa,other,floodscan,729,True,73.0,True,1.0,False
+FL20210907SDN,Africa,other,gfds,729,True,73.0,True,1.0,True
+FL20210928THA,Asia,normally wet,fusion,1694,True,170.0,True,-3.0,True
+FL20210928THA,Asia,normally wet,gfm,1694,True,170.0,True,-3.0,True
+FL20210928THA,Asia,normally wet,microwave,1694,True,170.0,True,-3.0,True
+FL20210928THA,Asia,normally wet,viirs,1694,True,170.0,False,,False
+FL20210928THA,Asia,normally wet,floodscan,1694,True,170.0,True,-3.0,True
+FL20210928THA,Asia,normally wet,gfds,1694,True,170.0,True,-2.0,False
+FL20210928THA,Asia,other,fusion,5067,True,507.0,True,-3.0,True
+FL20210928THA,Asia,other,gfm,5067,True,507.0,True,-3.0,False
+FL20210928THA,Asia,other,microwave,5067,True,507.0,True,-3.0,True
+FL20210928THA,Asia,other,viirs,5067,True,507.0,False,,False
+FL20210928THA,Asia,other,floodscan,5067,True,507.0,True,-3.0,True
+FL20210928THA,Asia,other,gfds,5067,True,507.0,True,-1.0,False
+FL20211008COD,Africa,normally wet,fusion,61,True,7.0,True,313.0,False
+FL20211008COD,Africa,normally wet,gfm,61,True,7.0,False,,False
+FL20211008COD,Africa,normally wet,microwave,61,True,7.0,True,5.0,False
+FL20211008COD,Africa,normally wet,viirs,61,True,7.0,True,12.0,True
+FL20211008COD,Africa,normally wet,floodscan,61,True,7.0,True,501.0,False
+FL20211008COD,Africa,normally wet,gfds,61,True,7.0,True,5.0,False
+FL20211008COD,Africa,other,fusion,2,False,,,,
+FL20211008COD,Africa,other,gfm,2,False,,,,
+FL20211008COD,Africa,other,microwave,2,False,,,,
+FL20211008COD,Africa,other,viirs,2,False,,,,
+FL20211008COD,Africa,other,floodscan,2,False,,,,
+FL20211008COD,Africa,other,gfds,2,False,,,,
+FL20220525BGD,Asia,normally wet,fusion,4047,True,405.0,True,-3.0,False
+FL20220525BGD,Asia,normally wet,gfm,4047,True,405.0,False,,True
+FL20220525BGD,Asia,normally wet,microwave,4047,True,405.0,True,-3.0,True
+FL20220525BGD,Asia,normally wet,viirs,4047,True,405.0,False,,False
+FL20220525BGD,Asia,normally wet,floodscan,4047,True,405.0,True,-3.0,False
+FL20220525BGD,Asia,normally wet,gfds,4047,True,405.0,True,-3.0,False
+FL20220525BGD,Asia,other,fusion,14741,True,1475.0,True,-3.0,False
+FL20220525BGD,Asia,other,gfm,14741,True,1475.0,True,10.0,False
+FL20220525BGD,Asia,other,microwave,14741,True,1475.0,True,-3.0,True
+FL20220525BGD,Asia,other,viirs,14741,True,1475.0,False,,False
+FL20220525BGD,Asia,other,floodscan,14741,True,1475.0,True,-3.0,False
+FL20220525BGD,Asia,other,gfds,14741,True,1475.0,True,-3.0,True
+FL20220526GUY,South America,normally wet,fusion,28,True,5.0,False,,False
+FL20220526GUY,South America,normally wet,gfm,28,True,5.0,False,,False
+FL20220526GUY,South America,normally wet,microwave,28,True,5.0,True,-2.0,False
+FL20220526GUY,South America,normally wet,viirs,28,True,5.0,False,,False
+FL20220526GUY,South America,normally wet,floodscan,28,True,5.0,True,-2.0,False
+FL20220526GUY,South America,normally wet,gfds,28,True,5.0,False,,False
+FL20220526GUY,South America,other,fusion,470,True,47.0,True,-3.0,False
+FL20220526GUY,South America,other,gfm,470,True,47.0,True,0.0,False
+FL20220526GUY,South America,other,microwave,470,True,47.0,True,-3.0,True
+FL20220526GUY,South America,other,viirs,470,True,47.0,False,,False
+FL20220526GUY,South America,other,floodscan,470,True,47.0,True,-3.0,False
+FL20220526GUY,South America,other,gfds,470,True,47.0,False,,True
+FL20220627GEO,Asia,normally wet,fusion,38,True,5.0,False,,False
+FL20220627GEO,Asia,normally wet,gfm,38,True,5.0,False,,False
+FL20220627GEO,Asia,normally wet,microwave,38,True,5.0,True,1.0,True
+FL20220627GEO,Asia,normally wet,viirs,38,True,5.0,False,,False
+FL20220627GEO,Asia,normally wet,floodscan,38,True,5.0,False,,False
+FL20220627GEO,Asia,normally wet,gfds,38,True,5.0,True,1.0,True
+FL20220627GEO,Asia,other,fusion,28,True,5.0,False,,False
+FL20220627GEO,Asia,other,gfm,28,True,5.0,True,0.0,False
+FL20220627GEO,Asia,other,microwave,28,True,5.0,False,,False
+FL20220627GEO,Asia,other,viirs,28,True,5.0,False,,False
+FL20220627GEO,Asia,other,floodscan,28,True,5.0,False,,False
+FL20220627GEO,Asia,other,gfds,28,True,5.0,False,,False
+FL20220728NER,Africa,normally wet,fusion,19,True,5.0,False,,False
+FL20220728NER,Africa,normally wet,gfm,19,True,5.0,False,,False
+FL20220728NER,Africa,normally wet,microwave,19,True,5.0,False,,False
+FL20220728NER,Africa,normally wet,viirs,19,True,5.0,False,,False
+FL20220728NER,Africa,normally wet,floodscan,19,True,5.0,False,,False
+FL20220728NER,Africa,normally wet,gfds,19,True,5.0,False,,False
+FL20220728NER,Africa,other,fusion,195,True,20.0,False,,False
+FL20220728NER,Africa,other,gfm,195,True,20.0,False,,False
+FL20220728NER,Africa,other,microwave,195,True,20.0,False,,False
+FL20220728NER,Africa,other,viirs,195,True,20.0,False,,False
+FL20220728NER,Africa,other,floodscan,195,True,20.0,False,,False
+FL20220728NER,Africa,other,gfds,195,True,20.0,False,,False
+FL20220801GMB,Africa,normally wet,fusion,36,True,5.0,False,,False
+FL20220801GMB,Africa,normally wet,gfm,36,True,5.0,False,,False
+FL20220801GMB,Africa,normally wet,microwave,36,True,5.0,True,-3.0,True
+FL20220801GMB,Africa,normally wet,viirs,36,True,5.0,False,,False
+FL20220801GMB,Africa,normally wet,floodscan,36,True,5.0,False,,False
+FL20220801GMB,Africa,normally wet,gfds,36,True,5.0,True,-3.0,True
+FL20220801GMB,Africa,other,fusion,26,True,5.0,False,,False
+FL20220801GMB,Africa,other,gfm,26,True,5.0,False,,False
+FL20220801GMB,Africa,other,microwave,26,True,5.0,True,-1.0,True
+FL20220801GMB,Africa,other,viirs,26,True,5.0,False,,False
+FL20220801GMB,Africa,other,floodscan,26,True,5.0,False,,False
+FL20220801GMB,Africa,other,gfds,26,True,5.0,True,-1.0,True
+FL20220803UGA,Africa,other,fusion,17,True,5.0,False,,False
+FL20220803UGA,Africa,other,gfm,17,True,5.0,False,,False
+FL20220803UGA,Africa,other,microwave,17,True,5.0,False,,False
+FL20220803UGA,Africa,other,viirs,17,True,5.0,False,,False
+FL20220803UGA,Africa,other,floodscan,17,True,5.0,False,,False
+FL20220803UGA,Africa,other,gfds,17,True,5.0,False,,False
+FL20220816SDN,Africa,normally wet,fusion,13,True,5.0,False,,False
+FL20220816SDN,Africa,normally wet,gfm,13,True,5.0,False,,False
+FL20220816SDN,Africa,normally wet,microwave,13,True,5.0,False,,False
+FL20220816SDN,Africa,normally wet,viirs,13,True,5.0,False,,False
+FL20220816SDN,Africa,normally wet,floodscan,13,True,5.0,False,,False
+FL20220816SDN,Africa,normally wet,gfds,13,True,5.0,False,,False
+FL20220816SDN,Africa,other,fusion,157,True,16.0,False,,False
+FL20220816SDN,Africa,other,gfm,157,True,16.0,False,,False
+FL20220816SDN,Africa,other,microwave,157,True,16.0,True,0.0,False
+FL20220816SDN,Africa,other,viirs,157,True,16.0,False,,False
+FL20220816SDN,Africa,other,floodscan,157,True,16.0,False,,False
+FL20220816SDN,Africa,other,gfds,157,True,16.0,True,0.0,False
+FL20221004NER,Africa,normally wet,fusion,93,True,10.0,False,,False
+FL20221004NER,Africa,normally wet,gfm,93,True,10.0,False,,False
+FL20221004NER,Africa,normally wet,microwave,93,True,10.0,False,,True
+FL20221004NER,Africa,normally wet,viirs,93,True,10.0,False,,False
+FL20221004NER,Africa,normally wet,floodscan,93,True,10.0,False,,True
+FL20221004NER,Africa,normally wet,gfds,93,True,10.0,False,,True
+FL20221004NER,Africa,other,fusion,509,True,51.0,False,,False
+FL20221004NER,Africa,other,gfm,509,True,51.0,False,,True
+FL20221004NER,Africa,other,microwave,509,True,51.0,False,,True
+FL20221004NER,Africa,other,viirs,509,True,51.0,False,,False
+FL20221004NER,Africa,other,floodscan,509,True,51.0,False,,False
+FL20221004NER,Africa,other,gfds,509,True,51.0,False,,True
+FL20221014VNM,Asia,normally wet,fusion,153,True,16.0,False,,False
+FL20221014VNM,Asia,normally wet,gfm,153,True,16.0,True,-3.0,False
+FL20221014VNM,Asia,normally wet,microwave,153,True,16.0,True,1.0,True
+FL20221014VNM,Asia,normally wet,viirs,153,True,16.0,False,,False
+FL20221014VNM,Asia,normally wet,floodscan,153,True,16.0,True,1.0,True
+FL20221014VNM,Asia,normally wet,gfds,153,True,16.0,False,,True
+FL20221014VNM,Asia,other,fusion,346,True,35.0,False,,False
+FL20221014VNM,Asia,other,gfm,346,True,35.0,True,0.0,False
+FL20221014VNM,Asia,other,microwave,346,True,35.0,True,-3.0,True
+FL20221014VNM,Asia,other,viirs,346,True,35.0,False,,False
+FL20221014VNM,Asia,other,floodscan,346,True,35.0,True,-3.0,True
+FL20221014VNM,Asia,other,gfds,346,True,35.0,True,1.0,True
+FL20221019TCD,Africa,normally wet,fusion,36,True,5.0,False,,False
+FL20221019TCD,Africa,normally wet,gfm,36,True,5.0,False,,False
+FL20221019TCD,Africa,normally wet,microwave,36,True,5.0,True,2.0,False
+FL20221019TCD,Africa,normally wet,viirs,36,True,5.0,False,,False
+FL20221019TCD,Africa,normally wet,floodscan,36,True,5.0,False,,False
+FL20221019TCD,Africa,normally wet,gfds,36,True,5.0,True,2.0,False
+FL20221019TCD,Africa,other,fusion,252,True,26.0,True,-3.0,True
+FL20221019TCD,Africa,other,gfm,252,True,26.0,False,,False
+FL20221019TCD,Africa,other,microwave,252,True,26.0,True,-3.0,True
+FL20221019TCD,Africa,other,viirs,252,True,26.0,False,,False
+FL20221019TCD,Africa,other,floodscan,252,True,26.0,True,1.0,True
+FL20221019TCD,Africa,other,gfds,252,True,26.0,True,-3.0,True
+FL20221117NPL,Asia,normally wet,fusion,288,True,29.0,True,0.0,False
+FL20221117NPL,Asia,normally wet,gfm,288,True,29.0,True,0.0,True
+FL20221117NPL,Asia,normally wet,microwave,288,True,29.0,True,-3.0,True
+FL20221117NPL,Asia,normally wet,viirs,288,True,29.0,False,,False
+FL20221117NPL,Asia,normally wet,floodscan,288,True,29.0,True,-3.0,True
+FL20221117NPL,Asia,normally wet,gfds,288,True,29.0,False,,True
+FL20221117NPL,Asia,other,fusion,419,True,42.0,True,0.0,False
+FL20221117NPL,Asia,other,gfm,419,True,42.0,True,0.0,False
+FL20221117NPL,Asia,other,microwave,419,True,42.0,True,-3.0,True
+FL20221117NPL,Asia,other,viirs,419,True,42.0,False,,False
+FL20221117NPL,Asia,other,floodscan,419,True,42.0,True,-3.0,True
+FL20221117NPL,Asia,other,gfds,419,True,42.0,False,,True
+FL20230304RWA,Africa,other,fusion,9,True,5.0,False,,False
+FL20230304RWA,Africa,other,gfm,9,True,5.0,False,,False
+FL20230304RWA,Africa,other,microwave,9,True,5.0,False,,False
+FL20230304RWA,Africa,other,viirs,9,True,5.0,False,,False
+FL20230304RWA,Africa,other,floodscan,9,True,5.0,False,,False
+FL20230304RWA,Africa,other,gfds,9,True,5.0,False,,False
+FL20230321PER,South America,normally wet,fusion,537,True,54.0,True,-3.0,True
+FL20230321PER,South America,normally wet,gfm,537,True,54.0,False,,False
+FL20230321PER,South America,normally wet,microwave,537,True,54.0,True,-3.0,True
+FL20230321PER,South America,normally wet,viirs,537,True,54.0,False,,False
+FL20230321PER,South America,normally wet,floodscan,537,True,54.0,True,-3.0,True
+FL20230321PER,South America,normally wet,gfds,537,True,54.0,True,-3.0,True
+FL20230321PER,South America,other,fusion,495,True,50.0,True,-3.0,True
+FL20230321PER,South America,other,gfm,495,True,50.0,True,9.0,False
+FL20230321PER,South America,other,microwave,495,True,50.0,True,-3.0,True
+FL20230321PER,South America,other,viirs,495,True,50.0,False,,False
+FL20230321PER,South America,other,floodscan,495,True,50.0,True,-3.0,True
+FL20230321PER,South America,other,gfds,495,True,50.0,True,-3.0,True
+FL20230327SOM,Africa,normally wet,fusion,13,True,5.0,False,,False
+FL20230327SOM,Africa,normally wet,gfm,13,True,5.0,False,,False
+FL20230327SOM,Africa,normally wet,microwave,13,True,5.0,False,,False
+FL20230327SOM,Africa,normally wet,viirs,13,True,5.0,False,,False
+FL20230327SOM,Africa,normally wet,floodscan,13,True,5.0,False,,False
+FL20230327SOM,Africa,normally wet,gfds,13,True,5.0,False,,False
+FL20230327SOM,Africa,other,fusion,1128,True,113.0,True,18.0,False
+FL20230327SOM,Africa,other,gfm,1128,True,113.0,True,25.0,False
+FL20230327SOM,Africa,other,microwave,1128,True,113.0,True,7.0,False
+FL20230327SOM,Africa,other,viirs,1128,True,113.0,False,,False
+FL20230327SOM,Africa,other,floodscan,1128,True,113.0,True,11.0,False
+FL20230327SOM,Africa,other,gfds,1128,True,113.0,True,14.0,False
+FL20230504RWA,Africa,other,fusion,44,True,5.0,False,,False
+FL20230504RWA,Africa,other,gfm,44,True,5.0,False,,False
+FL20230504RWA,Africa,other,microwave,44,True,5.0,False,,False
+FL20230504RWA,Africa,other,viirs,44,True,5.0,False,,False
+FL20230504RWA,Africa,other,floodscan,44,True,5.0,False,,False
+FL20230504RWA,Africa,other,gfds,44,True,5.0,False,,False
+FL20230807LAO,Asia,normally wet,fusion,16,True,5.0,False,,False
+FL20230807LAO,Asia,normally wet,gfm,16,True,5.0,True,-3.0,False
+FL20230807LAO,Asia,normally wet,microwave,16,True,5.0,False,,True
+FL20230807LAO,Asia,normally wet,viirs,16,True,5.0,False,,False
+FL20230807LAO,Asia,normally wet,floodscan,16,True,5.0,False,,True
+FL20230807LAO,Asia,normally wet,gfds,16,True,5.0,False,,False
+FL20230807LAO,Asia,other,fusion,84,True,9.0,False,,False
+FL20230807LAO,Asia,other,gfm,84,True,9.0,True,-3.0,False
+FL20230807LAO,Asia,other,microwave,84,True,9.0,False,,True
+FL20230807LAO,Asia,other,viirs,84,True,9.0,False,,False
+FL20230807LAO,Asia,other,floodscan,84,True,9.0,False,,True
+FL20230807LAO,Asia,other,gfds,84,True,9.0,False,,False
+FL20230912LBY,Africa,normally wet,fusion,4,False,,,,
+FL20230912LBY,Africa,normally wet,gfm,4,False,,,,
+FL20230912LBY,Africa,normally wet,microwave,4,False,,,,
+FL20230912LBY,Africa,normally wet,viirs,4,False,,,,
+FL20230912LBY,Africa,normally wet,floodscan,4,False,,,,
+FL20230912LBY,Africa,normally wet,gfds,4,False,,,,
+FL20230912LBY,Africa,other,fusion,21,True,5.0,False,,False
+FL20230912LBY,Africa,other,gfm,21,True,5.0,False,,False
+FL20230912LBY,Africa,other,microwave,21,True,5.0,False,,True
+FL20230912LBY,Africa,other,viirs,21,True,5.0,True,1.0,False
+FL20230912LBY,Africa,other,floodscan,21,True,5.0,False,,False
+FL20230912LBY,Africa,other,gfds,21,True,5.0,False,,True
+FL20231018GHA,Africa,normally wet,fusion,2,False,,,,
+FL20231018GHA,Africa,normally wet,gfm,2,False,,,,
+FL20231018GHA,Africa,normally wet,microwave,2,False,,,,
+FL20231018GHA,Africa,normally wet,viirs,2,False,,,,
+FL20231018GHA,Africa,normally wet,floodscan,2,False,,,,
+FL20231018GHA,Africa,normally wet,gfds,2,False,,,,
+FL20231018GHA,Africa,other,fusion,18,True,5.0,True,-3.0,False
+FL20231018GHA,Africa,other,gfm,18,True,5.0,True,0.0,False
+FL20231018GHA,Africa,other,microwave,18,True,5.0,True,-2.0,True
+FL20231018GHA,Africa,other,viirs,18,True,5.0,True,-3.0,True
+FL20231018GHA,Africa,other,floodscan,18,True,5.0,False,,False
+FL20231018GHA,Africa,other,gfds,18,True,5.0,True,-2.0,True
+FL20231105SOM,Africa,normally wet,fusion,27,True,5.0,True,9.0,False
+FL20231105SOM,Africa,normally wet,gfm,27,True,5.0,True,12.0,False
+FL20231105SOM,Africa,normally wet,microwave,27,True,5.0,True,11.0,False
+FL20231105SOM,Africa,normally wet,viirs,27,True,5.0,True,0.0,True
+FL20231105SOM,Africa,normally wet,floodscan,27,True,5.0,True,11.0,False
+FL20231105SOM,Africa,normally wet,gfds,27,True,5.0,True,15.0,False
+FL20231105SOM,Africa,other,fusion,2672,True,268.0,True,8.0,False
+FL20231105SOM,Africa,other,gfm,2672,True,268.0,True,14.0,False
+FL20231105SOM,Africa,other,microwave,2672,True,268.0,True,6.0,False
+FL20231105SOM,Africa,other,viirs,2672,True,268.0,True,0.0,False
+FL20231105SOM,Africa,other,floodscan,2672,True,268.0,True,10.0,False
+FL20231105SOM,Africa,other,gfds,2672,True,268.0,True,15.0,False
+FL20231124KEN,Africa,other,fusion,128,True,13.0,False,,False
+FL20231124KEN,Africa,other,gfm,128,True,13.0,False,,False
+FL20231124KEN,Africa,other,microwave,128,True,13.0,False,,False
+FL20231124KEN,Africa,other,viirs,128,True,13.0,True,-2.0,True
+FL20231124KEN,Africa,other,floodscan,128,True,13.0,False,,False
+FL20231124KEN,Africa,other,gfds,128,True,13.0,False,,False
+FL20231229COD,Africa,other,fusion,1,False,,,,
+FL20231229COD,Africa,other,gfm,1,False,,,,
+FL20231229COD,Africa,other,microwave,1,False,,,,
+FL20231229COD,Africa,other,viirs,1,False,,,,
+FL20231229COD,Africa,other,floodscan,1,False,,,,
+FL20231229COD,Africa,other,gfds,1,False,,,,
+FL20240102COG,Africa,normally wet,fusion,13,True,5.0,False,,False
+FL20240102COG,Africa,normally wet,gfm,13,True,5.0,False,,False
+FL20240102COG,Africa,normally wet,microwave,13,True,5.0,True,6.0,True
+FL20240102COG,Africa,normally wet,viirs,13,True,5.0,True,0.0,True
+FL20240102COG,Africa,normally wet,floodscan,13,True,5.0,False,,True
+FL20240102COG,Africa,normally wet,gfds,13,True,5.0,True,6.0,True
+FL20240102COG,Africa,other,fusion,3,False,,,,
+FL20240102COG,Africa,other,gfm,3,False,,,,
+FL20240102COG,Africa,other,microwave,3,False,,,,
+FL20240102COG,Africa,other,viirs,3,False,,,,
+FL20240102COG,Africa,other,floodscan,3,False,,,,
+FL20240102COG,Africa,other,gfds,3,False,,,,
+FL20240326IDN,Asia,normally wet,fusion,112,True,12.0,True,1.0,True
+FL20240326IDN,Asia,normally wet,gfm,112,True,12.0,True,0.0,False
+FL20240326IDN,Asia,normally wet,microwave,112,True,12.0,True,0.0,True
+FL20240326IDN,Asia,normally wet,viirs,112,True,12.0,True,1.0,True
+FL20240326IDN,Asia,normally wet,floodscan,112,True,12.0,True,4.0,False
+FL20240326IDN,Asia,normally wet,gfds,112,True,12.0,True,0.0,True
+FL20240326IDN,Asia,other,fusion,489,True,49.0,True,1.0,False
+FL20240326IDN,Asia,other,gfm,489,True,49.0,True,0.0,False
+FL20240326IDN,Asia,other,microwave,489,True,49.0,True,-2.0,True
+FL20240326IDN,Asia,other,viirs,489,True,49.0,True,1.0,True
+FL20240326IDN,Asia,other,floodscan,489,True,49.0,True,0.0,False
+FL20240326IDN,Asia,other,gfds,489,True,49.0,True,0.0,True
+FL20240426KEN,Africa,normally wet,fusion,45,True,5.0,True,-3.0,True
+FL20240426KEN,Africa,normally wet,gfm,45,True,5.0,False,,False
+FL20240426KEN,Africa,normally wet,microwave,45,True,5.0,True,-2.0,True
+FL20240426KEN,Africa,normally wet,viirs,45,True,5.0,True,-1.0,True
+FL20240426KEN,Africa,normally wet,floodscan,45,True,5.0,False,,False
+FL20240426KEN,Africa,normally wet,gfds,45,True,5.0,True,-2.0,True
+FL20240426KEN,Africa,other,fusion,477,True,48.0,True,1.0,False
+FL20240426KEN,Africa,other,gfm,477,True,48.0,False,,False
+FL20240426KEN,Africa,other,microwave,477,True,48.0,True,-3.0,True
+FL20240426KEN,Africa,other,viirs,477,True,48.0,True,-2.0,True
+FL20240426KEN,Africa,other,floodscan,477,True,48.0,False,,False
+FL20240426KEN,Africa,other,gfds,477,True,48.0,True,-3.0,True
+FL20240502BGD,Asia,normally wet,fusion,81,True,9.0,True,-3.0,True
+FL20240502BGD,Asia,normally wet,gfm,81,True,9.0,True,-3.0,True
+FL20240502BGD,Asia,normally wet,microwave,81,True,9.0,True,1.0,True
+FL20240502BGD,Asia,normally wet,viirs,81,True,9.0,True,0.0,True
+FL20240502BGD,Asia,normally wet,floodscan,81,True,9.0,False,,False
+FL20240502BGD,Asia,normally wet,gfds,81,True,9.0,False,,True
+FL20240502BGD,Asia,other,fusion,557,True,56.0,True,0.0,False
+FL20240502BGD,Asia,other,gfm,557,True,56.0,True,-3.0,False
+FL20240502BGD,Asia,other,microwave,557,True,56.0,True,-1.0,False
+FL20240502BGD,Asia,other,viirs,557,True,56.0,True,-2.0,True
+FL20240502BGD,Asia,other,floodscan,557,True,56.0,True,-1.0,False
+FL20240502BGD,Asia,other,gfds,557,True,56.0,False,,False
+FL20240603LKA,Asia,normally wet,fusion,41,True,5.0,True,5.0,True
+FL20240603LKA,Asia,normally wet,gfm,41,True,5.0,False,,False
+FL20240603LKA,Asia,normally wet,microwave,41,True,5.0,True,-3.0,True
+FL20240603LKA,Asia,normally wet,viirs,41,True,5.0,True,13.0,True
+FL20240603LKA,Asia,normally wet,floodscan,41,True,5.0,False,,False
+FL20240603LKA,Asia,normally wet,gfds,41,True,5.0,True,-3.0,True
+FL20240603LKA,Asia,other,fusion,85,True,9.0,False,,False
+FL20240603LKA,Asia,other,gfm,85,True,9.0,True,12.0,False
+FL20240603LKA,Asia,other,microwave,85,True,9.0,True,-1.0,True
+FL20240603LKA,Asia,other,viirs,85,True,9.0,True,12.0,False
+FL20240603LKA,Asia,other,floodscan,85,True,9.0,False,,False
+FL20240603LKA,Asia,other,gfds,85,True,9.0,True,-1.0,True
+FL20240812LBY,Africa,other,fusion,6,True,5.0,False,,False
+FL20240812LBY,Africa,other,gfm,6,True,5.0,False,,False
+FL20240812LBY,Africa,other,microwave,6,True,5.0,False,,False
+FL20240812LBY,Africa,other,viirs,6,True,5.0,False,,False
+FL20240812LBY,Africa,other,floodscan,6,True,5.0,False,,False
+FL20240812LBY,Africa,other,gfds,6,True,5.0,False,,False
+FL20240820TCD,Africa,normally wet,fusion,2,False,,,,
+FL20240820TCD,Africa,normally wet,gfm,2,False,,,,
+FL20240820TCD,Africa,normally wet,microwave,2,False,,,,
+FL20240820TCD,Africa,normally wet,viirs,2,False,,,,
+FL20240820TCD,Africa,normally wet,floodscan,2,False,,,,
+FL20240820TCD,Africa,normally wet,gfds,2,False,,,,
+FL20240820TCD,Africa,other,fusion,75,True,8.0,True,-3.0,True
+FL20240820TCD,Africa,other,gfm,75,True,8.0,False,,False
+FL20240820TCD,Africa,other,microwave,75,True,8.0,True,1.0,True
+FL20240820TCD,Africa,other,viirs,75,True,8.0,True,-3.0,True
+FL20240820TCD,Africa,other,floodscan,75,True,8.0,True,1.0,True
+FL20240820TCD,Africa,other,gfds,75,True,8.0,False,,False
+FL20240826SDN,Africa,normally wet,fusion,846,True,85.0,False,,False
+FL20240826SDN,Africa,normally wet,gfm,846,True,85.0,False,,False
+FL20240826SDN,Africa,normally wet,microwave,846,True,85.0,True,21.0,True
+FL20240826SDN,Africa,normally wet,viirs,846,True,85.0,True,21.0,False
+FL20240826SDN,Africa,normally wet,floodscan,846,True,85.0,True,21.0,False
+FL20240826SDN,Africa,normally wet,gfds,846,True,85.0,False,,True
+FL20240826SDN,Africa,other,fusion,8168,True,817.0,True,26.0,False
+FL20240826SDN,Africa,other,gfm,8168,True,817.0,False,,False
+FL20240826SDN,Africa,other,microwave,8168,True,817.0,True,-2.0,True
+FL20240826SDN,Africa,other,viirs,8168,True,817.0,True,21.0,False
+FL20240826SDN,Africa,other,floodscan,8168,True,817.0,True,25.0,True
+FL20240826SDN,Africa,other,gfds,8168,True,817.0,True,-2.0,True
+FL20240912MMR,Asia,normally wet,fusion,606,True,61.0,True,-3.0,True
+FL20240912MMR,Asia,normally wet,gfm,606,True,61.0,True,1.0,True
+FL20240912MMR,Asia,normally wet,microwave,606,True,61.0,True,-3.0,True
+FL20240912MMR,Asia,normally wet,viirs,606,True,61.0,True,-2.0,True
+FL20240912MMR,Asia,normally wet,floodscan,606,True,61.0,True,-3.0,True
+FL20240912MMR,Asia,normally wet,gfds,606,True,61.0,True,-1.0,True
+FL20240912MMR,Asia,other,fusion,1650,True,165.0,True,-3.0,True
+FL20240912MMR,Asia,other,gfm,1650,True,165.0,True,1.0,True
+FL20240912MMR,Asia,other,microwave,1650,True,165.0,True,-3.0,True
+FL20240912MMR,Asia,other,viirs,1650,True,165.0,True,-2.0,True
+FL20240912MMR,Asia,other,floodscan,1650,True,165.0,True,-3.0,True
+FL20240912MMR,Asia,other,gfds,1650,True,165.0,True,-1.0,True
+FL20240913LAO,Asia,normally wet,fusion,151,True,16.0,True,-3.0,False
+FL20240913LAO,Asia,normally wet,gfm,151,True,16.0,True,-2.0,True
+FL20240913LAO,Asia,normally wet,microwave,151,True,16.0,True,4.0,False
+FL20240913LAO,Asia,normally wet,viirs,151,True,16.0,True,5.0,True
+FL20240913LAO,Asia,normally wet,floodscan,151,True,16.0,False,,False
+FL20240913LAO,Asia,normally wet,gfds,151,True,16.0,False,,False
+FL20240913LAO,Asia,other,fusion,262,True,27.0,True,6.0,False
+FL20240913LAO,Asia,other,gfm,262,True,27.0,True,7.0,True
+FL20240913LAO,Asia,other,microwave,262,True,27.0,True,4.0,False
+FL20240913LAO,Asia,other,viirs,262,True,27.0,True,5.0,True
+FL20240913LAO,Asia,other,floodscan,262,True,27.0,True,7.0,False
+FL20240913LAO,Asia,other,gfds,262,True,27.0,False,,False
+FL20240928NPL,Asia,normally wet,fusion,1040,True,104.0,True,-3.0,True
+FL20240928NPL,Asia,normally wet,gfm,1040,True,104.0,True,2.0,True
+FL20240928NPL,Asia,normally wet,microwave,1040,True,104.0,True,3.0,False
+FL20240928NPL,Asia,normally wet,viirs,1040,True,104.0,True,2.0,True
+FL20240928NPL,Asia,normally wet,floodscan,1040,True,104.0,True,3.0,False
+FL20240928NPL,Asia,normally wet,gfds,1040,True,104.0,False,,False
+FL20240928NPL,Asia,other,fusion,1602,True,161.0,True,5.0,False
+FL20240928NPL,Asia,other,gfm,1602,True,161.0,True,2.0,False
+FL20240928NPL,Asia,other,microwave,1602,True,161.0,True,3.0,False
+FL20240928NPL,Asia,other,viirs,1602,True,161.0,True,3.0,True
+FL20240928NPL,Asia,other,floodscan,1602,True,161.0,True,3.0,False
+FL20240928NPL,Asia,other,gfds,1602,True,161.0,False,,False
+FL20241022SEN,Africa,normally wet,fusion,160,True,16.0,True,-3.0,True
+FL20241022SEN,Africa,normally wet,gfm,160,True,16.0,True,3.0,True
+FL20241022SEN,Africa,normally wet,microwave,160,True,16.0,True,-3.0,True
+FL20241022SEN,Africa,normally wet,viirs,160,True,16.0,True,-3.0,True
+FL20241022SEN,Africa,normally wet,floodscan,160,True,16.0,True,-3.0,True
+FL20241022SEN,Africa,normally wet,gfds,160,True,16.0,True,-3.0,True
+FL20241022SEN,Africa,other,fusion,458,True,46.0,True,-3.0,True
+FL20241022SEN,Africa,other,gfm,458,True,46.0,True,3.0,True
+FL20241022SEN,Africa,other,microwave,458,True,46.0,True,-3.0,True
+FL20241022SEN,Africa,other,viirs,458,True,46.0,True,-3.0,True
+FL20241022SEN,Africa,other,floodscan,458,True,46.0,True,-3.0,True
+FL20241022SEN,Africa,other,gfds,458,True,46.0,True,-3.0,True
+FL20241112COL,South America,normally wet,fusion,18,True,5.0,True,0.0,True
+FL20241112COL,South America,normally wet,gfm,18,True,5.0,False,,False
+FL20241112COL,South America,normally wet,microwave,18,True,5.0,False,,False
+FL20241112COL,South America,normally wet,viirs,18,True,5.0,True,-2.0,True
+FL20241112COL,South America,normally wet,floodscan,18,True,5.0,False,,False
+FL20241112COL,South America,normally wet,gfds,18,True,5.0,False,,False
+FL20241112COL,South America,other,fusion,4,False,,,,
+FL20241112COL,South America,other,gfm,4,False,,,,
+FL20241112COL,South America,other,microwave,4,False,,,,
+FL20241112COL,South America,other,viirs,4,False,,,,
+FL20241112COL,South America,other,floodscan,4,False,,,,
+FL20241112COL,South America,other,gfds,4,False,,,,
+FL20241128LKA,Asia,normally wet,fusion,86,True,9.0,True,0.0,False
+FL20241128LKA,Asia,normally wet,gfm,86,True,9.0,False,,False
+FL20241128LKA,Asia,normally wet,microwave,86,True,9.0,True,-3.0,True
+FL20241128LKA,Asia,normally wet,viirs,86,True,9.0,True,-3.0,True
+FL20241128LKA,Asia,normally wet,floodscan,86,True,9.0,False,,False
+FL20241128LKA,Asia,normally wet,gfds,86,True,9.0,True,-3.0,True
+FL20241128LKA,Asia,other,fusion,83,True,9.0,False,,False
+FL20241128LKA,Asia,other,gfm,83,True,9.0,False,,False
+FL20241128LKA,Asia,other,microwave,83,True,9.0,True,-3.0,True
+FL20241128LKA,Asia,other,viirs,83,True,9.0,True,-3.0,False
+FL20241128LKA,Asia,other,floodscan,83,True,9.0,False,,False
+FL20241128LKA,Asia,other,gfds,83,True,9.0,True,-3.0,True
+FL20241224SDN,Africa,normally wet,fusion,814,True,82.0,True,-3.0,True
+FL20241224SDN,Africa,normally wet,gfm,814,True,82.0,False,,False
+FL20241224SDN,Africa,normally wet,microwave,814,True,82.0,False,,False
+FL20241224SDN,Africa,normally wet,viirs,814,True,82.0,True,-3.0,True
+FL20241224SDN,Africa,normally wet,floodscan,814,True,82.0,False,,False
+FL20241224SDN,Africa,normally wet,gfds,814,True,82.0,False,,False
+FL20241224SDN,Africa,other,fusion,390,True,39.0,True,-3.0,True
+FL20241224SDN,Africa,other,gfm,390,True,39.0,False,,False
+FL20241224SDN,Africa,other,microwave,390,True,39.0,False,,False
+FL20241224SDN,Africa,other,viirs,390,True,39.0,True,-3.0,True
+FL20241224SDN,Africa,other,floodscan,390,True,39.0,False,,False
+FL20241224SDN,Africa,other,gfds,390,True,39.0,False,,False
+FL20250220BWA,Africa,normally wet,fusion,17,True,5.0,False,,False
+FL20250220BWA,Africa,normally wet,gfm,17,True,5.0,False,,False
+FL20250220BWA,Africa,normally wet,microwave,17,True,5.0,False,,False
+FL20250220BWA,Africa,normally wet,viirs,17,True,5.0,True,4.0,False
+FL20250220BWA,Africa,normally wet,floodscan,17,True,5.0,False,,False
+FL20250220BWA,Africa,normally wet,gfds,17,True,5.0,False,,False
+FL20250220BWA,Africa,other,fusion,62,True,7.0,False,,False
+FL20250220BWA,Africa,other,gfm,62,True,7.0,False,,False
+FL20250220BWA,Africa,other,microwave,62,True,7.0,False,,False
+FL20250220BWA,Africa,other,viirs,62,True,7.0,True,4.0,False
+FL20250220BWA,Africa,other,floodscan,62,True,7.0,False,,False
+FL20250220BWA,Africa,other,gfds,62,True,7.0,False,,False
+FL20250601NGA,Africa,normally wet,fusion,10,True,5.0,False,,False
+FL20250601NGA,Africa,normally wet,gfm,10,True,5.0,False,,False
+FL20250601NGA,Africa,normally wet,microwave,10,True,5.0,False,,False
+FL20250601NGA,Africa,normally wet,viirs,10,True,5.0,False,,False
+FL20250601NGA,Africa,normally wet,floodscan,10,True,5.0,False,,False
+FL20250601NGA,Africa,normally wet,gfds,10,True,5.0,False,,False
+FL20250601NGA,Africa,other,fusion,17,True,5.0,False,,False
+FL20250601NGA,Africa,other,gfm,17,True,5.0,False,,False
+FL20250601NGA,Africa,other,microwave,17,True,5.0,False,,False
+FL20250601NGA,Africa,other,viirs,17,True,5.0,False,,False
+FL20250601NGA,Africa,other,floodscan,17,True,5.0,False,,False
+FL20250601NGA,Africa,other,gfds,17,True,5.0,False,,False
+FL20250728NGA,Africa,normally wet,fusion,55,True,6.0,False,,False
+FL20250728NGA,Africa,normally wet,gfm,55,True,6.0,False,,False
+FL20250728NGA,Africa,normally wet,microwave,55,True,6.0,True,3.0,False
+FL20250728NGA,Africa,normally wet,viirs,55,True,6.0,True,0.0,False
+FL20250728NGA,Africa,normally wet,floodscan,55,True,6.0,True,3.0,False
+FL20250728NGA,Africa,normally wet,gfds,55,True,6.0,False,,False
+FL20250728NGA,Africa,other,fusion,841,True,85.0,False,,False
+FL20250728NGA,Africa,other,gfm,841,True,85.0,False,,False
+FL20250728NGA,Africa,other,microwave,841,True,85.0,True,-1.0,False
+FL20250728NGA,Africa,other,viirs,841,True,85.0,True,-1.0,False
+FL20250728NGA,Africa,other,floodscan,841,True,85.0,True,-1.0,False
+FL20250728NGA,Africa,other,gfds,841,True,85.0,False,,False
+FL20250812CPV,Africa,other,fusion,9,True,5.0,False,,False
+FL20250812CPV,Africa,other,gfm,9,True,5.0,False,,False
+FL20250812CPV,Africa,other,microwave,9,True,5.0,True,0.0,True
+FL20250812CPV,Africa,other,viirs,9,True,5.0,False,,False
+FL20250812CPV,Africa,other,floodscan,9,True,5.0,False,,False
+FL20250812CPV,Africa,other,gfds,9,True,5.0,True,0.0,True
+FL20250818PAK,Asia,normally wet,fusion,9,True,5.0,False,,False
+FL20250818PAK,Asia,normally wet,gfm,9,True,5.0,False,,False
+FL20250818PAK,Asia,normally wet,microwave,9,True,5.0,False,,False
+FL20250818PAK,Asia,normally wet,viirs,9,True,5.0,True,4.0,True
+FL20250818PAK,Asia,normally wet,floodscan,9,True,5.0,False,,False
+FL20250818PAK,Asia,normally wet,gfds,9,True,5.0,False,,False
+FL20250818PAK,Asia,other,fusion,112,True,12.0,False,,True
+FL20250818PAK,Asia,other,gfm,112,True,12.0,False,,False
+FL20250818PAK,Asia,other,microwave,112,True,12.0,False,,False
+FL20250818PAK,Asia,other,viirs,112,True,12.0,True,4.0,True
+FL20250818PAK,Asia,other,floodscan,112,True,12.0,False,,False
+FL20250818PAK,Asia,other,gfds,112,True,12.0,False,,False
+FL20251126IDN,Asia,normally wet,fusion,330,True,33.0,True,3.0,True
+FL20251126IDN,Asia,normally wet,gfm,330,True,33.0,True,1.0,False
+FL20251126IDN,Asia,normally wet,microwave,330,True,33.0,True,1.0,True
+FL20251126IDN,Asia,normally wet,viirs,330,True,33.0,True,2.0,True
+FL20251126IDN,Asia,normally wet,floodscan,330,True,33.0,True,1.0,True
+FL20251126IDN,Asia,normally wet,gfds,330,True,33.0,True,1.0,False
+FL20251126IDN,Asia,other,fusion,975,True,98.0,True,2.0,False
+FL20251126IDN,Asia,other,gfm,975,True,98.0,True,0.0,False
+FL20251126IDN,Asia,other,microwave,975,True,98.0,True,0.0,True
+FL20251126IDN,Asia,other,viirs,975,True,98.0,True,2.0,True
+FL20251126IDN,Asia,other,floodscan,975,True,98.0,True,1.0,False
+FL20251126IDN,Asia,other,gfds,975,True,98.0,True,1.0,True
+FL20251229MOZ,Africa,normally wet,fusion,95,True,10.0,True,-3.0,True
+FL20251229MOZ,Africa,normally wet,gfm,95,True,10.0,False,,False
+FL20251229MOZ,Africa,normally wet,microwave,95,True,10.0,True,-2.0,True
+FL20251229MOZ,Africa,normally wet,viirs,95,True,10.0,True,-3.0,True
+FL20251229MOZ,Africa,normally wet,floodscan,95,True,10.0,True,-2.0,False
+FL20251229MOZ,Africa,normally wet,gfds,95,True,10.0,True,-2.0,True
+FL20251229MOZ,Africa,other,fusion,868,True,87.0,True,-2.0,False
+FL20251229MOZ,Africa,other,gfm,868,True,87.0,False,,False
+FL20251229MOZ,Africa,other,microwave,868,True,87.0,True,-3.0,True
+FL20251229MOZ,Africa,other,viirs,868,True,87.0,True,-3.0,True
+FL20251229MOZ,Africa,other,floodscan,868,True,87.0,True,-3.0,False
+FL20251229MOZ,Africa,other,gfds,868,True,87.0,True,-1.0,True
+TC20180103MDG,Africa,normally wet,fusion,49,True,5.0,False,,False
+TC20180103MDG,Africa,normally wet,gfm,49,True,5.0,False,,False
+TC20180103MDG,Africa,normally wet,microwave,49,True,5.0,True,1.0,False
+TC20180103MDG,Africa,normally wet,viirs,49,True,5.0,True,2.0,True
+TC20180103MDG,Africa,normally wet,floodscan,49,True,5.0,False,,False
+TC20180103MDG,Africa,normally wet,gfds,49,True,5.0,True,1.0,False
+TC20180103MDG,Africa,other,fusion,278,True,28.0,False,,False
+TC20180103MDG,Africa,other,gfm,278,True,28.0,False,,False
+TC20180103MDG,Africa,other,microwave,278,True,28.0,True,0.0,False
+TC20180103MDG,Africa,other,viirs,278,True,28.0,True,2.0,False
+TC20180103MDG,Africa,other,floodscan,278,True,28.0,True,0.0,False
+TC20180103MDG,Africa,other,gfds,278,True,28.0,True,1.0,False
+TC20190312MOZ,Africa,normally wet,fusion,653,True,66.0,True,-3.0,True
+TC20190312MOZ,Africa,normally wet,gfm,653,True,66.0,False,,False
+TC20190312MOZ,Africa,normally wet,microwave,653,True,66.0,True,-3.0,True
+TC20190312MOZ,Africa,normally wet,viirs,653,True,66.0,True,-3.0,True
+TC20190312MOZ,Africa,normally wet,floodscan,653,True,66.0,True,-3.0,False
+TC20190312MOZ,Africa,normally wet,gfds,653,True,66.0,True,6.0,False
+TC20190312MOZ,Africa,other,fusion,11720,True,1172.0,True,9.0,False
+TC20190312MOZ,Africa,other,gfm,11720,True,1172.0,False,,False
+TC20190312MOZ,Africa,other,microwave,11720,True,1172.0,True,5.0,False
+TC20190312MOZ,Africa,other,viirs,11720,True,1172.0,True,8.0,False
+TC20190312MOZ,Africa,other,floodscan,11720,True,1172.0,True,5.0,False
+TC20190312MOZ,Africa,other,gfds,11720,True,1172.0,True,6.0,False
+TC20190324ZWE,Africa,normally wet,fusion,218,True,22.0,False,,False
+TC20190324ZWE,Africa,normally wet,gfm,218,True,22.0,False,,False
+TC20190324ZWE,Africa,normally wet,microwave,218,True,22.0,False,,False
+TC20190324ZWE,Africa,normally wet,viirs,218,True,22.0,False,,False
+TC20190324ZWE,Africa,normally wet,floodscan,218,True,22.0,False,,False
+TC20190324ZWE,Africa,normally wet,gfds,218,True,22.0,False,,False
+TC20190324ZWE,Africa,other,fusion,14748,True,1475.0,False,,False
+TC20190324ZWE,Africa,other,gfm,14748,True,1475.0,False,,False
+TC20190324ZWE,Africa,other,microwave,14748,True,1475.0,False,,False
+TC20190324ZWE,Africa,other,viirs,14748,True,1475.0,False,,False
+TC20190324ZWE,Africa,other,floodscan,14748,True,1475.0,False,,False
+TC20190324ZWE,Africa,other,gfds,14748,True,1475.0,False,,False
+TC20200518BGD,Asia,normally wet,fusion,1621,True,163.0,True,-3.0,True
+TC20200518BGD,Asia,normally wet,gfm,1621,True,163.0,False,,False
+TC20200518BGD,Asia,normally wet,microwave,1621,True,163.0,True,-1.0,True
+TC20200518BGD,Asia,normally wet,viirs,1621,True,163.0,True,-2.0,True
+TC20200518BGD,Asia,normally wet,floodscan,1621,True,163.0,True,-1.0,True
+TC20200518BGD,Asia,normally wet,gfds,1621,True,163.0,False,,False
+TC20200518BGD,Asia,other,fusion,555,True,56.0,True,-3.0,True
+TC20200518BGD,Asia,other,gfm,555,True,56.0,True,-3.0,False
+TC20200518BGD,Asia,other,microwave,555,True,56.0,True,-1.0,True
+TC20200518BGD,Asia,other,viirs,555,True,56.0,True,-2.0,True
+TC20200518BGD,Asia,other,floodscan,555,True,56.0,True,-1.0,True
+TC20200518BGD,Asia,other,gfds,555,True,56.0,False,,False
+TC20201028VNM,Asia,normally wet,fusion,1189,True,119.0,True,-3.0,True
+TC20201028VNM,Asia,normally wet,gfm,1189,True,119.0,True,-1.0,True
+TC20201028VNM,Asia,normally wet,microwave,1189,True,119.0,True,3.0,True
+TC20201028VNM,Asia,normally wet,viirs,1189,True,119.0,True,0.0,False
+TC20201028VNM,Asia,normally wet,floodscan,1189,True,119.0,True,3.0,True
+TC20201028VNM,Asia,normally wet,gfds,1189,True,119.0,False,,False
+TC20201028VNM,Asia,other,fusion,1427,True,143.0,True,-3.0,False
+TC20201028VNM,Asia,other,gfm,1427,True,143.0,True,-1.0,True
+TC20201028VNM,Asia,other,microwave,1427,True,143.0,True,0.0,True
+TC20201028VNM,Asia,other,viirs,1427,True,143.0,False,,False
+TC20201028VNM,Asia,other,floodscan,1427,True,143.0,True,0.0,True
+TC20201028VNM,Asia,other,gfds,1427,True,143.0,False,,False
+TC20201101PHL,Asia,normally wet,fusion,46,True,5.0,True,0.0,False
+TC20201101PHL,Asia,normally wet,gfm,46,True,5.0,True,-2.0,False
+TC20201101PHL,Asia,normally wet,microwave,46,True,5.0,True,1.0,True
+TC20201101PHL,Asia,normally wet,viirs,46,True,5.0,True,-3.0,False
+TC20201101PHL,Asia,normally wet,floodscan,46,True,5.0,False,,False
+TC20201101PHL,Asia,normally wet,gfds,46,True,5.0,True,1.0,True
+TC20201101PHL,Asia,other,fusion,240,True,24.0,True,1.0,False
+TC20201101PHL,Asia,other,gfm,240,True,24.0,True,-2.0,False
+TC20201101PHL,Asia,other,microwave,240,True,24.0,True,1.0,True
+TC20201101PHL,Asia,other,viirs,240,True,24.0,True,-3.0,True
+TC20201101PHL,Asia,other,floodscan,240,True,24.0,False,,False
+TC20201101PHL,Asia,other,gfds,240,True,24.0,True,1.0,True
+TC20201111PHL,Asia,normally wet,fusion,311,True,32.0,True,12.0,False
+TC20201111PHL,Asia,normally wet,gfm,311,True,32.0,True,12.0,False
+TC20201111PHL,Asia,normally wet,microwave,311,True,32.0,True,9.0,False
+TC20201111PHL,Asia,normally wet,viirs,311,True,32.0,True,12.0,True
+TC20201111PHL,Asia,normally wet,floodscan,311,True,32.0,True,9.0,False
+TC20201111PHL,Asia,normally wet,gfds,311,True,32.0,True,9.0,False
+TC20201111PHL,Asia,other,fusion,1305,True,131.0,True,12.0,False
+TC20201111PHL,Asia,other,gfm,1305,True,131.0,True,12.0,False
+TC20201111PHL,Asia,other,microwave,1305,True,131.0,True,9.0,False
+TC20201111PHL,Asia,other,viirs,1305,True,131.0,True,-3.0,True
+TC20201111PHL,Asia,other,floodscan,1305,True,131.0,True,9.0,False
+TC20201111PHL,Asia,other,gfds,1305,True,131.0,True,9.0,False
+TC20220124MOZ,Africa,normally wet,fusion,345,True,35.0,False,,False
+TC20220124MOZ,Africa,normally wet,gfm,345,True,35.0,False,,False
+TC20220124MOZ,Africa,normally wet,microwave,345,True,35.0,True,2.0,False
+TC20220124MOZ,Africa,normally wet,viirs,345,True,35.0,False,,False
+TC20220124MOZ,Africa,normally wet,floodscan,345,True,35.0,True,2.0,False
+TC20220124MOZ,Africa,normally wet,gfds,345,True,35.0,False,,False
+TC20220124MOZ,Africa,other,fusion,2130,True,213.0,True,2.0,False
+TC20220124MOZ,Africa,other,gfm,2130,True,213.0,False,,False
+TC20220124MOZ,Africa,other,microwave,2130,True,213.0,True,-1.0,False
+TC20220124MOZ,Africa,other,viirs,2130,True,213.0,False,,False
+TC20220124MOZ,Africa,other,floodscan,2130,True,213.0,True,0.0,False
+TC20220124MOZ,Africa,other,gfds,2130,True,213.0,True,-1.0,False
+TC20220126MWI,Africa,normally wet,fusion,297,True,30.0,False,,False
+TC20220126MWI,Africa,normally wet,gfm,297,True,30.0,False,,False
+TC20220126MWI,Africa,normally wet,microwave,297,True,30.0,True,2.0,False
+TC20220126MWI,Africa,normally wet,viirs,297,True,30.0,False,,False
+TC20220126MWI,Africa,normally wet,floodscan,297,True,30.0,True,2.0,False
+TC20220126MWI,Africa,normally wet,gfds,297,True,30.0,False,,False
+TC20220126MWI,Africa,other,fusion,646,True,65.0,True,2.0,False
+TC20220126MWI,Africa,other,gfm,646,True,65.0,True,0.0,False
+TC20220126MWI,Africa,other,microwave,646,True,65.0,True,-1.0,True
+TC20220126MWI,Africa,other,viirs,646,True,65.0,False,,False
+TC20220126MWI,Africa,other,floodscan,646,True,65.0,True,0.0,True
+TC20220126MWI,Africa,other,gfds,646,True,65.0,True,-1.0,True
+TC20220201MDG,Africa,normally wet,fusion,107,True,11.0,False,,False
+TC20220201MDG,Africa,normally wet,gfm,107,True,11.0,True,1.0,False
+TC20220201MDG,Africa,normally wet,microwave,107,True,11.0,True,2.0,True
+TC20220201MDG,Africa,normally wet,viirs,107,True,11.0,False,,False
+TC20220201MDG,Africa,normally wet,floodscan,107,True,11.0,False,,False
+TC20220201MDG,Africa,normally wet,gfds,107,True,11.0,True,7.0,True
+TC20220201MDG,Africa,other,fusion,799,True,80.0,False,,False
+TC20220201MDG,Africa,other,gfm,799,True,80.0,True,1.0,False
+TC20220201MDG,Africa,other,microwave,799,True,80.0,True,3.0,False
+TC20220201MDG,Africa,other,viirs,799,True,80.0,False,,False
+TC20220201MDG,Africa,other,floodscan,799,True,80.0,True,3.0,False
+TC20220201MDG,Africa,other,gfds,799,True,80.0,False,,False
+TC20220221MDG,Africa,normally wet,fusion,68,True,7.0,False,,False
+TC20220221MDG,Africa,normally wet,gfm,68,True,7.0,False,,False
+TC20220221MDG,Africa,normally wet,microwave,68,True,7.0,False,,False
+TC20220221MDG,Africa,normally wet,viirs,68,True,7.0,False,,False
+TC20220221MDG,Africa,normally wet,floodscan,68,True,7.0,False,,False
+TC20220221MDG,Africa,normally wet,gfds,68,True,7.0,False,,False
+TC20220221MDG,Africa,other,fusion,943,True,95.0,False,,False
+TC20220221MDG,Africa,other,gfm,943,True,95.0,False,,True
+TC20220221MDG,Africa,other,microwave,943,True,95.0,False,,False
+TC20220221MDG,Africa,other,viirs,943,True,95.0,False,,False
+TC20220221MDG,Africa,other,floodscan,943,True,95.0,False,,False
+TC20220221MDG,Africa,other,gfds,943,True,95.0,False,,False
+TC20220311MOZ,Africa,normally wet,fusion,28,True,5.0,False,,False
+TC20220311MOZ,Africa,normally wet,gfm,28,True,5.0,False,,False
+TC20220311MOZ,Africa,normally wet,microwave,28,True,5.0,True,9.0,True
+TC20220311MOZ,Africa,normally wet,viirs,28,True,5.0,False,,False
+TC20220311MOZ,Africa,normally wet,floodscan,28,True,5.0,False,,False
+TC20220311MOZ,Africa,normally wet,gfds,28,True,5.0,False,,False
+TC20220311MOZ,Africa,other,fusion,894,True,90.0,True,-3.0,True
+TC20220311MOZ,Africa,other,gfm,894,True,90.0,True,5.0,False
+TC20220311MOZ,Africa,other,microwave,894,True,90.0,True,-3.0,True
+TC20220311MOZ,Africa,other,viirs,894,True,90.0,False,,False
+TC20220311MOZ,Africa,other,floodscan,894,True,90.0,True,-3.0,True
+TC20220311MOZ,Africa,other,gfds,894,True,90.0,True,3.0,True
+TC20220928LAO,Asia,normally wet,fusion,15,True,5.0,False,,False
+TC20220928LAO,Asia,normally wet,gfm,15,True,5.0,False,,False
+TC20220928LAO,Asia,normally wet,microwave,15,True,5.0,False,,False
+TC20220928LAO,Asia,normally wet,viirs,15,True,5.0,False,,False
+TC20220928LAO,Asia,normally wet,floodscan,15,True,5.0,False,,False
+TC20220928LAO,Asia,normally wet,gfds,15,True,5.0,False,,False
+TC20220928LAO,Asia,other,fusion,19,True,5.0,False,,False
+TC20220928LAO,Asia,other,gfm,19,True,5.0,True,0.0,False
+TC20220928LAO,Asia,other,microwave,19,True,5.0,False,,False
+TC20220928LAO,Asia,other,viirs,19,True,5.0,False,,False
+TC20220928LAO,Asia,other,floodscan,19,True,5.0,False,,False
+TC20220928LAO,Asia,other,gfds,19,True,5.0,False,,False
+TC20220928THA,Asia,normally wet,fusion,116,True,12.0,True,2.0,False
+TC20220928THA,Asia,normally wet,gfm,116,True,12.0,True,-2.0,False
+TC20220928THA,Asia,normally wet,microwave,116,True,12.0,True,1.0,False
+TC20220928THA,Asia,normally wet,viirs,116,True,12.0,False,,False
+TC20220928THA,Asia,normally wet,floodscan,116,True,12.0,True,1.0,False
+TC20220928THA,Asia,normally wet,gfds,116,True,12.0,True,2.0,False
+TC20220928THA,Asia,other,fusion,321,True,33.0,True,3.0,False
+TC20220928THA,Asia,other,gfm,321,True,33.0,True,-2.0,False
+TC20220928THA,Asia,other,microwave,321,True,33.0,True,1.0,False
+TC20220928THA,Asia,other,viirs,321,True,33.0,False,,False
+TC20220928THA,Asia,other,floodscan,321,True,33.0,True,1.0,False
+TC20220928THA,Asia,other,gfds,321,True,33.0,True,1.0,False
+TC20221028PHL,Asia,normally wet,fusion,229,True,23.0,True,-3.0,True
+TC20221028PHL,Asia,normally wet,gfm,229,True,23.0,True,6.0,True
+TC20221028PHL,Asia,normally wet,microwave,229,True,23.0,True,-3.0,True
+TC20221028PHL,Asia,normally wet,viirs,229,True,23.0,False,,False
+TC20221028PHL,Asia,normally wet,floodscan,229,True,23.0,True,-3.0,True
+TC20221028PHL,Asia,normally wet,gfds,229,True,23.0,True,-3.0,True
+TC20221028PHL,Asia,other,fusion,178,True,18.0,True,-3.0,True
+TC20221028PHL,Asia,other,gfm,178,True,18.0,False,,False
+TC20221028PHL,Asia,other,microwave,178,True,18.0,True,-3.0,True
+TC20221028PHL,Asia,other,viirs,178,True,18.0,False,,False
+TC20221028PHL,Asia,other,floodscan,178,True,18.0,True,-3.0,True
+TC20221028PHL,Asia,other,gfds,178,True,18.0,True,-3.0,True
+TC20230221MDG,Africa,other,fusion,31,True,5.0,False,,False
+TC20230221MDG,Africa,other,gfm,31,True,5.0,False,,False
+TC20230221MDG,Africa,other,microwave,31,True,5.0,False,,True
+TC20230221MDG,Africa,other,viirs,31,True,5.0,False,,False
+TC20230221MDG,Africa,other,floodscan,31,True,5.0,False,,True
+TC20230221MDG,Africa,other,gfds,31,True,5.0,False,,False
+TC20230221MOZ,Africa,normally wet,fusion,382,True,39.0,True,22.0,False
+TC20230221MOZ,Africa,normally wet,gfm,382,True,39.0,False,,False
+TC20230221MOZ,Africa,normally wet,microwave,382,True,39.0,True,17.0,False
+TC20230221MOZ,Africa,normally wet,viirs,382,True,39.0,False,,False
+TC20230221MOZ,Africa,normally wet,floodscan,382,True,39.0,True,17.0,False
+TC20230221MOZ,Africa,normally wet,gfds,382,True,39.0,True,19.0,False
+TC20230221MOZ,Africa,other,fusion,5039,True,504.0,True,20.0,False
+TC20230221MOZ,Africa,other,gfm,5039,True,504.0,True,31.0,False
+TC20230221MOZ,Africa,other,microwave,5039,True,504.0,True,16.0,False
+TC20230221MOZ,Africa,other,viirs,5039,True,504.0,False,,False
+TC20230221MOZ,Africa,other,floodscan,5039,True,504.0,True,17.0,False
+TC20230221MOZ,Africa,other,gfds,5039,True,504.0,True,16.0,False
+TC20230314MWI,Africa,normally wet,fusion,397,True,40.0,True,5.0,False
+TC20230314MWI,Africa,normally wet,gfm,397,True,40.0,False,,False
+TC20230314MWI,Africa,normally wet,microwave,397,True,40.0,True,1.0,True
+TC20230314MWI,Africa,normally wet,viirs,397,True,40.0,False,,False
+TC20230314MWI,Africa,normally wet,floodscan,397,True,40.0,True,1.0,True
+TC20230314MWI,Africa,normally wet,gfds,397,True,40.0,True,2.0,False
+TC20230314MWI,Africa,other,fusion,3104,True,311.0,True,5.0,False
+TC20230314MWI,Africa,other,gfm,3104,True,311.0,False,,False
+TC20230314MWI,Africa,other,microwave,3104,True,311.0,True,1.0,False
+TC20230314MWI,Africa,other,viirs,3104,True,311.0,False,,False
+TC20230314MWI,Africa,other,floodscan,3104,True,311.0,True,1.0,False
+TC20230314MWI,Africa,other,gfds,3104,True,311.0,True,2.0,False
+TC20240313MOZ,Africa,normally wet,fusion,15,True,5.0,False,,False
+TC20240313MOZ,Africa,normally wet,gfm,15,True,5.0,False,,False
+TC20240313MOZ,Africa,normally wet,microwave,15,True,5.0,True,5.0,True
+TC20240313MOZ,Africa,normally wet,viirs,15,True,5.0,True,-3.0,True
+TC20240313MOZ,Africa,normally wet,floodscan,15,True,5.0,False,,False
+TC20240313MOZ,Africa,normally wet,gfds,15,True,5.0,True,5.0,True
+TC20240313MOZ,Africa,other,fusion,35,True,5.0,False,,True
+TC20240313MOZ,Africa,other,gfm,35,True,5.0,False,,False
+TC20240313MOZ,Africa,other,microwave,35,True,5.0,False,,True
+TC20240313MOZ,Africa,other,viirs,35,True,5.0,True,-3.0,True
+TC20240313MOZ,Africa,other,floodscan,35,True,5.0,False,,False
+TC20240313MOZ,Africa,other,gfds,35,True,5.0,False,,True
+TC20240328MDG,Africa,other,fusion,8,True,5.0,False,,False
+TC20240328MDG,Africa,other,gfm,8,True,5.0,False,,False
+TC20240328MDG,Africa,other,microwave,8,True,5.0,False,,False
+TC20240328MDG,Africa,other,viirs,8,True,5.0,True,-2.0,False
+TC20240328MDG,Africa,other,floodscan,8,True,5.0,False,,False
+TC20240328MDG,Africa,other,gfds,8,True,5.0,False,,False
+TC20240905VNM,Asia,normally wet,fusion,364,True,37.0,True,-3.0,True
+TC20240905VNM,Asia,normally wet,gfm,364,True,37.0,True,2.0,False
+TC20240905VNM,Asia,normally wet,microwave,364,True,37.0,True,2.0,False
+TC20240905VNM,Asia,normally wet,viirs,364,True,37.0,True,3.0,True
+TC20240905VNM,Asia,normally wet,floodscan,364,True,37.0,True,2.0,False
+TC20240905VNM,Asia,normally wet,gfds,364,True,37.0,False,,False
+TC20240905VNM,Asia,other,fusion,686,True,69.0,True,-3.0,True
+TC20240905VNM,Asia,other,gfm,686,True,69.0,True,2.0,False
+TC20240905VNM,Asia,other,microwave,686,True,69.0,True,-2.0,False
+TC20240905VNM,Asia,other,viirs,686,True,69.0,True,3.0,True
+TC20240905VNM,Asia,other,floodscan,686,True,69.0,True,-2.0,False
+TC20240905VNM,Asia,other,gfds,686,True,69.0,False,,False
+TC20250308MDG,Africa,normally wet,fusion,94,True,10.0,True,-3.0,True
+TC20250308MDG,Africa,normally wet,gfm,94,True,10.0,False,,False
+TC20250308MDG,Africa,normally wet,microwave,94,True,10.0,True,2.0,True
+TC20250308MDG,Africa,normally wet,viirs,94,True,10.0,True,2.0,True
+TC20250308MDG,Africa,normally wet,floodscan,94,True,10.0,False,,False
+TC20250308MDG,Africa,normally wet,gfds,94,True,10.0,True,2.0,True
+TC20250308MDG,Africa,other,fusion,92,True,10.0,False,,False
+TC20250308MDG,Africa,other,gfm,92,True,10.0,True,3.0,False
+TC20250308MDG,Africa,other,microwave,92,True,10.0,True,-2.0,True
+TC20250308MDG,Africa,other,viirs,92,True,10.0,True,1.0,True
+TC20250308MDG,Africa,other,floodscan,92,True,10.0,False,,False
+TC20250308MDG,Africa,other,gfds,92,True,10.0,True,-2.0,True
+TC20250722LAO,Asia,normally wet,fusion,707,True,71.0,True,-3.0,True
+TC20250722LAO,Asia,normally wet,gfm,707,True,71.0,False,,False
+TC20250722LAO,Asia,normally wet,microwave,707,True,71.0,True,-3.0,True
+TC20250722LAO,Asia,normally wet,viirs,707,True,71.0,False,,False
+TC20250722LAO,Asia,normally wet,floodscan,707,True,71.0,True,-3.0,True
+TC20250722LAO,Asia,normally wet,gfds,707,True,71.0,False,,False
+TC20250722LAO,Asia,other,fusion,475,True,48.0,False,,False
+TC20250722LAO,Asia,other,gfm,475,True,48.0,True,3.0,False
+TC20250722LAO,Asia,other,microwave,475,True,48.0,False,,False
+TC20250722LAO,Asia,other,viirs,475,True,48.0,False,,True
+TC20250722LAO,Asia,other,floodscan,475,True,48.0,False,,False
+TC20250722LAO,Asia,other,gfds,475,True,48.0,False,,False
+TC20250825VNM,Asia,normally wet,fusion,79,True,8.0,True,2.0,True
+TC20250825VNM,Asia,normally wet,gfm,79,True,8.0,True,0.0,False
+TC20250825VNM,Asia,normally wet,microwave,79,True,8.0,True,-2.0,True
+TC20250825VNM,Asia,normally wet,viirs,79,True,8.0,False,,True
+TC20250825VNM,Asia,normally wet,floodscan,79,True,8.0,True,-2.0,True
+TC20250825VNM,Asia,normally wet,gfds,79,True,8.0,False,,True
+TC20250825VNM,Asia,other,fusion,732,True,74.0,True,3.0,True
+TC20250825VNM,Asia,other,gfm,732,True,74.0,True,0.0,False
+TC20250825VNM,Asia,other,microwave,732,True,74.0,True,1.0,True
+TC20250825VNM,Asia,other,viirs,732,True,74.0,False,,True
+TC20250825VNM,Asia,other,floodscan,732,True,74.0,True,1.0,True
+TC20250825VNM,Asia,other,gfds,732,True,74.0,False,,False

@@ -1,0 +1,4 @@
+product,events,caught,false_event,caught_clean,median_days
+"cascade: GFM, else VIIRS, else microwave (sensitivity)",148,0.8581081081081081,0.6351351351351351,0.25,-2.0
+"cascade: VIIRS, else GFM, else microwave",148,0.8581081081081081,0.6418918918918919,0.24324324324324326,-2.0
+fusion,148,0.6756756756756757,0.33783783783783783,0.3581081081081081,-2.0

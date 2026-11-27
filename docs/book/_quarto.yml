@@ -1,0 +1,43 @@
+project:
+  type: book
+  output-dir: _book
+
+book:
+  title: "Flood fusion"
+  subtitle: "Analysis and results, checkpoint 2026-11-27"
+  author: "OCHA Centre for Humanitarian Data"
+  date: today
+  sidebar:
+    collapse-level: 1
+  chapters:
+    - index.qmd
+    - 01-status.qmd
+    - 02-the-basics-what-is-classified-and-how-it-is-scor.qmd
+    - 03-from-pixels-to-cells-how-every-layer-lands-on-on.qmd
+    - 04-how-the-pieces-fit-together.qmd
+    - 05-scope-and-events.qmd
+    - 06-events-days-and-how-counts-add-up.qmd
+    - 07-inputs.qmd
+    - 08-grid-domain-and-strata.qmd
+    - 09-water-versus-flood.qmd
+    - 10-gold-labels.qmd
+    - 11-how-fusion-and-scoring-work.qmd
+    - 12-testing-five-folds-by-river-basin.qmd
+    - 13-from-counts-to-totals.qmd
+    - 14-was-the-event-caught.qmd
+    - 15-results.qmd
+    - 16-other-approaches-tried.qmd
+    - 17-not-yet-validated.qmd
+    - 18-next-steps.qmd
+  appendices:
+    - glossary.qmd
+    - events.qmd
+    - log.qmd
+
+format:
+  html:
+    theme: cosmo
+    include-before-body:
+      - home-link.html  # back-link to the landing page (team convention)
+    toc: true
+    number-sections: true

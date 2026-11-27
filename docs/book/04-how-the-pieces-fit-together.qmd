@@ -1,0 +1,14 @@
+# How the pieces fit together
+
+1. **Inputs.** Three kinds of satellite product give each 0.01° cell, each day, a value: flood, dry or "couldn't see" (Inputs).
+2. **Fixed layers.** Elevation, permanent water and land cover decide which cells can flood, and whether each is open, vegetated or urban (Grid, domain and strata).
+3. **Gold labels.** Expert flood maps label each examined cell flooded, dry or none on their map days. The 30 days before and 60 days after each event add dry labels (Gold labels; Events, days and how counts add up).
+4. **Fitting.** For each source and land type, the events used for fitting give two numbers: how often it says flood where gold says flooded (hit rate), and where gold says dry (false-alarm rate).
+5. **Fusion.** Each day, fusion turns the sources' reports into a probability of flooding using those rates. P ≥ 0.5 counts as a flood call (How fusion and scoring work).
+6. **Scoring.** Fusion and each product are compared with gold cell by cell, on the map days of events not used for fitting. The counts are summed into recall, precision and F1, and per event into "caught or not" (Testing; From counts to totals; Was the event caught?).
+
+The project plan judges fusion on three criteria:
+
+- **(a) coverage:** a value on more floodable cells each day than any single product;
+- **(b) mapping skill:** in each land type, CSI at least that of the best single product;
+- **(c) reliability:** its probabilities mean what they say. Of cells given P 0.6, about 60% should be flooded; the slope between predicted and observed must be 0.8–1.2.

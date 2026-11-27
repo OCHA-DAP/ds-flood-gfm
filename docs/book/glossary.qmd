@@ -1,0 +1,94 @@
+# Glossary
+
+Every term the analysis uses, in plain words, grouped by topic.
+
+## Events and gold maps
+
+| term | meaning |
+|---|---|
+| **gold map** | an expert-drawn flood map from Copernicus EMS or UNOSAT, used as the reference answer |
+| **activation code** | the ID a mapping service gives one flood response, e.g. EMSR838. One code is one **event** |
+| **examined area** | the part of a gold map the analyst actually looked at. Outside it there is no label, flooded or dry |
+| **map day** | a date on which an event, or one of its windows, has a gold map. A window is scored only on its own map days |
+| **event period** | from an event's first map day to its last |
+| **window** | one area of an event, processed on its own. Maps within 0.05° of each other share a window. A window covers 30 days before the event period to 60 days after it |
+| **days before and after** | the 30 days before the first map and the 60 after the last. Examined cells are labelled dry there, to measure false alarms on ordinary days, except cells flooded on a map day of their window, which get no label there |
+| **built** | an event whose gold labels and source values have been prepared on the grid and saved (an **event cube** per window) |
+
+## Grid and cells
+
+| term | meaning |
+|---|---|
+| **cell** | one 0.01° × 0.01° square of the grid, about 1.1 km across at the equator |
+| **cell-day** | one cell on one day: the unit every count is made of. A window-day is one window on one day |
+| **sub-pixel** | one of the 100 squares of 0.001° a gold map is drawn onto inside each cell |
+| **HAND** | height above nearest drainage: how far a point sits above the nearest stream. From the GLO-30 elevation model |
+| **floodable** | at least 30% of the cell lies less than 15 m above the nearest stream |
+| **permanent water** | water at least 90% of the time over 1984–2021 (JRC Global Surface Water). Cells that are mostly permanent water are removed |
+| **domain** | floodable cells that are not permanent water. Nothing outside it is predicted or scored |
+| **normally wet** | a cell where at least 30% of the 30 m pixels were water in that calendar month in at least half of the years observed (JRC monthly recurrence, 1984–2021): a wet-season floodplain, wetland or rice paddy |
+| **reference water** | a map of the water that is normally there, which a product or an analyst leaves out of "flood". GFM uses its own; the gold analysts decide by eye, and do not always decide the same way |
+| **unusual water** | water that is not normally there in that month: the flood every source agrees on |
+| **water-first design** | a proposal: fuse the products' water, then turn it into flood with one normal-water baseline, so the definition of flood is one visible setting |
+| **land type, stratum** | open, vegetated or urban, from ESA WorldCover. A stratum is the group of cells with one land type; the model's rates are fitted per stratum |
+| **snow season** | a month in which a cell is usually snow-covered (ERA5-Land). Not used: almost all snow-season gold flood is in Europe, which is out of scope |
+
+## Satellites and sources
+
+| term | meaning |
+|---|---|
+| **radar (SAR)** | the satellite sends a microwave pulse and reads the echo; calm water reflects it away and looks dark. Works through cloud and at night, but cannot see water under trees |
+| **Sentinel-1, GFM** | the European radar satellites, and Copernicus's Global Flood Monitoring product made from them. A given place gets an image only every 6 to 12 days |
+| **optical** | sees reflected sunlight, like a camera. Blocked by cloud |
+| **VIIRS, MODIS** | US optical sensors that image the whole Earth daily; NOAA and NASA make flood maps from them |
+| **passive microwave** | measures the energy the ground itself gives off; wet ground gives off less. Sees through cloud every day, but only at about 9 km |
+| **FloodScan, SFED** | AER's product from passive microwave; SFED is the share of each 9 km cell that is flooded |
+| **GFDS** | JRC/GDACS Global Flood Detection System, also passive microwave, about 9 km |
+| **couldn't see** | the product had no usable observation for that cell that day (also called NoData). Never counted as dry |
+| **microwave vote** | FloodScan and GFDS combined: flood if either says flood, dry if at least one observed and neither says flood |
+| **optical vote** | the same for VIIRS and MODIS (proposed) |
+| **CYGNSS** | a NASA constellation measuring GPS signals reflected off the ground; the UC Berkeley daily watermask made from it is a rolling multi-week composite of surface water at 0.01°, within 37.4° of the equator, from August 2018 |
+
+## Fusion
+
+| term | meaning |
+|---|---|
+| **hit rate** | for one source and land type: the share of gold-flooded cells it observed that it called flood (`docs/methods.md`: sensitivity) |
+| **false-alarm rate** | the share of gold-dry cells it observed that it called flood (1 − specificity) |
+| **fitting** | counting hits, misses, false alarms and correct dries on the events used for fitting, to get those two rates |
+| **base flood rate (prior)** | how often a cell of that land type is flooded on an ordinary day, from the global random sample's 30 blocks in the four continents: about 0.23% in open land, 0.01% in vegetated and 0.005% in urban land |
+| **odds** | P / (1 − P). P 0.002 is odds of about 1 to 500. Fusion multiplies the odds by each source's hit rate over its false-alarm rate |
+| **log-odds** | the logarithm of the odds; fusion adds evidence and fades yesterday's value on this scale |
+| **P** | fusion's probability that a cell is flooded that day; P ≥ 0.5 counts as a flood call |
+| **memory** | yesterday's log-odds carry over at 0.9 of their distance from the base rate, so evidence builds up over days |
+| **cascade** | a baseline that needs no fitting: for each cell-day, the first product that observed it, in the order VIIRS, GFM, microwave vote |
+
+## Scoring and testing
+
+| term | meaning |
+|---|---|
+| **hit, miss, false alarm, correct dry** | product flood where gold is flooded; product dry (or couldn't see) where gold is flooded; product flood where gold is dry; product dry where gold is dry |
+| **recall** | the share of gold-flooded cells a product flags |
+| **precision** | the share of a product's flood calls that gold confirms |
+| **F1** | the balance of recall and precision (their harmonic mean); high only when both are. The headline score |
+| **CSI** | hits ÷ (hits + misses + false alarms); ranks products the same as F1. Used only for criterion (b) |
+| **all cells, observed cells** | two scoring views: a product's gaps count as misses / only the cells it saw are scored |
+| **pooled** | counts summed over all cells, days and events before computing a score, so large floods weigh more (a micro-average) |
+| **basin-weighted** | each river basin's counts scaled so its flood counts once; stops one basin deciding the answer |
+| **reliability, calibration slope** | whether probabilities mean what they say: of cells given P 0.6, about 60% should be flooded. Slope 1 is perfect; the target is 0.8–1.2 |
+| **fold** | one of five groups of events; each is scored with rates fitted on the other four |
+| **training, test (held-out) events** | the first run's one-off split: 149 events for fitting, 49 for testing |
+| **river basin** | a river's catchment, from HydroBASINS at level 4 (level 1 is a whole continent; each level splits basins into smaller sub-basins). Events in one basin stay in one fold |
+| **bootstrap interval** | the range a score moves within when it is recomputed on many random re-draws of whole events; it shows how much the score depends on which events happened to be mapped |
+| **global random sample** | 53 blocks of 0.25° to 0.5° with no gold maps, with every day of 2023–2025 prepared: 30 random, 12 on cities and 11 reserves. The 30 blocks in Africa, Asia, South America and Oceania give the base flood rate; ordinary-day precision will be measured there |
+| **caught** | a product flags at least 10% of an event's gold-flooded floodable cells, and at least 5, on some day from 3 days before its first map to 3 days after its last. "Caught, no false event" also requires no false event |
+| **false event** | the "caught" rule firing on ordinary days, when there was no mapped flood |
+
+## Files and tools
+
+| term | meaning |
+|---|---|
+| **STAC** | a searchable catalogue of satellite files (GFM's is at EODC) |
+| **COG** | a cloud-optimised GeoTIFF: a raster file that can be read in parts over the internet |
+| **NetCDF** | a file format for gridded data with several layers and a time axis; each event cube is one |
+| **blob** | a file in the team's Azure storage (dev or prod account) |

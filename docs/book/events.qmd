@@ -1,0 +1,182 @@
+# Events
+
+All 170 events in scope, all built and scored (15 October). The fold column is the cross-validation fold each event was scored in. They are grouped by continent, newest first. Country is the country at the event's centre, so an event near a border can be listed under the neighbour (FL20180619BGD, a Bangladesh activation, falls in India).
+
+- **map days:** distinct dates with a gold map.
+- **windows:** separate map areas, each processed on its own.
+- **cells:** every 0.01° cell in the event's windows (the rectangles around its maps), examined or not, floodable or not. A cell is about 1.1 km across at the equator.
+- **gold flooded cell-days:** floodable cells flooded on a map day, summed over the map days; these are the cells scored for recall. A 0 means the maps' flood areas never covered 30% of a floodable cell.
+- **fold:** the cross-validation fold (1–5) the event was scored in; its rates were fitted on the other four folds. Events in one river basin share a fold.
+
+| continent | event | catalog | country | first map | last map | map days | windows | cells | gold flooded cell-days | fold |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Africa | EMSR857 | Copernicus EMS | Mozambique | 2026-01-12 | 2026-01-27 | 12 | 6 | 57,518 | 10,045 | 5 |
+| Africa | FL20251229MOZ | UNOSAT | Mozambique | 2025-12-31 | 2026-01-05 | 2 | 1 | 57,181 | 1,032 | 2 |
+| Africa | FL20250812CPV | UNOSAT | Cabo Verde | 2025-08-14 | 2025-08-14 | 1 | 1 | 135 | 9 | 4 |
+| Africa | FL20250728NGA | UNOSAT | Nigeria | 2025-07-29 | 2025-07-29 | 1 | 1 | 68,040 | 896 | 3 |
+| Africa | FL20250601NGA | UNOSAT | Nigeria | 2025-05-31 | 2025-06-02 | 2 | 1 | 480 | 27 | 3 |
+| Africa | TC20250308MDG | UNOSAT | Madagascar | 2025-03-09 | 2025-03-09 | 1 | 1 | 26,100 | 186 | 5 |
+| Africa | FL20250220BWA | UNOSAT | Botswana | 2025-02-22 | 2025-03-04 | 4 | 1 | 7,216 | 133 | 5 |
+| Africa | FL20241224SDN | UNOSAT | Sudan | 2024-12-12 | 2025-01-01 | 3 | 1 | 30,132 | 3,209 | 3 |
+| Africa | EMSR779 | Copernicus EMS | Cameroon | 2024-11-23 | 2024-11-23 | 1 | 1 | 49,920 | 1,622 | 4 |
+| Africa | EMSR772 | Copernicus EMS | Cameroon | 2024-10-24 | 2024-10-24 | 1 | 1 | 50,080 | 801 | 4 |
+| Africa | FL20241022SEN | UNOSAT | Senegal | 2024-10-20 | 2024-10-25 | 2 | 1 | 1,932 | 618 | 1 |
+| Africa | EMSR753 | Copernicus EMS | Nigeria | 2024-09-11 | 2024-09-12 | 2 | 1 | 342 | 104 | 4 |
+| Africa | EMSR750 | Copernicus EMS | Sudan | 2024-08-28 | 2024-09-01 | 3 | 1 | 551 | 36 | 4 |
+| Africa | FL20240820TCD | UNOSAT | Chad | 2024-08-26 | 2024-08-26 | 1 | 2 | 708 | 77 | 3 |
+| Africa | FL20240812LBY | UNOSAT | Libya | 2024-08-18 | 2024-08-18 | 1 | 1 | 24 | 6 | 5 |
+| Africa | FL20240826SDN | UNOSAT | Sudan | 2024-08-09 | 2024-09-08 | 6 | 5 | 97,001 | 9,075 | 5 |
+| Africa | FL20240426KEN | UNOSAT | Kenya | 2024-04-29 | 2024-05-05 | 3 | 2 | 94,434 | 552 | 3 |
+| Africa | TC20240328MDG | UNOSAT | Madagascar | 2024-04-01 | 2024-04-01 | 1 | 1 | 616 | 8 | 5 |
+| Africa | TC20240313MOZ | UNOSAT | Mozambique | 2024-03-23 | 2024-03-27 | 2 | 1 | 2,337 | 53 | 1 |
+| Africa | FL20231229COD | UNOSAT | Democratic Republic of the Congo | 2023-12-28 | 2024-01-13 | 2 | 1 | 522 | 1 | 5 |
+| Africa | FL20240102COG | UNOSAT | Republic of the Congo | 2023-12-28 | 2024-02-08 | 2 | 1 | 182 | 31 | 5 |
+| Africa | FL20231124KEN | UNOSAT | Kenya | 2023-11-26 | 2023-12-01 | 2 | 2 | 1,029 | 142 | 3 |
+| Africa | FL20231105SOM | UNOSAT | Somalia | 2023-11-05 | 2023-12-03 | 13 | 3 | 217,759 | 3,137 | 5 |
+| Africa | FL20231018GHA | UNOSAT | Ghana | 2023-10-23 | 2023-10-23 | 1 | 1 | 4,554 | 20 | 3 |
+| Africa | FL20230912LBY | UNOSAT | Libya | 2023-09-12 | 2023-09-13 | 2 | 2 | 198 | 25 | 4 |
+| Africa | EMSR663 | Copernicus EMS | Mozambique | 2023-05-18 | 2023-05-18 | 1 | 1 | 192 | 43 | 1 |
+| Africa | EMSR662 | Copernicus EMS | Uganda | 2023-05-14 | 2023-05-14 | 1 | 1 | 102 | 0 | 4 |
+| Africa | FL20230304RWA | UNOSAT | Rwanda | 2023-05-03 | 2023-05-03 | 1 | 1 | 4,200 | 9 | 4 |
+| Africa | FL20230504RWA | UNOSAT | Rwanda | 2023-05-03 | 2023-05-05 | 2 | 1 | 4,760 | 49 | 4 |
+| Africa | FL20230327SOM | UNOSAT | Somalia | 2023-03-30 | 2023-05-25 | 8 | 1 | 109,740 | 1,869 | 3 |
+| Africa | TC20230314MWI | UNOSAT | Mozambique | 2023-03-14 | 2023-03-21 | 3 | 1 | 50,220 | 5,019 | 1 |
+| Africa | TC20230221MOZ | UNOSAT | Mozambique | 2023-02-26 | 2023-03-26 | 9 | 4 | 172,671 | 8,243 | 2 |
+| Africa | TC20230221MDG | UNOSAT | Madagascar | 2023-02-23 | 2023-02-23 | 1 | 2 | 2,050 | 31 | 5 |
+| Africa | EMSR650 | Copernicus EMS | Mozambique | 2023-02-13 | 2023-02-21 | 3 | 4 | 34,144 | 443 | 2 |
+| Africa | FL20221019TCD | UNOSAT | Chad | 2022-10-15 | 2022-10-30 | 5 | 1 | 1,392 | 696 | 1 |
+| Africa | FL20221004NER | UNOSAT | Niger | 2022-10-05 | 2022-10-05 | 1 | 1 | 71,093 | 602 | 2 |
+| Africa | EMSR696 | Copernicus EMS | Libya | 2022-09-13 | 2023-09-13 | 2 | 5 | 901 | 44 | 3 |
+| Africa | FL20220816SDN | UNOSAT | Sudan | 2022-08-15 | 2022-09-11 | 5 | 3 | 12,540 | 243 | 5 |
+| Africa | FL20220728NER | UNOSAT | Niger | 2022-08-11 | 2022-08-11 | 1 | 1 | 48,600 | 214 | 2 |
+| Africa | FL20220801GMB | UNOSAT | Gambia | 2022-08-05 | 2022-08-10 | 2 | 1 | 2,200 | 62 | 5 |
+| Africa | FL20220803UGA | UNOSAT | Uganda | 2022-08-02 | 2022-08-02 | 1 | 1 | 1,128 | 17 | 4 |
+| Africa | EMSR568 | Copernicus EMS | Mozambique | 2022-03-17 | 2022-03-17 | 1 | 1 | 12,177 | 35 | 1 |
+| Africa | TC20220311MOZ | UNOSAT | Mozambique | 2022-03-12 | 2022-03-22 | 6 | 2 | 39,368 | 1,410 | 1 |
+| Africa | TC20220221MDG | UNOSAT | Madagascar | 2022-02-24 | 2022-03-01 | 5 | 11 | 17,118 | 1,047 | 5 |
+| Africa | TC20220201MDG | UNOSAT | Madagascar | 2022-02-07 | 2022-02-15 | 5 | 7 | 22,974 | 933 | 5 |
+| Africa | EMSR561 | Copernicus EMS | Malawi | 2022-01-26 | 2022-02-01 | 4 | 3 | 1,128 | 275 | 2 |
+| Africa | TC20220124MOZ | UNOSAT | Mozambique | 2022-01-26 | 2022-02-02 | 3 | 1 | 189,486 | 2,548 | 1 |
+| Africa | TC20220126MWI | UNOSAT | Mozambique | 2022-01-26 | 2022-01-26 | 1 | 2 | 41,007 | 943 | 3 |
+| Africa | EMSR559 | Copernicus EMS | Madagascar | 2022-01-25 | 2022-01-29 | 4 | 4 | 7,427 | 560 | 4 |
+| Africa | FL20211015SSD | UNOSAT | South Sudan | 2021-10-17 | 2021-10-17 | 1 | 1 | 37,830 | 0 | 1 |
+| Africa | FL20210907SDN | UNOSAT | Sudan | 2021-09-04 | 2021-09-22 | 5 | 2 | 8,772 | 1,662 | 3 |
+| Africa | FL20210812SDN | UNOSAT | Sudan | 2021-08-10 | 2021-08-10 | 1 | 1 | 10,395 | 318 | 1 |
+| Africa | EMSR470 | Copernicus EMS | Togo | 2020-10-14 | 2020-10-20 | 3 | 1 | 10,074 | 568 | 1 |
+| Africa | EMSR466 | Copernicus EMS | Niger | 2020-09-12 | 2020-09-27 | 2 | 3 | 752 | 82 | 2 |
+| Africa | EMSR446 | Copernicus EMS | Uganda | 2020-06-01 | 2020-09-01 | 11 | 2 | 26,075 | 1,063 | 4 |
+| Africa | FL20200428SOM | UNOSAT | Somalia | 2020-05-13 | 2020-05-16 | 2 | 1 | 49 | 16 | 2 |
+| Africa | EMSR438 | Copernicus EMS | Uganda | 2020-04-29 | 2020-05-20 | 9 | 5 | 24,278 | 175 | 4 |
+| Africa | FL20200305ZMB | UNOSAT | Zambia | 2020-03-04 | 2020-03-07 | 2 | 1 | 12,584 | 1,942 | 2 |
+| Africa | EMSR424 | Copernicus EMS | Madagascar | 2020-01-27 | 2020-02-08 | 7 | 3 | 44,672 | 6,096 | 4 |
+| Africa | EMSR410 | Copernicus EMS | Djibouti | 2019-11-22 | 2019-11-27 | 4 | 2 | 140 | 26 | 1 |
+| Africa | FL20191118COD | UNOSAT | Democratic Republic of the Congo | 2019-11-15 | 2019-11-15 | 1 | 1 | 72 | 0 | 3 |
+| Africa | FL20191030SOM | UNOSAT | Somalia | 2019-11-06 | 2019-11-06 | 1 | 1 | 20,090 | 831 | 3 |
+| Africa | EMSR404 | Copernicus EMS | Somalia | 2019-11-03 | 2019-11-03 | 1 | 1 | 56 | 25 | 2 |
+| Africa | FL20191029TGO | UNOSAT | Benin | 2019-10-26 | 2019-10-26 | 1 | 1 | 1,815 | 19 | 1 |
+| Africa | FL20191017CMR | UNOSAT | Cameroon | 2019-10-11 | 2019-10-16 | 2 | 1 | 7,152 | 1,771 | 4 |
+| Africa | FL20190815SDN | UNOSAT | Sudan | 2019-08-28 | 2019-08-28 | 1 | 3 | 868 | 119 | 3 |
+| Africa | FL20211008COD | UNOSAT | Democratic Republic of the Congo | 2019-08-01 | 2021-01-27 | 5 | 1 | 9,700 | 289 | 4 |
+| Africa | EMSR349 | Copernicus EMS | Zimbabwe | 2019-03-21 | 2019-03-26 | 3 | 3 | 2,370 | 8 | 2 |
+| Africa | TC20190312MOZ | UNOSAT | Mozambique | 2019-03-13 | 2019-04-07 | 5 | 1 | 267,988 | 16,581 | 2 |
+| Africa | TC20190324ZWE | UNOSAT | Zimbabwe | 2019-03-12 | 2019-03-24 | 2 | 1 | 129,024 | 18,054 | 2 |
+| Africa | EMSR319 | Copernicus EMS | Tunisia | 2018-10-01 | 2018-10-01 | 1 | 1 | 2,408 | 2 | 2 |
+| Africa | EMSR314 | Copernicus EMS | Nigeria | 2018-09-20 | 2018-09-22 | 2 | 3 | 3,557 | 1,101 | 3 |
+| Africa | FL20180501SOM | UNOSAT | Ethiopia | 2018-05-01 | 2018-05-01 | 1 | 1 | 14,148 | 44 | 5 |
+| Africa | TC20180103MDG | UNOSAT | Madagascar | 2018-01-07 | 2018-01-07 | 1 | 1 | 11,242 | 327 | 5 |
+| Africa | FL20170926TCD | UNOSAT | Chad | 2017-09-25 | 2017-09-25 | 1 | 1 | 11,554 | 299 | 1 |
+| Africa | EMSR235 | Copernicus EMS | Niger | 2017-09-10 | 2017-09-15 | 3 | 3 | 147 | 4 | 2 |
+| Africa | FL20170828NER | UNOSAT | Niger | 2017-08-14 | 2017-08-26 | 2 | 1 | 3,657 | 177 | 2 |
+| Africa | FL20151015SOM | UNOSAT | Somalia | 2015-10-30 | 2015-10-30 | 1 | 1 | 16,975 | 0 | 3 |
+| Africa | FL20150112MOZ | UNOSAT | Mozambique | 2015-02-03 | 2015-02-03 | 1 | 1 | 29,370 | 0 | 1 |
+| Africa | EMSR116 | Copernicus EMS | Malawi | 2015-01-22 | 2015-01-27 | 2 | 1 | 54,060 | 246 | 1 |
+| Asia | EMSR927 | Copernicus EMS | Nepal | 2026-08-27 | 2026-08-28 | 2 | 3 | 203 | 12 | 5 |
+| Asia | EMSR851 | Copernicus EMS | Sri Lanka | 2025-11-30 | 2025-12-26 | 12 | 13 | 850 | 32 | 5 |
+| Asia | FL20251126IDN | UNOSAT | Indonesia | 2025-11-27 | 2025-11-29 | 2 | 1 | 105,120 | 1,650 | 3 |
+| Asia | EMSR844 | Copernicus EMS | Vietnam | 2025-10-09 | 2025-10-12 | 3 | 1 | 592 | 10 | 1 |
+| Asia | EMSR838 | Copernicus EMS | Pakistan | 2025-08-27 | 2025-09-03 | 7 | 5 | 46,191 | 6,010 | 4 |
+| Asia | TC20250825VNM | UNOSAT | Vietnam | 2025-08-26 | 2025-08-26 | 1 | 1 | 99,220 | 811 | 2 |
+| Asia | FL20250818PAK | UNOSAT | Pakistan | 2025-08-16 | 2025-08-20 | 2 | 2 | 2,836 | 201 | 4 |
+| Asia | EMSR848 | Copernicus EMS | Vietnam | 2025-08-14 | 2025-11-26 | 19 | 5 | 39,396 | 4,337 | 4 |
+| Asia | TC20250722LAO | UNOSAT | Laos | 2025-07-23 | 2025-07-27 | 3 | 1 | 93,225 | 1,348 | 1 |
+| Asia | FL20241128LKA | UNOSAT | Sri Lanka | 2024-12-05 | 2024-12-05 | 1 | 1 | 1,104 | 169 | 5 |
+| Asia | FL20240928NPL | UNOSAT | India | 2024-09-27 | 2024-10-01 | 4 | 3 | 84,576 | 2,676 | 5 |
+| Asia | FL20240912MMR | UNOSAT | Myanmar | 2024-09-15 | 2024-10-02 | 2 | 1 | 57,084 | 2,276 | 4 |
+| Asia | EMSR754 | Copernicus EMS | Vietnam | 2024-09-13 | 2024-09-20 | 3 | 8 | 3,555 | 143 | 1 |
+| Asia | FL20240913LAO | UNOSAT | Laos | 2024-09-10 | 2024-09-18 | 3 | 2 | 28,592 | 483 | 1 |
+| Asia | TC20240905VNM | UNOSAT | Vietnam | 2024-09-10 | 2024-09-25 | 3 | 1 | 39,672 | 1,475 | 4 |
+| Asia | FL20240502BGD | UNOSAT | Bangladesh | 2024-06-01 | 2024-06-01 | 1 | 1 | 81,120 | 638 | 3 |
+| Asia | FL20240603LKA | UNOSAT | Sri Lanka | 2024-05-23 | 2024-06-04 | 2 | 1 | 27,951 | 182 | 5 |
+| Asia | FL20240326IDN | UNOSAT | Indonesia | 2024-03-15 | 2024-03-27 | 3 | 1 | 3,655 | 1,122 | 4 |
+| Asia | FL20230807LAO | UNOSAT | Laos | 2023-08-04 | 2023-08-04 | 1 | 1 | 38,868 | 100 | 1 |
+| Asia | TC20221028PHL | UNOSAT | Philippines | 2022-11-02 | 2022-11-05 | 3 | 3 | 4,379 | 407 | 5 |
+| Asia | FL20221014VNM | UNOSAT | Vietnam | 2022-10-15 | 2022-10-15 | 1 | 1 | 119,490 | 499 | 2 |
+| Asia | FL20221117NPL | UNOSAT | Nepal | 2022-10-15 | 2022-10-15 | 1 | 1 | 14,560 | 707 | 5 |
+| Asia | TC20220928THA | UNOSAT | Thailand | 2022-10-03 | 2022-10-20 | 2 | 2 | 1,683 | 437 | 3 |
+| Asia | TC20220928LAO | UNOSAT | Laos | 2022-09-30 | 2022-09-30 | 1 | 2 | 894 | 34 | 2 |
+| Asia | EMSR629 | Copernicus EMS | Pakistan | 2022-08-28 | 2022-08-30 | 2 | 3 | 2,800 | 3,132 | 4 |
+| Asia | FL20220627GEO | UNOSAT | Georgia | 2022-06-23 | 2022-06-23 | 1 | 1 | 3,264 | 66 | 3 |
+| Asia | FL20220525BGD | UNOSAT | Bangladesh | 2022-05-25 | 2022-06-21 | 6 | 2 | 77,604 | 33,435 | 1 |
+| Asia | EMSR551 | Copernicus EMS | Iraq | 2021-11-20 | 2021-11-22 | 3 | 1 | 64 | 0 | 2 |
+| Asia | FL20210928THA | UNOSAT | Thailand | 2021-09-29 | 2021-11-01 | 11 | 2 | 143,960 | 19,309 | 3 |
+| Asia | FL20210831MMR | UNOSAT | Myanmar | 2021-08-25 | 2021-08-31 | 2 | 1 | 15,750 | 2,589 | 1 |
+| Asia | FL20210729YEM | UNOSAT | Yemen | 2021-08-05 | 2021-08-05 | 1 | 1 | 90 | 0 | 4 |
+| Asia | FL20210729BGD | UNOSAT | Bangladesh | 2021-07-27 | 2021-08-10 | 4 | 1 | 38,889 | 9,386 | 3 |
+| Asia | FL20210630NPL | UNOSAT | India | 2021-07-01 | 2021-07-07 | 4 | 4 | 95,065 | 7,528 | 5 |
+| Asia | EMSR631 | Copernicus EMS | Pakistan | 2021-05-02 | 2022-09-23 | 4 | 2 | 240 | 129 | 2 |
+| Asia | EMSR507 | Copernicus EMS | East Timor | 2021-04-06 | 2021-04-11 | 5 | 7 | 1,233 | 16 | 2 |
+| Asia | TC20201101PHL | UNOSAT | Philippines | 2020-11-01 | 2020-11-01 | 1 | 1 | 7,832 | 286 | 5 |
+| Asia | TC20201111PHL | UNOSAT | Philippines | 2020-11-01 | 2020-11-13 | 3 | 5 | 32,675 | 1,855 | 5 |
+| Asia | TC20201028VNM | UNOSAT | Vietnam | 2020-10-29 | 2020-11-10 | 6 | 1 | 325,251 | 3,614 | 2 |
+| Asia | EMSR459 | Copernicus EMS | Afghanistan | 2020-08-28 | 2020-08-28 | 1 | 1 | 28 | 0 | 4 |
+| Asia | EMSR450 | Copernicus EMS | Vietnam | 2020-08-04 | 2020-08-04 | 1 | 2 | 168 | 1 | 2 |
+| Asia | FL20200713BGD | UNOSAT | Bangladesh | 2020-07-09 | 2020-08-08 | 7 | 1 | 205,632 | 80,274 | 1 |
+| Asia | FL20200708NPL | UNOSAT | Nepal | 2020-07-06 | 2020-08-02 | 7 | 4 | 13,559 | 1,556 | 5 |
+| Asia | TC20200518BGD | UNOSAT | Bangladesh | 2020-05-25 | 2020-05-31 | 2 | 1 | 9,690 | 3,486 | 3 |
+| Asia | FL20200324IRN | UNOSAT | Iran | 2020-03-23 | 2020-03-23 | 1 | 1 | 989 | 64 | 3 |
+| Asia | EMSR431 | Copernicus EMS | Iran | 2020-02-26 | 2020-02-27 | 2 | 3 | 4,779 | 9 | 1 |
+| Asia | EMSR419 | Copernicus EMS | Iran | 2020-01-11 | 2020-01-16 | 4 | 6 | 7,309 | 216 | 3 |
+| Asia | FL20191217MYS | UNOSAT | Malaysia | 2019-12-15 | 2019-12-15 | 1 | 2 | 4,572 | 60 | 4 |
+| Asia | EMSR399 | Copernicus EMS | Vietnam | 2019-10-29 | 2019-10-29 | 1 | 1 | 88 | 2 | 3 |
+| Asia | EMSR392 | Copernicus EMS | Vietnam | 2019-10-02 | 2019-10-04 | 2 | 1 | 72 | 7 | 2 |
+| Asia | FL20190905LAO | UNOSAT | Laos | 2019-09-06 | 2019-09-11 | 3 | 1 | 78,771 | 1,410 | 2 |
+| Asia | EMSR352 | Copernicus EMS | Iran | 2019-04-08 | 2019-04-14 | 5 | 1 | 51,150 | 7,206 | 2 |
+| Asia | FL20190321IRN | UNOSAT | Iran | 2019-03-29 | 2019-03-30 | 2 | 2 | 13,928 | 1,220 | 3 |
+| Asia | FL20180723LAO | UNOSAT | Laos | 2018-07-10 | 2018-07-29 | 6 | 1 | 8,284 | 594 | 4 |
+| Asia | FL20180619BGD | UNOSAT | India | 2018-06-15 | 2018-06-15 | 1 | 1 | 45,045 | 7,855 | 1 |
+| Asia | FL20180518BGD | UNOSAT | Bangladesh | 2018-05-22 | 2018-06-13 | 2 | 1 | 50 | 9 | 3 |
+| Asia | FL20171106VNM | UNOSAT | Vietnam | 2017-11-07 | 2017-11-10 | 2 | 2 | 26,960 | 926 | 2 |
+| Asia | FL20170815BGD | UNOSAT | Bangladesh | 2017-08-12 | 2017-08-22 | 3 | 1 | 86,292 | 38,261 | 1 |
+| Asia | EMSR205 | Copernicus EMS | Sri Lanka | 2017-05-30 | 2017-05-30 | 1 | 2 | 644 | 3 | 5 |
+| Asia | EMSR162 | Copernicus EMS | Tajikistan | 2016-05-17 | 2016-05-17 | 1 | 1 | 60 | 0 | 1 |
+| Asia | EMSR130 | Copernicus EMS | Myanmar | 2015-08-09 | 2015-09-13 | 9 | 1 | 72,593 | 18,165 | 4 |
+| Asia | FL20150703MMR | UNOSAT | Myanmar | 2015-08-06 | 2015-08-11 | 3 | 2 | 113,889 | 1,835 | 2 |
+| Oceania | TC20260408SLB | UNOSAT | Solomon Islands | 2026-04-14 | 2026-04-14 | 1 | 1 | 72 | 0 | 5 |
+| Oceania | EMSR637 | Copernicus EMS | Australia | 2022-10-13 | 2022-11-07 | 14 | 10 | 7,128 | 2,236 | 1 |
+| Oceania | EMSR586 | Copernicus EMS | Australia | 2022-07-04 | 2022-07-09 | 5 | 3 | 7,810 | 913 | 5 |
+| Oceania | EMSR570 | Copernicus EMS | Australia | 2022-03-30 | 2022-04-01 | 3 | 1 | 1,408 | 654 | 3 |
+| Oceania | EMSR567 | Copernicus EMS | Australia | 2022-02-20 | 2022-03-09 | 8 | 13 | 6,148 | 779 | 2 |
+| Oceania | EMSR574 | Copernicus EMS | Australia | 2022-02-15 | 2022-05-15 | 2 | 2 | 2,238 | 19 | 3 |
+| Oceania | EMSR554 | Copernicus EMS | Australia | 2021-11-30 | 2021-12-05 | 5 | 3 | 3,128 | 721 | 1 |
+| Oceania | EMSR550 | Copernicus EMS | Australia | 2021-11-12 | 2021-11-17 | 6 | 7 | 1,021 | 11 | 1 |
+| Oceania | EMSR504 | Copernicus EMS | Australia | 2021-03-19 | 2021-03-26 | 7 | 11 | 6,869 | 1,599 | 1 |
+| Oceania | EMSR562 | Copernicus EMS | Australia | 2020-02-01 | 2022-02-03 | 3 | 3 | 874 | 94 | 4 |
+| Oceania | EMSR342 | Copernicus EMS | Australia | 2019-02-02 | 2019-02-16 | 11 | 5 | 10,304 | 9,503 | 4 |
+| Oceania | EMSR184 | Copernicus EMS | Australia | 2016-09-25 | 2016-10-26 | 14 | 1 | 36,456 | 3,024 | 3 |
+| Oceania | TC20160219FJI | UNOSAT | Fiji | 2015-04-08 | 2015-04-08 | 1 | 1 | 2,736 | 0 | 2 |
+| South America | EMSR870 | Copernicus EMS | Ecuador | 2026-03-07 | 2026-03-19 | 5 | 3 | 948 | 61 | 1 |
+| South America | EMSR865 | Copernicus EMS | Colombia | 2026-02-02 | 2026-02-14 | 3 | 1 | 8,742 | 791 | 1 |
+| South America | EMSR853 | Copernicus EMS | Bolivia | 2025-12-17 | 2025-12-19 | 3 | 3 | 9,072 | 91 | 2 |
+| South America | EMSR813 | Copernicus EMS | Ecuador | 2025-07-14 | 2025-07-14 | 1 | 1 | 49 | 0 | 3 |
+| South America | EMSR799 | Copernicus EMS | Bolivia | 2025-04-04 | 2025-05-01 | 5 | 3 | 8,715 | 387 | 2 |
+| South America | EMSR796 | Copernicus EMS | Ecuador | 2025-03-18 | 2025-05-01 | 11 | 5 | 533 | 5 | 1 |
+| South America | EMSR789 | Copernicus EMS | Ecuador | 2025-02-24 | 2025-03-11 | 8 | 5 | 816 | 119 | 1 |
+| South America | FL20241112COL | UNOSAT | Colombia | 2024-11-15 | 2024-11-15 | 1 | 1 | 165 | 22 | 3 |
+| South America | EMSR720 | Copernicus EMS | Brazil | 2024-05-04 | 2024-05-15 | 6 | 1 | 1,054 | 69 | 4 |
+| South America | FL20230321PER | UNOSAT | Peru | 2023-03-25 | 2023-04-01 | 3 | 2 | 26,268 | 1,060 | 2 |
+| South America | EMSR577 | Copernicus EMS | Suriname | 2022-06-16 | 2022-06-16 | 1 | 1 | 5,439 | 0 | 5 |
+| South America | FL20220526GUY | UNOSAT | Guyana | 2022-05-26 | 2022-05-26 | 1 | 1 | 21,744 | 498 | 4 |
+| South America | EMSR514 | Copernicus EMS | Guyana | 2021-06-06 | 2021-06-14 | 4 | 3 | 3,831 | 211 | 5 |
+| South America | FL20210520GUY | UNOSAT | Guyana | 2021-05-19 | 2021-06-23 | 6 | 3 | 17,962 | 660 | 5 |
+| South America | EMSR286 | Copernicus EMS | Colombia | 2017-05-25 | 2018-06-02 | 6 | 2 | 916 | 2 | 4 |
+| South America | EMSR199 | Copernicus EMS | Peru | 2017-03-23 | 2017-04-24 | 11 | 7 | 6,496 | 1,197 | 3 |
